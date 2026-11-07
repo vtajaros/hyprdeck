@@ -194,8 +194,92 @@ FloatingWindow {
                                 }
                                 Row {
                                     spacing: 8
+                                    Text {
+                                        width: 140
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "Theme:"
+                                        color: HKS.muted
+                                        font.family: HKS.fontFamily
+                                        font.pixelSize: HKS.fontSizeSmall
+                                        font.weight: Font.Bold
+                                    }
+
+                                    Row {
+                                        spacing: 8
+                                        anchors.verticalCenter: parent.verticalCenter
+
+                                        // Option 1: Follow system (Matugen)
+                                        Rectangle {
+                                            height: 26
+                                            width: sysTxt.implicitWidth + 16
+                                            radius: HKS.radiusSmall
+                                            color: HKS.themeMode === "system" ? HKS.alpha(HKS.accent, 0.25) : HKS.alpha(HKS.elevated, 0.6)
+                                            border.width: 1
+                                            border.color: HKS.themeMode === "system" ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+
+                                            Text {
+                                                id: sysTxt
+                                                anchors.centerIn: parent
+                                                text: "Follow system (Matugen)"
+                                                font.family: HKS.fontFamily
+                                                font.pixelSize: HKS.fontSizeSmall
+                                                font.weight: HKS.themeMode === "system" ? Font.Bold : Font.Normal
+                                                color: HKS.themeMode === "system" ? HKS.accent : HKS.fg
+                                            }
+
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: HKS.themeMode = "system"
+                                            }
+                                        }
+
+                                        // Option 2: Fixed graphite
+                                        Rectangle {
+                                            height: 26
+                                            width: graphTxt.implicitWidth + 16
+                                            radius: HKS.radiusSmall
+                                            color: HKS.themeMode === "graphite" ? HKS.alpha(HKS.accent, 0.25) : HKS.alpha(HKS.elevated, 0.6)
+                                            border.width: 1
+                                            border.color: HKS.themeMode === "graphite" ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+
+                                            Text {
+                                                id: graphTxt
+                                                anchors.centerIn: parent
+                                                text: "Fixed graphite"
+                                                font.family: HKS.fontFamily
+                                                font.pixelSize: HKS.fontSizeSmall
+                                                font.weight: HKS.themeMode === "graphite" ? Font.Bold : Font.Normal
+                                                color: HKS.themeMode === "graphite" ? HKS.accent : HKS.fg
+                                            }
+
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: HKS.themeMode = "graphite"
+                                            }
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "(in-memory only)"
+                                            font.family: HKS.fontFamily
+                                            font.pixelSize: 10
+                                            color: HKS.alpha(HKS.muted, 0.6)
+                                        }
+                                    }
+                                }
+                                Row {
+                                    spacing: 8
                                     Text { width: 140; text: "Theme Source:"; color: HKS.muted; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall; font.weight: Font.Bold }
-                                    Text { text: "~/.config/quickshell/theme/colors.json (Matugen / Quickshell)"; color: HKS.fg; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall }
+                                    Text {
+                                        text: HKS.themeMode === "system"
+                                            ? "~/.config/quickshell/theme/colors.json (Matugen / Quickshell)"
+                                            : "Fixed graphite palette (offline defaults)"
+                                        color: HKS.fg
+                                        font.family: HKS.fontFamily
+                                        font.pixelSize: HKS.fontSizeSmall
+                                    }
                                 }
                             }
                         }

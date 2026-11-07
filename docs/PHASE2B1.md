@@ -44,7 +44,11 @@ It provides both a dedicated workspace floating window and an instant Wayland la
 ### Hard Rules & Invariants
 - **Read-Only**: Never modifies, renames, or touches `~/.config/hypr` or `~/.config/quickshell`.
 - **Backend Schema Unchanged**: Uses the existing Phase 2b-0 JSON contract from `python3 -m backend.cli scan --compact`.
-- **System Theme Integration**: Reads the live Matugen palette directly from `~/.config/quickshell/theme/colors.json` via `FileView`. If missing, smoothly falls back to dark graphite tones (`#141414` bg, `#1c1c1e` surface, `#7fae8b` sage green accent).
+- **System Theme Integration & Palette Switching**:
+  - `HKS` theme singleton supports two modes:
+    - `"Follow system (Matugen)"`: reads `~/.config/quickshell/theme/colors.json` via `FileView` with fallback defaults.
+    - `"Fixed graphite"`: built-in neutral dark graphite palette (`#141414` bg, `#1c1c1e` surface, `#7fae8b` sage green accent).
+  - Configurable on the fly from the Settings page. Note: the theme selection is currently maintained in-memory for the running process and not persisted to disk.
 - **Qt Quick Controls Basic Style**: Avoids heavy styles like Material or Fusion; styled with custom QML primitives.
 
 ---

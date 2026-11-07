@@ -6,7 +6,24 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    // Palette with dark graphite defaults and muted green fallback
+    // Default fixed graphite palette (offline fallback / manual choice)
+    readonly property var fallbackPalette: ({
+        bg: "#141414",
+        surface: "#1c1c1e",
+        elevated: "#26262a",
+        fg: "#e6e6e6",
+        muted: "#9a9a9f",
+        accent: "#7fae8b",
+        secondary: "#85867c",
+        warning: "#d79921",
+        critical: "#e06c6c"
+    })
+
+    // Active theme mode: "system" ("Follow system (Matugen)") | "graphite" ("Fixed graphite")
+    // Note: In-memory selection only for now; not persisted to disk.
+    property string themeMode: "system"
+
+    // Active palette colors
     property color bg: "#141414"
     property color surface: "#1c1c1e"
     property color elevated: "#26262a"
@@ -52,28 +69,59 @@ Singleton {
         path: Quickshell.env("HOME") + "/.config/quickshell/theme/colors.json"
         blockLoading: true
         watchChanges: true
-        onFileChanged: root.loadColors()
+        onFileChanged: {
+            if (root.themeMode === "system") {
+                root.applyTheme();
+            }
+        }
     }
 
-    function loadColors() {
+    function applyTheme() {
+        if (themeMode === "graphite") {
+            bg = fallbackPalette.bg;
+            surface = fallbackPalette.surface;
+            elevated = fallbackPalette.elevated;
+            fg = fallbackPalette.fg;
+            muted = fallbackPalette.muted;
+            accent = fallbackPalette.accent;
+            secondary = fallbackPalette.secondary;
+            warning = fallbackPalette.warning;
+            critical = fallbackPalette.critical;
+            return;
+        }
+
+        // themeMode === "system": read live colors.json with fallback
         try {
             var raw = colorFile.text();
             if (raw && raw.trim().startsWith("{")) {
                 var data = JSON.parse(raw);
-                if (data.bg) bg = data.bg;
-                if (data.surface) surface = data.surface;
-                if (data.elevated) elevated = data.elevated;
-                if (data.fg) fg = data.fg;
-                if (data.muted) muted = data.muted;
-                if (data.accent) accent = data.accent;
-                if (data.secondary) secondary = data.secondary;
-                if (data.warning) warning = data.warning;
-                if (data.critical) critical = data.critical;
+                bg = data.bg || fallbackPalette.bg;
+                surface = data.surface || fallbackPalette.surface;
+                elevated = data.elevated || fallbackPalette.elevated;
+                fg = data.fg || fallbackPalette.fg;
+                muted = data.muted || fallbackPalette.muted;
+                accent = data.accent || fallbackPalette.accent;
+                secondary = data.secondary || fallbackPalette.secondary;
+                warning = data.warning || fallbackPalette.warning;
+                critical = data.critical || fallbackPalette.critical;
+                return;
             }
         } catch(e) {
-            // Silently retain defaults on error or missing file
+            // Silently fall back to defaults
         }
+
+        bg = fallbackPalette.bg;
+        surface = fallbackPalette.surface;
+        elevated = fallbackPalette.elevated;
+        fg = fallbackPalette.fg;
+        muted = fallbackPalette.muted;
+        accent = fallbackPalette.accent;
+        secondary = fallbackPalette.secondary;
+        warning = fallbackPalette.warning;
+        critical = fallbackPalette.critical;
     }
 
-    Component.onCompleted: loadColors()
+    onThemeModeChanged: applyTheme()
+
+    Component.onCompleted: applyTheme()
 }
