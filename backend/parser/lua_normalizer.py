@@ -8,6 +8,7 @@ import os
 import re
 from typing import Any
 
+from backend.describe.derive import populate_bind_descriptions
 from backend.discovery.config_discovery import build_file_record
 from backend.models.types import (
     BindRecord,
@@ -335,6 +336,8 @@ def normalize_lua_output(
                 args_raw=arg_summary,
             )
         )
+
+    populate_bind_descriptions(binds)
 
     # Build FileRecords for entrypoint and loaded files
     seen_files: set[str] = set()

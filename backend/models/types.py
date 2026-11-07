@@ -126,6 +126,31 @@ def default_flags() -> dict[str, bool]:
     }
 
 
+VALID_CATEGORIES = (
+    "Apps",
+    "Windows",
+    "Workspaces",
+    "Media & Hardware",
+    "System",
+    "Mouse",
+    "Other",
+)
+
+
+@dataclass(slots=True)
+class DescriptionEffective:
+    text: str
+    source: str  # "sidecar" | "config" | "derived"
+    generic: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "generic": self.generic,
+            "source": self.source,
+            "text": self.text,
+        }
+
+
 @dataclass(slots=True)
 class BindRecord:
     id: str
@@ -154,13 +179,21 @@ class BindRecord:
     parse_status: str  # "ok" | "partial" | "unsupported" | "unresolved"
     key_raw: str = ""
     args_raw: str = ""
+    description_effective: DescriptionEffective = field(
+        default_factory=lambda: DescriptionEffective(text="", source="derived", generic=True)
+    )
+    category: str = "Other"
+    category_source: str = "derived"  # "sidecar" | "derived"
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "args_raw": self.args_raw,
             "bind_type": self.bind_type,
+            "category": self.category,
+            "category_source": self.category_source,
             "declared_via": self.declared_via,
             "description": self.description,
+            "description_effective": self.description_effective.to_dict(),
             "dispatcher": self.dispatcher.to_dict(),
             "flags": dict(sorted(self.flags.items())),
             "flags_extra": dict(sorted(self.flags_extra.items())),

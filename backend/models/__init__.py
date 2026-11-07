@@ -1,7 +1,9 @@
 """Models package for Hyprland Keybind Studio."""
 
 from backend.models.types import (
+    VALID_CATEGORIES,
     BindRecord,
+    DescriptionEffective,
     Diagnostic,
     DispatcherInfo,
     EnvironmentInfo,
@@ -17,6 +19,7 @@ from backend.models.types import (
 
 __all__ = [
     "BindRecord",
+    "DescriptionEffective",
     "Diagnostic",
     "DispatcherInfo",
     "EnvironmentInfo",
@@ -27,5 +30,6 @@ __all__ = [
     "StatsRecord",
     "TraceFrame",
     "UnbindRecord",
+    "VALID_CATEGORIES",
     "default_flags",
 ]

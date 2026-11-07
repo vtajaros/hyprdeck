@@ -8,6 +8,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from backend.describe.derive import populate_bind_descriptions
 from backend.discovery.config_discovery import build_file_record
 from backend.models.types import (
     BindRecord,
@@ -669,6 +670,8 @@ def parse_hyprlang_config(
         total_occ = state.site_occurrences.get((b.source_file, b.source_line), 1)
         b.occurrences_at_site = total_occ
         b.generated = total_occ > 1
+
+    populate_bind_descriptions(state.binds)
 
     file_records: list[FileRecord] = []
     for fpath, role in state.files_ordered:

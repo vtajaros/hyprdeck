@@ -107,6 +107,9 @@
           "flags",
           "flags_extra",
           "description",
+          "description_effective",
+          "category",
+          "category_source",
           "dispatcher",
           "submap",
           "source_file",
@@ -167,6 +170,35 @@
             "type": "object"
           },
           "description": { "type": ["string", "null"] },
+          "description_effective": {
+            "type": "object",
+            "required": ["text", "source", "generic"],
+            "additionalProperties": false,
+            "properties": {
+              "text": { "type": "string" },
+              "source": {
+                "type": "string",
+                "enum": ["sidecar", "config", "derived"]
+              },
+              "generic": { "type": "boolean" }
+            }
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "Apps",
+              "Windows",
+              "Workspaces",
+              "Media & Hardware",
+              "System",
+              "Mouse",
+              "Other"
+            ]
+          },
+          "category_source": {
+            "type": "string",
+            "enum": ["sidecar", "derived"]
+          },
           "dispatcher": {
             "type": "object",
             "required": ["path", "args", "arg_summary"],
