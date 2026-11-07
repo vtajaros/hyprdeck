@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import "../theme"
 import "../services"
 
@@ -9,6 +10,19 @@ Rectangle {
     property bool isExpanded: false
     property bool isSelected: false
     signal toggleExpand()
+
+    readonly property string displaySource: {
+        if (!root.bindData || !root.bindData.source_file) return "";
+        var path = root.bindData.source_file;
+        var home = Quickshell.env("HOME") || "";
+        if (home && path.startsWith(home)) {
+            path = "~" + path.slice(home.length);
+        }
+        if (root.bindData.source_line !== undefined && root.bindData.source_line !== null) {
+            path += ":" + root.bindData.source_line;
+        }
+        return path;
+    }
 
     implicitWidth: 600
     implicitHeight: mainCol.implicitHeight + 16
@@ -34,32 +48,123 @@ Rectangle {
         anchors.margins: 8
         spacing: 8
 
-        // Top line: Shortcut + Badges + Category
+        // Top line fixed-column layout:
+        // [shortcut column (300px) | description+action column (fills) | badge column | category column (140px)]
         Item {
+            id: topRowItem
             width: parent.width
-            height: Math.max(keycapsRow.implicitHeight, Math.max(descCol.implicitHeight, rightPills.implicitHeight))
+            height: Math.max(shortcutCol.implicitHeight, Math.max(descCol.implicitHeight, Math.max(badgesCol.implicitHeight, 28)))
 
-            // Shortcut keycaps
-            Row {
-                id: keycapsRow
+            // 1. Shortcut column: fixed width ~300px, content left-aligned, keycaps never wrap or overlap
+            Item {
+                id: shortcutCol
+                width: 300
+                implicitHeight: keycapsRow.implicitHeight
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 4
+                clip: true
 
-                Repeater {
-                    model: root.bindData ? KeybindData.shortcutParts(root.bindData) : []
-                    delegate: Keycap {
-                        text: modelData
+                Row {
+                    id: keycapsRow
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 4
+
+                    Repeater {
+                        model: root.bindData ? KeybindData.shortcutParts(root.bindData) : []
+                        delegate: Keycap {
+                            text: modelData
+                        }
                     }
                 }
             }
 
-            // Description and action
+            // 4. Category column: fixed width (width of longest category "Media & Hardware" ~140px), right-aligned
+            Item {
+                id: categoryCol
+                width: 140
+                height: 22
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+
+                Rectangle {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 22
+                    width: Math.min(parent.width, catLabel.implicitWidth + 14)
+                    radius: 11
+                    color: HKS.alpha(HKS.accent, 0.15)
+                    border.width: 1
+                    border.color: HKS.alpha(HKS.accent, 0.3)
+
+                    Text {
+                        id: catLabel
+                        anchors.centerIn: parent
+                        text: root.bindData ? (root.bindData.category || "Other") : ""
+                        font.family: HKS.fontFamily
+                        font.pixelSize: 10
+                        font.weight: Font.DemiBold
+                        color: HKS.accent
+                        elide: Text.ElideRight
+                    }
+                }
+            }
+
+            // 3. Badges column: right-aligned Row in fixed order (locked, repeat, loop, stacked, flags)
+            Row {
+                id: badgesCol
+                anchors.right: categoryCol.left
+                anchors.rightMargin: 10
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+
+                Repeater {
+                    model: {
+                        if (!root.bindData) return [];
+                        var res = [];
+                        var f = root.bindData.flags || {};
+                        if (f.locked) res.push({ text: "locked", type: "flag" });
+                        if (f.repeating) res.push({ text: "repeat", type: "flag" });
+                        if (root.bindData.generated) res.push({ text: "loop", type: "loop" });
+                        if (root.bindData.conflict_ids && root.bindData.conflict_ids.length > 0) res.push({ text: "stacked", type: "stacked" });
+                        if (f.mouse) res.push({ text: "mouse", type: "flag" });
+                        if (f.release) res.push({ text: "release", type: "flag" });
+                        if (f.long_press) res.push({ text: "long", type: "flag" });
+                        return res;
+                    }
+
+                    delegate: Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 20
+                        width: badgeText.implicitWidth + (modelData.type === "stacked" ? 10 : 8)
+                        radius: 4
+                        color: modelData.type === "stacked"
+                            ? HKS.alpha(HKS.warning, 0.2)
+                            : (modelData.type === "loop" ? HKS.alpha(HKS.muted, 0.15) : HKS.alpha(HKS.muted, 0.12))
+                        border.width: 1
+                        border.color: modelData.type === "stacked"
+                            ? HKS.alpha(HKS.warning, 0.6)
+                            : (modelData.type === "loop" ? HKS.alpha(HKS.muted, 0.3) : HKS.alpha(HKS.muted, 0.22))
+
+                        Text {
+                            id: badgeText
+                            anchors.centerIn: parent
+                            text: modelData.text
+                            font.family: HKS.fontFamily
+                            font.pixelSize: 9
+                            font.weight: modelData.type === "stacked" ? Font.Bold : Font.Normal
+                            color: modelData.type === "stacked" ? HKS.warning : HKS.muted
+                        }
+                    }
+                }
+            }
+
+            // 2. Description + action column: fills between shortcut column and badges, starting at the exact same x on every row
             Column {
                 id: descCol
-                anchors.left: keycapsRow.right
+                anchors.left: shortcutCol.right
                 anchors.leftMargin: 12
-                anchors.right: rightPills.left
+                anchors.right: badgesCol.left
                 anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 2
@@ -84,116 +189,12 @@ Rectangle {
                     elide: Text.ElideRight
                 }
             }
-
-            // Right pills: Conflict, Loop, Flags, Category
-            Row {
-                id: rightPills
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
-                spacing: 6
-
-                // Conflict badge
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: !!(root.bindData && root.bindData.conflict_ids && root.bindData.conflict_ids.length > 0)
-                    height: 20
-                    width: conflictLabel.implicitWidth + 10
-                    radius: 4
-                    color: HKS.alpha(HKS.warning, 0.2)
-                    border.width: 1
-                    border.color: HKS.alpha(HKS.warning, 0.6)
-
-                    Text {
-                        id: conflictLabel
-                        anchors.centerIn: parent
-                        text: "stacked"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: 9
-                        font.weight: Font.Bold
-                        color: HKS.warning
-                    }
-                }
-
-                // Generated by loop badge
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: !!(root.bindData && root.bindData.generated)
-                    height: 20
-                    width: loopLabel.implicitWidth + 8
-                    radius: 4
-                    color: HKS.alpha(HKS.muted, 0.15)
-                    border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.3)
-
-                    Text {
-                        id: loopLabel
-                        anchors.centerIn: parent
-                        text: "loop"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: 9
-                        color: HKS.muted
-                    }
-                }
-
-                // Flags (mouse, release, locked, repeating, long_press)
-                Repeater {
-                    model: {
-                        if (!root.bindData || !root.bindData.flags) return [];
-                        var activeFlags = [];
-                        var f = root.bindData.flags;
-                        if (f.mouse) activeFlags.push("mouse");
-                        if (f.release) activeFlags.push("release");
-                        if (f.locked) activeFlags.push("locked");
-                        if (f.repeating) activeFlags.push("repeat");
-                        if (f.long_press) activeFlags.push("long");
-                        return activeFlags;
-                    }
-
-                    delegate: Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        height: 20
-                        width: flagTxt.implicitWidth + 8
-                        radius: 4
-                        color: HKS.alpha(HKS.muted, 0.12)
-
-                        Text {
-                            id: flagTxt
-                            anchors.centerIn: parent
-                            text: modelData
-                            font.family: HKS.fontFamily
-                            font.pixelSize: 9
-                            color: HKS.muted
-                        }
-                    }
-                }
-
-                // Category tag
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    height: 22
-                    width: catLabel.implicitWidth + 12
-                    radius: 11
-                    color: HKS.alpha(HKS.accent, 0.15)
-                    border.width: 1
-                    border.color: HKS.alpha(HKS.accent, 0.3)
-
-                    Text {
-                        id: catLabel
-                        anchors.centerIn: parent
-                        text: root.bindData ? (root.bindData.category || "Other") : ""
-                        font.family: HKS.fontFamily
-                        font.pixelSize: 10
-                        font.weight: Font.DemiBold
-                        color: HKS.accent
-                    }
-                }
-            }
         }
 
-        // Expanded details section
+        // Expanded details section: grid with fixed label column (~80px) and selectable text
         Rectangle {
             width: parent.width
-            height: root.isExpanded ? detailsCol.implicitHeight + 16 : 0
+            height: root.isExpanded ? detailsCol.implicitHeight + 20 : 0
             visible: root.isExpanded
             clip: true
             radius: 6
@@ -206,62 +207,90 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: 8
-                spacing: 6
+                anchors.margins: 10
+                spacing: 8
 
+                // Row 1: Source file with "~" replacement + ":line"
                 Row {
+                    width: parent.width
                     spacing: 8
+
                     Text {
+                        width: 80
                         text: "Source:"
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeSmall
                         font.weight: Font.Bold
                         color: HKS.muted
                     }
+
                     TextEdit {
-                        text: root.bindData ? (root.bindData.source_file + ":" + root.bindData.source_line) : ""
+                        width: parent.width - 88
+                        text: root.displaySource
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeSmall
                         color: HKS.fg
                         readOnly: true
                         selectByMouse: true
+                        selectionColor: HKS.alpha(HKS.accent, 0.4)
+                        selectedTextColor: HKS.fg
+                        wrapMode: TextEdit.WrapAnywhere
                     }
                 }
 
+                // Row 2: Config original line
                 Row {
+                    width: parent.width
                     spacing: 8
+
                     Text {
+                        width: 80
                         text: "Config:"
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeSmall
                         font.weight: Font.Bold
                         color: HKS.muted
                     }
+
                     TextEdit {
+                        width: parent.width - 88
                         text: root.bindData ? (root.bindData.original_line || "") : ""
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeSmall
                         color: HKS.accent
                         readOnly: true
                         selectByMouse: true
+                        selectionColor: HKS.alpha(HKS.accent, 0.4)
+                        selectedTextColor: HKS.fg
+                        wrapMode: TextEdit.WrapAnywhere
                     }
                 }
 
+                // Row 3: Submap (visible only when non-empty)
                 Row {
+                    width: parent.width
                     spacing: 8
                     visible: !!(root.bindData && root.bindData.submap)
+
                     Text {
+                        width: 80
                         text: "Submap:"
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeSmall
                         font.weight: Font.Bold
                         color: HKS.muted
                     }
-                    Text {
+
+                    TextEdit {
+                        width: parent.width - 88
                         text: root.bindData ? (root.bindData.submap || "") : ""
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeSmall
                         color: HKS.fg
+                        readOnly: true
+                        selectByMouse: true
+                        selectionColor: HKS.alpha(HKS.accent, 0.4)
+                        selectedTextColor: HKS.fg
                     }
                 }
             }

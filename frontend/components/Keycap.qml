@@ -8,7 +8,7 @@ Rectangle {
     property bool active: false
     readonly property bool isModifier: ["SUPER", "SHIFT", "CTRL", "ALT", "MOD2", "MOD3", "MOD5"].indexOf(text.toUpperCase()) !== -1
 
-    implicitWidth: Math.max(26, label.implicitWidth + 14)
+    implicitWidth: Math.min(280, Math.max(26, label.implicitWidth + 14))
     implicitHeight: 24
     radius: 5
     color: active
@@ -23,10 +23,13 @@ Rectangle {
     Text {
         id: label
         anchors.centerIn: parent
+        width: Math.min(parent.width - 8, implicitWidth)
         text: root.text
         font.family: HKS.fontFamily
         font.pixelSize: HKS.fontSizeSmall
         font.weight: Font.DemiBold
         color: root.active ? HKS.accent : HKS.fg
+        elide: Text.ElideRight
+        horizontalAlignment: Text.AlignHCenter
     }
 }

@@ -269,6 +269,7 @@ Item {
             ListView {
                 id: listView
                 anchors.fill: parent
+                anchors.topMargin: 8
                 visible: !KeybindData.loading && !KeybindData.error && root.filteredBinds.length > 0
                 model: root.filteredBinds
                 clip: true
