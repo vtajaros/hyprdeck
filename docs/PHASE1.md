@@ -99,10 +99,10 @@ Defense-in-depth layers applied during execution:
    - `os.getenv` only permits `HOME`, `XDG_CONFIG_HOME`, `XDG_SESSION_TYPE`, `USER`, `LANG`. `os.time`, `os.date`, `os.clock` are allowed. Any other `os.*` call (`os.execute`, `os.remove`, etc.) is blocked and emits `sandbox_denied`.
    - `io.open` only permits read modes (`"r"`, `"rb"`) on paths that normalize inside `config_dir`. Write modes and `io.popen` are blocked with `sandbox_denied`.
    - `loadfile`, `dofile`, and `require` only load text chunks (`mode = "t"`) inside `config_dir` bound to sandbox environment `E`.
-3. **Instruction Budget**: `debug.sethook` fires every `100,000` VM instructions and aborts after `500` hooks (`50,000,000` instructions total) with diagnostic `instruction_limit`, preserving all binds recorded prior to the loop.
+3. **Instruction Budget**: `debug.sethook` fires every `100,000` VM instructions and aborts after reaching `50,000,000` instructions (configured as a named constant in `lua_runner.py` and passed via argv) with diagnostic `instruction_limit`, preserving all binds recorded prior to the loop.
 4. **OS Process Isolation (`lua_runner.py`)**:
-   - Cleared environment variables, `stdin=DEVNULL`, fresh empty temporary working directory, `15s` wall-clock timeout.
-   - Kernel resource limits via `resource.setrlimit`: `RLIMIT_CPU = 10s`, `RLIMIT_AS = 512 MiB`, `RLIMIT_FSIZE = 0` (kernel blocks all file writes), `RLIMIT_NOFILE = 64`.
+   - Cleared environment variables, `stdin=DEVNULL`, fresh empty temporary working directory, `15s` wall-clock timeout (`WALL_TIMEOUT_SECONDS = 15.0`).
+   - Kernel resource limits via `resource.setrlimit`: `RLIMIT_CPU = 10s`, `RLIMIT_AS = 512 MiB`, `RLIMIT_FSIZE = 0` (kernel blocks all file writes), `RLIMIT_NOFILE = 64`, `RLIMIT_NPROC = 0`.
 - **TODO (Future Phase)**: Add optional `bubblewrap` (`bwrap --ro-bind ... --unshare-all`) containerization around the `lua5.4` subprocess.
 
 ---
