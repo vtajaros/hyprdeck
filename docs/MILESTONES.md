@@ -1,4 +1,6 @@
-# Hyprland Keybind Studio (HKS) — Phase 1 Milestones
+# Hyprland Keybind Studio (HKS) — Milestones
+
+## Phase 1 Milestones
 
 | Deliverable | Component | Status |
 | :--- | :--- | :--- |
@@ -14,6 +16,20 @@
 | CLI (`scan`, `scan --oracle`, `summary`) with clean exit codes | `backend/cli.py`, `backend/serializer/json_serializer.py` | [x] Complete |
 | Unit tests (Discovery, Lua fixture, Sandbox, Hyprlang, Serializer, Oracle) | `backend/tests/` | [x] Complete |
 | Phase 1 architecture & acceptance documentation | `docs/PHASE1.md`, `docs/MILESTONES.md`, `README.md` | [x] Complete |
+
+---
+
+## Phase 2a Milestones (Descriptions, Categories & Sidecar Overrides)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Additive schema fields (`description_effective`, `category`, `category_source`, `stats.sidecar`) | `shared/schemas/bindings.schema.json`, `backend/models/types.py` | [x] Complete |
+| Dual-language human description derivation (`derive_description`) | `backend/describe/derive.py` | [x] Complete |
+| Semantic category classification (`derive_category`) | `backend/describe/derive.py` | [x] Complete |
+| Read-only sidecar override loader, validator & matcher | `backend/describe/sidecar.py` | [x] Complete |
+| CLI summary `DESCRIPTION` & `CATEGORY` columns (<= 120 cols) & `sidecar-template [--all]` | `backend/cli.py`, `backend/serializer/json_serializer.py` | [x] Complete |
+| Phase 2a parity, derivation & sidecar unit tests | `backend/tests/test_describe.py` | [x] Complete |
+| Phase 2a documentation | `docs/PHASE2A.md`, `docs/MILESTONES.md`, `README.md` | [x] Complete |
 
 ---
 
