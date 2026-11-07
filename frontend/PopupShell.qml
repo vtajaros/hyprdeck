@@ -9,7 +9,26 @@ import "pages"
 Item {
     id: root
 
+    property bool appeared: false
     property bool isClosing: false
+
+    readonly property int popupLeft: {
+        var raw = Quickshell.env("HKS_POPUP_LEFT");
+        if (!raw || raw.trim() === "") return 20;
+        var val = parseInt(raw, 10);
+        return isNaN(val) ? 20 : val;
+    }
+
+    readonly property int popupTop: {
+        var raw = Quickshell.env("HKS_POPUP_TOP");
+        if (!raw || raw.trim() === "") return 64;
+        var val = parseInt(raw, 10);
+        return isNaN(val) ? 64 : val;
+    }
+
+    Component.onCompleted: {
+        appeared = true;
+    }
 
     function dismiss(reason) {
         if (isClosing) return;
@@ -47,23 +66,40 @@ Item {
             anchors.fill: parent
             color: "transparent"
 
+            focus: true
+            Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Escape) {
+                    root.dismiss("key_escape");
+                    event.accepted = true;
+                }
+            }
+
             MouseArea {
                 anchors.fill: parent
                 onClicked: root.dismiss("outside_click")
             }
         }
 
-        // Centered ~760x560 popup card with clear opaque boundary
+        // Top-left anchored ~760x560 popup card with clear opaque boundary & slide-in
         Rectangle {
             id: card
-            anchors.centerIn: parent
-            width: Math.min(parent.width - 40, 760)
-            height: Math.min(parent.height - 40, 560)
+            x: root.popupLeft
+            y: root.popupTop + (root.appeared ? 0 : -8)
+            width: parent.width > 0 ? Math.min(parent.width - root.popupLeft - 20, 760) : 760
+            height: parent.height > 0 ? Math.min(parent.height - root.popupTop - 20, 560) : 560
             radius: 10
             color: HKS.bg
-            opacity: 1.0
             border.width: 1
             border.color: HKS.borderColor
+
+            opacity: root.appeared ? 1.0 : 0.0
+
+            Behavior on opacity {
+                NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+            }
+            Behavior on y {
+                NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+            }
 
             // Prevent clicks inside card from dismissing
             MouseArea {
@@ -176,12 +212,6 @@ Item {
             }
         }
 
-        // Global Esc key handler on the exclusive popup window
-        Keys.onPressed: function(event) {
-            if (event.key === Qt.Key_Escape) {
-                root.dismiss("key_escape");
-                event.accepted = true;
-            }
-        }
+
     }
 }

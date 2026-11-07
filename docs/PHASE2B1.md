@@ -70,9 +70,14 @@ HKS provides two entry modes toggled via dedicated scripts:
 
 ### Popup Mode (`scripts/hks-popup`)
 - Implements a fast Wayland Layershell HUD:
-  - **Centered Card Window**: `WlrLayershell.namespace: "hks-popup"`, 760x560 centered card with 10px rounded corners, 1px border (`HKS.borderColor`), opaque surface (`alpha: 1.0`), and `WlrKeyboardFocus.Exclusive`.
+  - **Top-Left Anchored Card**: `WlrLayershell.namespace: "hks-popup"`, anchored at top-left with configurable margins (`HKS_POPUP_LEFT`, default `20px`; `HKS_POPUP_TOP`, default `64px` clearing the top bar). Sized `min(parent.width - left - 20, 760)` by `min(parent.height - top - 20, 560)`.
+  - **Animation**: Short fade and slide-in (opacity `0` to `1` with an 8px vertical offset over 120ms).
+  - **Opaque Card & Border**: 10px rounded corners, 1px border (`HKS.borderColor`), and fully opaque surface (`alpha: 1.0`).
   - **No Dark Scrim**: The dimmed background scrim was removed so the popup HUD remains non-intrusive without darkening underlying desktop windows, using an invisible full-screen click-catcher to dismiss on outside clicks instead.
   - Pressing `Esc`, clicking outside, or clicking the `` button dismisses the popup.
+  - **Environment Variables**:
+    - `HKS_POPUP_LEFT`: Left margin in pixels (default: `20`). Non-integer/invalid values fall back to default.
+    - `HKS_POPUP_TOP`: Top margin in pixels (default: `64`, clears the top panel bar). Non-integer/invalid values fall back to default.
 
 ### Toggle & IPC Control
 Both launcher scripts implement toggle behavior:

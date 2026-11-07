@@ -38,4 +38,12 @@ export HKS_ROOT="$REPO_ROOT"
 export HKS_MODE="popup"
 export QML_XHR_ALLOW_FILE_READ=1
 
+# Pass through optional popup anchor margins if set
+if [[ -n "${HKS_POPUP_LEFT:-}" ]]; then
+    export HKS_POPUP_LEFT
+fi
+if [[ -n "${HKS_POPUP_TOP:-}" ]]; then
+    export HKS_POPUP_TOP
+fi
+
 exec quickshell -p "$FRONTEND_DIR" "$@"
