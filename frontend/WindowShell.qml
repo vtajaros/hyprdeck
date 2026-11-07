@@ -14,7 +14,11 @@ FloatingWindow {
     implicitHeight: 700
     color: HKS.bg
 
-    property string currentPage: Quickshell.env("HKS_PAGE") || "all" // "all" | "conflicts" | "settings"
+    property string currentPage: Quickshell.env("HKS_PAGE") || "all" // "all" | "conflicts" | "disabled" | "backups" | "settings"
+
+    Component.onCompleted: {
+        EditService.loadBackups();
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -112,6 +116,24 @@ FloatingWindow {
 
                         SidebarItem {
                             width: parent.width
+                            icon: ""
+                            text: "Disabled"
+                            active: win.currentPage === "disabled"
+                            badge: String(KeybindData.disabledBinds ? KeybindData.disabledBinds.length : 0)
+                            onClicked: win.currentPage = "disabled"
+                        }
+
+                        SidebarItem {
+                            width: parent.width
+                            icon: ""
+                            text: "Backups"
+                            active: win.currentPage === "backups"
+                            badge: String(EditService.backups ? EditService.backups.length : 0)
+                            onClicked: win.currentPage = "backups"
+                        }
+
+                        SidebarItem {
+                            width: parent.width
                             icon: ""
                             text: "Settings"
                             active: win.currentPage === "settings"
@@ -144,6 +166,18 @@ FloatingWindow {
                     onRequestClose: {
                         win.currentPage = "all";
                     }
+                }
+
+                Disabled {
+                    id: disabledPage
+                    anchors.fill: parent
+                    visible: win.currentPage === "disabled"
+                }
+
+                Backups {
+                    id: backupsPage
+                    anchors.fill: parent
+                    visible: win.currentPage === "backups"
                 }
 
                 // Settings Page Stub
