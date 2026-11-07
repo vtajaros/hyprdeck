@@ -294,48 +294,16 @@ Item {
                             }
 
                             // Right: Button "Show in list"
-                            Rectangle {
+                            ActionButton {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
-                                height: 26
-                                width: showBtnRow.implicitWidth + 16
-                                radius: HKS.radiusSmall
-                                color: showBtnMouse.containsMouse ? HKS.alpha(HKS.accent, 0.25) : HKS.alpha(HKS.elevated, 0.8)
-                                border.width: 1
-                                border.color: showBtnMouse.containsMouse ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
-
-                                Row {
-                                    id: showBtnRow
-                                    anchors.centerIn: parent
-                                    spacing: 6
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: ""
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: 10
-                                        color: showBtnMouse.containsMouse ? HKS.accent : HKS.fg
-                                    }
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "Show in list"
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        font.weight: Font.DemiBold
-                                        color: showBtnMouse.containsMouse ? HKS.accent : HKS.fg
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: showBtnMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        var q = KeybindData.conflictSearchQuery(conflictItem);
-                                        root.requestShowInList(q);
-                                    }
+                                variant: "neutral"
+                                compact: true
+                                iconText: ""
+                                text: "Show in list"
+                                onClicked: {
+                                    var q = KeybindData.conflictSearchQuery(conflictItem);
+                                    root.requestShowInList(q);
                                 }
                             }
                         }

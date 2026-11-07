@@ -185,48 +185,13 @@ Item {
                             }
 
                             // Enable Action Button
-                            Rectangle {
+                            ActionButton {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
-                                height: 28
-                                width: enableTxt.implicitWidth + 24
-                                radius: 6
-                                color: enableMa.containsMouse ? HKS.alpha(HKS.accent, 0.25) : HKS.alpha(HKS.accent, 0.12)
-                                border.width: 1
-                                border.color: HKS.alpha(HKS.accent, 0.4)
-
-                                Row {
-                                    anchors.centerIn: parent
-                                    spacing: 6
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: ""
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: 12
-                                        color: HKS.accent
-                                    }
-
-                                    Text {
-                                        id: enableTxt
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "Enable"
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        font.weight: Font.DemiBold
-                                        color: HKS.accent
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: enableMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        EditService.requestUncomment(modelData);
-                                    }
-                                }
+                                variant: "accent"
+                                iconText: ""
+                                text: "Enable"
+                                onClicked: EditService.requestUncomment(modelData)
                             }
                         }
 

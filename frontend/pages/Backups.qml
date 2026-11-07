@@ -88,44 +88,13 @@ Item {
             }
 
             // Refresh Button
-            Rectangle {
+            ActionButton {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                height: 28
-                width: refTxt.implicitWidth + 24
-                radius: 6
-                color: refMa.containsMouse ? HKS.alpha(HKS.muted, 0.25) : HKS.alpha(HKS.muted, 0.12)
-                border.width: 1
-                border.color: HKS.alpha(HKS.muted, 0.3)
-
-                Row {
-                    id: refTxt
-                    anchors.centerIn: parent
-                    spacing: 6
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: ""
-                        font.family: HKS.fontFamily
-                        font.pixelSize: 12
-                        color: HKS.fg
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Refresh"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.fg
-                    }
-                }
-
-                MouseArea {
-                    id: refMa
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: EditService.loadBackups()
-                }
+                variant: "neutral"
+                iconText: ""
+                text: "Refresh"
+                onClicked: EditService.loadBackups()
             }
         }
 
@@ -261,48 +230,13 @@ Item {
                             }
 
                             // Restore Action Button
-                            Rectangle {
+                            ActionButton {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
-                                height: 28
-                                width: restoreTxt.implicitWidth + 24
-                                radius: 6
-                                color: restMa.containsMouse ? HKS.alpha(HKS.warning, 0.25) : HKS.alpha(HKS.warning, 0.12)
-                                border.width: 1
-                                border.color: HKS.alpha(HKS.warning, 0.4)
-
-                                Row {
-                                    anchors.centerIn: parent
-                                    spacing: 6
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: ""
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: 12
-                                        color: HKS.warning
-                                    }
-
-                                    Text {
-                                        id: restoreTxt
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "Restore"
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        font.weight: Font.DemiBold
-                                        color: HKS.warning
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: restMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        EditService.requestRestore(modelData.id);
-                                    }
-                                }
+                                variant: "accent"
+                                iconText: ""
+                                text: "Restore"
+                                onClicked: EditService.requestRestore(modelData.id)
                             }
                         }
 

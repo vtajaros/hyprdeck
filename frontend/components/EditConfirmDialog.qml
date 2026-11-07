@@ -419,83 +419,25 @@ Item {
                         spacing: 10
 
                         // Cancel Button
-                        Rectangle {
-                            width: cancelTxt.implicitWidth + 24
-                            height: 32
-                            radius: 6
-                            color: cancelMa.containsMouse ? HKS.alpha(HKS.muted, 0.25) : HKS.alpha(HKS.muted, 0.12)
-                            border.width: 1
-                            border.color: HKS.alpha(HKS.muted, 0.3)
-
-                            Text {
-                                id: cancelTxt
-                                anchors.centerIn: parent
-                                text: "Cancel"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.fg
-                            }
-
-                            MouseArea {
-                                id: cancelMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: EditService.cancelDialog()
-                            }
+                        ActionButton {
+                            variant: "neutral"
+                            text: "Cancel"
+                            onClicked: EditService.cancelDialog()
                         }
 
                         // Apply Button
-                        Rectangle {
+                        ActionButton {
                             property bool isDeleteBlocked: (EditService.activeOp && EditService.activeOp.action === "delete") && !root.deleteConfirmed
                             property bool canApply: !EditService.dryRunOnly && !isDeleteBlocked && !EditService.busy
 
-                            width: applyTxt.implicitWidth + 24
-                            height: 32
-                            radius: 6
-                            color: {
-                                if (EditService.dryRunOnly) return HKS.alpha(HKS.muted, 0.15);
-                                if (!canApply) return HKS.alpha(HKS.muted, 0.2);
-                                if (applyMa.containsMouse) {
-                                    return EditService.activeOp && EditService.activeOp.isDestructive
-                                        ? HKS.critical
-                                        : HKS.accent;
-                                }
-                                return EditService.activeOp && EditService.activeOp.isDestructive
-                                    ? HKS.alpha(HKS.critical, 0.8)
-                                    : HKS.alpha(HKS.accent, 0.85);
+                            variant: (EditService.activeOp && EditService.activeOp.action === "delete") ? "danger" : "accent"
+                            enabled: canApply
+                            text: {
+                                if (EditService.dryRunOnly) return "Apply (disabled in test mode)";
+                                if (EditService.busy) return "Applying...";
+                                return "Apply & Reload";
                             }
-                            border.width: 1
-                            border.color: canApply
-                                ? (EditService.activeOp && EditService.activeOp.isDestructive ? HKS.critical : HKS.accent)
-                                : HKS.alpha(HKS.muted, 0.3)
-
-                            Text {
-                                id: applyTxt
-                                anchors.centerIn: parent
-                                text: {
-                                    if (EditService.dryRunOnly) return "Apply (disabled in test mode)";
-                                    if (EditService.busy) return "Applying...";
-                                    if (EditService.activeOp && EditService.activeOp.isDestructive) return "Apply & Reload";
-                                    return "Apply & Reload";
-                                }
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                font.weight: Font.DemiBold
-                                color: parent.canApply ? "#ffffff" : HKS.muted
-                            }
-
-                            MouseArea {
-                                id: applyMa
-                                anchors.fill: parent
-                                hoverEnabled: parent.canApply
-                                cursorShape: parent.canApply ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: {
-                                    if (parent.canApply) {
-                                        EditService.confirmApply();
-                                    }
-                                }
-                            }
+                            onClicked: EditService.confirmApply()
                         }
                     }
                 }
