@@ -62,6 +62,19 @@
 
 ---
 
+## Phase 2b-2a Milestones (Conflicts Page UI)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Sidebar Conflicts navigation enabled with count badge | `frontend/WindowShell.qml`, `frontend/components/SidebarItem.qml` | [x] Complete |
+| Conflicts page with header summary, duplicate/stacked ordering & empty state | `frontend/pages/Conflicts.qml`, `frontend/pages/qmldir` | [x] Complete |
+| Conflict card layout, keycaps, explanatory sentence & fixed-column bind table | `frontend/pages/Conflicts.qml` | [x] Complete |
+| Safe bind ID lookup & unknown ID graceful degradation | `frontend/services/KeybindData.qml`, `frontend/pages/Conflicts.qml` | [x] Complete |
+| "Show in list" cross-page search navigation | `frontend/pages/Conflicts.qml`, `frontend/pages/AllKeybindings.qml`, `frontend/WindowShell.qml` | [x] Complete |
+| Phase 2b-2a documentation & acceptance tests | `docs/PHASE2B2A.md`, `docs/MILESTONES.md`, `README.md` | [x] Complete |
+
+---
+
 ## Verified on Real Config
 
 - **Binds**: 126 binds

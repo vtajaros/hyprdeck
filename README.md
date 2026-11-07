@@ -59,5 +59,6 @@ python3 -m unittest discover -s backend/tests -v
 - [docs/PHASE2A.md](docs/PHASE2A.md): Phase 2a human description derivation table, category precedence order, sidecar override format, and CLI usage.
 - [docs/PHASE2B0.md](docs/PHASE2B0.md): Phase 2b-0 conflict detection algorithm, stacked binds rationale, and CLI conflicts usage.
 - [docs/PHASE2B1.md](docs/PHASE2B1.md): Phase 2b-1 Quickshell desktop UI architecture, window/popup modes, theme integration, keyboard navigation, and IPC.
+- [docs/PHASE2B2A.md](docs/PHASE2B2A.md): Phase 2b-2a Conflicts page, card breakdown, cross-page search navigation, and safety against unknown bind IDs.
 - [docs/MILESTONES.md](docs/MILESTONES.md): Deliverables checklist across all project phases.
 - [shared/schemas/bindings.schema.json](shared/schemas/bindings.schema.json): JSON Schema 2020-12 specification.
