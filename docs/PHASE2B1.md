@@ -24,8 +24,8 @@ It provides both a dedicated workspace floating window and an instant Wayland la
                ▼                            ▼
 ┌───────────────────────────┐  ┌───────────────────────────┐
 │ frontend/WindowShell.qml  │  │  frontend/PopupShell.qml  │
-│ FloatingWindow (1000x700) │  │  Overlay Scrim + Popup   │
-│ Sidebar + Status Bar      │  │  Card (760x560, Exclusive)│
+│ FloatingWindow (1000x700) │  │  Overlay Popup Card       │
+│ Sidebar + Status Bar      │  │  (760x560, Exclusive)     │
 └──────────────┬────────────┘  └────────────┬──────────────┘
                └──────────────┬─────────────┘
                               ▼
@@ -70,8 +70,8 @@ HKS provides two entry modes toggled via dedicated scripts:
 
 ### Popup Mode (`scripts/hks-popup`)
 - Implements a fast Wayland Layershell HUD:
-  - **Backdrop Scrim Window**: `WlrLayershell.namespace: "hks-backdrop"`, fullscreen `#b8090b0e` dimmed overlay, clicking dismisses.
-  - **Centered Card Window**: `WlrLayershell.namespace: "hks-popup"`, 760x560 centered card with 10px rounded corners, subtle accent border, and `WlrKeyboardFocus.Exclusive`.
+  - **Centered Card Window**: `WlrLayershell.namespace: "hks-popup"`, 760x560 centered card with 10px rounded corners, 1px border (`HKS.borderColor`), opaque surface (`alpha: 1.0`), and `WlrKeyboardFocus.Exclusive`.
+  - **No Dark Scrim**: The dimmed background scrim was removed so the popup HUD remains non-intrusive without darkening underlying desktop windows, using an invisible full-screen click-catcher to dismiss on outside clicks instead.
   - Pressing `Esc`, clicking outside, or clicking the `` button dismisses the popup.
 
 ### Toggle & IPC Control

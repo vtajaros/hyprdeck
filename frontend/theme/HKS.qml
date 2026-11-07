@@ -34,6 +34,7 @@ Singleton {
     property color secondary: "#85867c"
     property color warning: "#d79921"
     property color critical: "#e06c6c"
+    property color borderColor: alpha(accent, 0.5)
 
     // Metrics
     readonly property int radius: 10
@@ -87,6 +88,7 @@ Singleton {
             secondary = fallbackPalette.secondary;
             warning = fallbackPalette.warning;
             critical = fallbackPalette.critical;
+            borderColor = alpha(accent, 0.5);
             return;
         }
 
@@ -104,6 +106,7 @@ Singleton {
                 secondary = data.secondary || fallbackPalette.secondary;
                 warning = data.warning || fallbackPalette.warning;
                 critical = data.critical || fallbackPalette.critical;
+                borderColor = alpha(accent, 0.5);
                 return;
             }
         } catch(e) {
@@ -119,6 +122,7 @@ Singleton {
         secondary = fallbackPalette.secondary;
         warning = fallbackPalette.warning;
         critical = fallbackPalette.critical;
+        borderColor = alpha(accent, 0.5);
     }
 
     onThemeModeChanged: applyTheme()

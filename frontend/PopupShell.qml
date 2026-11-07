@@ -23,34 +23,9 @@ Item {
         onTriggered: Qt.quit()
     }
 
-    // 1. Dimmed background scrim window
+    // Full-screen invisible click-catcher window
     PanelWindow {
-        id: bgWindow
-
-        anchors {
-            top: true
-            bottom: true
-            left: true
-            right: true
-        }
-
-        exclusionMode: ExclusionMode.Ignore
-        WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.namespace: "hks-backdrop"
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-
-        color: "#b8090b0e"
-        visible: !root.isClosing
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.dismiss("bg_click")
-        }
-    }
-
-    // 2. Foreground centered card window
-    PanelWindow {
-        id: fgWindow
+        id: popupWindow
 
         anchors {
             top: true
@@ -67,22 +42,28 @@ Item {
         color: "transparent"
         visible: !root.isClosing
 
-        // Dismiss on clicking outside the card
-        MouseArea {
+        // Invisible full-screen click-catcher scrim: closes on click outside card
+        Rectangle {
             anchors.fill: parent
-            z: -1
-            onClicked: root.dismiss("outside_click")
+            color: "transparent"
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.dismiss("outside_click")
+            }
         }
 
+        // Centered ~760x560 popup card with clear opaque boundary
         Rectangle {
             id: card
             anchors.centerIn: parent
             width: Math.min(parent.width - 40, 760)
             height: Math.min(parent.height - 40, 560)
-            radius: HKS.radius
+            radius: 10
             color: HKS.bg
+            opacity: 1.0
             border.width: 1
-            border.color: HKS.alpha(HKS.accent, 0.45)
+            border.color: HKS.borderColor
 
             // Prevent clicks inside card from dismissing
             MouseArea {
@@ -97,8 +78,16 @@ Item {
                 Rectangle {
                     width: parent.width
                     height: 44
-                    radius: HKS.radius
+                    radius: 10
                     color: HKS.surface
+
+                    // Square off bottom corners so only top corners of the header are rounded
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width
+                        height: 10
+                        color: HKS.surface
+                    }
 
                     // Bottom border
                     Rectangle {
@@ -184,6 +173,14 @@ Item {
                     height: parent.height - 44
                     onRequestClose: root.dismiss("key_escape")
                 }
+            }
+        }
+
+        // Global Esc key handler on the exclusive popup window
+        Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_Escape) {
+                root.dismiss("key_escape");
+                event.accepted = true;
             }
         }
     }
