@@ -5,6 +5,7 @@ from __future__ import annotations
 from backend.editor.apply import (
     ApplyResult,
     apply_edit,
+    resolve_uncomment_op,
 )
 from backend.editor.backups import (
     BackupConflictError,
@@ -68,6 +69,7 @@ __all__ = [
     "generate_unified_diff",
     "list_backups",
     "resolve_backup_dir",
+    "resolve_uncomment_op",
     "restore_backup",
     "stage_candidate_config",
     "verify_with_hyprland",

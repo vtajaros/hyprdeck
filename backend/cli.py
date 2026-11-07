@@ -14,6 +14,20 @@ from backend.discovery import (
     discover_config,
     probe_hyprctl_binds,
 )
+from backend.editor import (
+    ApplyResult,
+    BackupConflictError,
+    BackupError,
+    BackupRecord,
+    EditConflict,
+    EditOp,
+    NotEditableError,
+    apply_edit,
+    build_op_for_bind,
+    list_backups,
+    resolve_uncomment_op,
+    restore_backup,
+)
 from backend.models.types import (
     ConflictStats,
     Diagnostic,
@@ -196,6 +210,117 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Disable loading any sidecar overrides.",
     )
 
+    # edit subcommand
+    edit_p = subparsers.add_parser(
+        "edit",
+        help="Safely comment out or uncomment keybindings (dry-run by default; requires --apply to write).",
+    )
+    edit_p.add_argument(
+        "--config-dir",
+        dest="config_dir",
+        default=None,
+        help="Override Hyprland configuration directory.",
+    )
+    edit_p.add_argument(
+        "--entrypoint",
+        dest="entrypoint",
+        default=None,
+        help="Override entrypoint configuration file.",
+    )
+    edit_p.add_argument(
+        "--no-live",
+        dest="no_live",
+        action="store_true",
+        help="Disable optional live hyprctl probing during discovery.",
+    )
+    edit_p.add_argument(
+        "--dry-run",
+        dest="dry_run",
+        action="store_true",
+        default=False,
+        help="Preview diff and run verification without writing (default when --apply is omitted).",
+    )
+    edit_p.add_argument(
+        "--apply",
+        dest="apply",
+        action="store_true",
+        default=False,
+        help="Apply changes atomically after verification and backup.",
+    )
+    edit_p.add_argument(
+        "--reload",
+        dest="reload",
+        action="store_true",
+        default=False,
+        help="Run `hyprctl reload config-only` after applying and auto-rollback if configerrors occur.",
+    )
+    edit_p.add_argument(
+        "--comment-out",
+        dest="comment_out",
+        action="append",
+        default=[],
+        metavar="BIND_ID",
+        help="Comment out the specified bind ID (may be specified multiple times).",
+    )
+    edit_p.add_argument(
+        "--uncomment",
+        dest="uncomment",
+        action="append",
+        default=[],
+        metavar="BIND_ID",
+        help="Uncomment a previously HKS-disabled bind ID (may be specified multiple times).",
+    )
+
+    # backups subcommand
+    bak_p = subparsers.add_parser(
+        "backups",
+        help="List configuration backups stored in the HKS backup directory.",
+    )
+    bak_p.add_argument(
+        "--path",
+        dest="path",
+        default=None,
+        help="Filter backups by original file path.",
+    )
+
+    # restore subcommand
+    res_p = subparsers.add_parser(
+        "restore",
+        help="Restore a configuration backup by ID (requires --apply).",
+    )
+    res_p.add_argument(
+        "backup_id",
+        nargs="?",
+        default=None,
+        help="Backup ID to restore.",
+    )
+    res_p.add_argument(
+        "--id",
+        dest="id_flag",
+        default=None,
+        help="Backup ID to restore (alternative to positional argument).",
+    )
+    res_p.add_argument(
+        "--apply",
+        dest="apply",
+        action="store_true",
+        default=False,
+        help="Required flag to write the restored backup to disk.",
+    )
+    res_p.add_argument(
+        "--force",
+        dest="force",
+        action="store_true",
+        default=False,
+        help="Restore even if the current file hash differs from expected.",
+    )
+    res_p.add_argument(
+        "--expected-sha256",
+        dest="expected_sha256",
+        default=None,
+        help="Expected SHA-256 hash of the current file before restoring.",
+    )
+
     return parser
 
 
@@ -306,6 +431,201 @@ def run_scan_pipeline(
     return doc, exit_code
 
 
+def format_apply_result(result: ApplyResult, *, dry_run: bool, reload: bool) -> str:
+    """Format an ApplyResult into human-readable diff and verification report."""
+    lines: list[str] = []
+    mode_label = "DRY-RUN (no files modified)" if dry_run else ("APPLY + RELOAD" if reload else "APPLY")
+    lines.append(f"[HKS Edit] Mode: {mode_label}")
+    lines.append("")
+
+    if result.diff:
+        lines.append(result.diff.rstrip("\n"))
+    else:
+        lines.append("(no diff generated)")
+    lines.append("")
+
+    if result.verify is not None:
+        if result.verify.ok is True:
+            lines.append(f"Verification (Hyprland --verify-config): OK ({result.verify.message})")
+        elif result.verify.ok is None:
+            lines.append(
+                f"Verification (Hyprland --verify-config): SKIPPED ({result.verify.reason}: {result.verify.message})"
+            )
+        else:
+            lines.append(f"Verification (Hyprland --verify-config): FAILED ({result.verify.message})")
+
+    if result.bind_comparison is not None:
+        bc = result.bind_comparison
+        if bc.ok:
+            lines.append(
+                f"Verification (Recorder + bind-set diff): OK "
+                f"(before={bc.before_count}, after={bc.after_count}, "
+                f"removed={bc.removed_count}, added={bc.added_count})"
+            )
+        else:
+            lines.append(f"Verification (Recorder + bind-set diff): FAILED ({bc.message})")
+
+    if result.companion_warning:
+        lines.append(f"Warning: {result.companion_warning}")
+
+    if result.backup is not None:
+        lines.append(f"Backup: {result.backup.id} ({result.backup.backup_path})")
+
+    if result.errors:
+        for err in result.errors:
+            lines.append(f"Error: {err}")
+        if result.rolled_back:
+            lines.append("Result: ROLLED BACK")
+        else:
+            lines.append("Result: FAILED")
+    elif dry_run:
+        lines.append("Result: VERIFIED (dry-run only; pass --apply to write changes)")
+    else:
+        lines.append("Result: APPLIED")
+
+    return "\n".join(lines)
+
+
+def format_backups_table(records: list[BackupRecord]) -> str:
+    """Format backup records as a plain-text table."""
+    if not records:
+        return "No backups found."
+    lines: list[str] = [
+        f"{'ID':<32}  {'CREATED_AT':<25}  {'SHA256':<12}  {'ORIGINAL_PATH'}",
+        "-" * 96,
+    ]
+    for r in records:
+        lines.append(
+            f"{r.id:<32}  {r.created_at:<25}  {r.sha256[:12]:<12}  {r.original_path}"
+        )
+    return "\n".join(lines)
+
+
+def _handle_edit(args: argparse.Namespace) -> int:
+    if args.dry_run and args.apply:
+        sys.stderr.write("hks: error: --dry-run and --apply are mutually exclusive\n")
+        return 2
+    if args.reload and not args.apply:
+        sys.stderr.write("hks: error: --reload requires --apply\n")
+        return 2
+    if not args.comment_out and not args.uncomment:
+        sys.stderr.write("hks: error: edit requires at least one --comment-out or --uncomment BIND_ID\n")
+        return 2
+
+    is_dry_run = not args.apply
+    doc, _ = run_scan_pipeline(
+        config_dir=args.config_dir,
+        entrypoint=args.entrypoint,
+        no_live=args.no_live,
+        with_oracle=False,
+        no_sidecar=True,
+    )
+
+    bind_by_id = {b.id: b for b in doc.binds}
+    file_hashes = {f.path: f.sha256 for f in doc.files}
+    candidate_files = [f.path for f in doc.files]
+    ops: list[EditOp] = []
+
+    try:
+        for bid in args.comment_out:
+            b = bind_by_id.get(bid)
+            if b is None:
+                sys.stderr.write(f"hks edit: error: bind '{bid}' not found in active configuration.\n")
+                return 1
+            ops.append(build_op_for_bind(b, "comment_out"))
+
+        for bid in args.uncomment:
+            if bid in bind_by_id:
+                b = bind_by_id[bid]
+                sys.stderr.write(
+                    f"hks edit: error: bind '{bid}' at {b.source_file}:{b.source_line} is already active.\n"
+                )
+                return 1
+            op = resolve_uncomment_op(
+                bind_id=bid,
+                config_dir=doc.environment.config_dir,
+                entrypoint=doc.environment.entrypoint,
+                candidate_files=candidate_files,
+            )
+            ops.append(op)
+
+        result = apply_edit(
+            ops=ops,
+            config_dir=doc.environment.config_dir,
+            entrypoint=doc.environment.entrypoint,
+            dry_run=is_dry_run,
+            reload=args.reload,
+            scan_sha256=file_hashes,
+            before_binds=doc.binds,
+        )
+    except NotEditableError as exc:
+        sys.stderr.write(f"hks edit: not editable: {exc}\n")
+        return 1
+    except EditConflict as exc:
+        sys.stderr.write(f"hks edit: conflict: {exc}\n")
+        return 1
+    except KeyError as exc:
+        msg = exc.args[0] if exc.args else str(exc)
+        sys.stderr.write(f"hks edit: error: {msg}\n")
+        return 1
+    except BackupError as exc:
+        sys.stderr.write(f"hks edit: backup error: {exc}\n")
+        return 1
+
+    output = format_apply_result(result, dry_run=is_dry_run, reload=args.reload)
+    sys.stdout.write(output + "\n")
+    sys.stdout.flush()
+
+    if result.errors or result.rolled_back:
+        return 1
+    return 0
+
+
+def _handle_backups(args: argparse.Namespace) -> int:
+    try:
+        records = list_backups(path=args.path)
+    except BackupError as exc:
+        sys.stderr.write(f"hks backups: error: {exc}\n")
+        return 1
+    sys.stdout.write(format_backups_table(records) + "\n")
+    sys.stdout.flush()
+    return 0
+
+
+def _handle_restore(args: argparse.Namespace) -> int:
+    target_id = args.id_flag or args.backup_id
+    if not target_id:
+        sys.stderr.write("hks: error: restore requires a backup ID\n")
+        return 2
+    if not args.apply:
+        sys.stderr.write("hks: error: restore requires --apply to write files\n")
+        return 2
+
+    try:
+        records = list_backups()
+        matched = next((r for r in records if r.id == target_id), None)
+        if matched is None:
+            sys.stderr.write(f"hks restore: error: backup '{target_id}' not found.\n")
+            return 1
+        restore_backup(
+            matched,
+            expected_current_sha256=args.expected_sha256,
+            force=args.force,
+        )
+    except BackupConflictError as exc:
+        sys.stderr.write(f"hks restore: conflict: {exc}\n")
+        return 1
+    except BackupError as exc:
+        sys.stderr.write(f"hks restore: error: {exc}\n")
+        return 1
+
+    sys.stdout.write(
+        f"Restored {matched.original_path} from backup {matched.id} (sha256={matched.sha256})\n"
+    )
+    sys.stdout.flush()
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_arg_parser()
     try:
@@ -316,7 +636,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.subcommand:
         parser.print_usage(sys.stderr)
         sys.stderr.write(
-            "hks: error: subcommand required (choose from 'scan', 'summary', 'sidecar-template', 'conflicts')\n"
+            "hks: error: subcommand required (choose from 'scan', 'summary', 'sidecar-template', 'conflicts', 'edit', 'backups', 'restore')\n"
         )
         return 2
 
@@ -375,6 +695,15 @@ def main(argv: list[str] | None = None) -> int:
             sys.stdout.write(format_conflicts_table(doc) + "\n")
             sys.stdout.flush()
             return 0
+
+        if args.subcommand == "edit":
+            return _handle_edit(args)
+
+        if args.subcommand == "backups":
+            return _handle_backups(args)
+
+        if args.subcommand == "restore":
+            return _handle_restore(args)
     except DiscoveryError as exc:
         sys.stderr.write(f"hks: error: {exc}\n")
         return 2

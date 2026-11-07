@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
+import io
 import os
 import stat
 import subprocess
 import tempfile
 import unittest
 from typing import Any
+from unittest import mock
 
+from backend.cli import main as cli_main, run_scan_pipeline
 from backend.editor import (
     BackupConflictError,
     BackupError,
@@ -635,6 +639,140 @@ class TestApplyPipeline(unittest.TestCase):
         self.assertIsNone(res.backup)
         self.assertTrue(any("Concurrent edit detected" in e for e in res.errors))
         self.assertEqual(compute_file_sha256(self.lua_path), orig_sha)
+
+
+class TestEditorCLI(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp_obj = tempfile.TemporaryDirectory(prefix="hks_test_cli_")
+        self.root = self.tmp_obj.name
+        self.cfg_dir = os.path.join(self.root, "hypr")
+        self.bak_dir = os.path.join(self.root, "backups")
+        os.makedirs(self.cfg_dir)
+
+        self.lua_path = os.path.join(self.cfg_dir, "hyprland.lua")
+        self.initial_lua = (
+            'local mainMod = "SUPER"\n'
+            'hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("kitty"))\n'
+            'for i = 1, 2 do\n'
+            '    hl.bind(mainMod .. " + " .. tostring(i), hl.dsp.focus({ workspace = i }))\n'
+            'end\n'
+        )
+        with open(self.lua_path, "w", encoding="utf-8") as f:
+            f.write(self.initial_lua)
+
+        self.env_patcher = mock.patch.dict(
+            os.environ,
+            {"HKS_BACKUP_DIR": self.bak_dir},
+        )
+        self.env_patcher.start()
+
+    def tearDown(self) -> None:
+        self.env_patcher.stop()
+        self.tmp_obj.cleanup()
+
+    def _run_cli(self, argv: list[str]) -> tuple[int, str, str]:
+        out_buf = io.StringIO()
+        err_buf = io.StringIO()
+        with contextlib.redirect_stdout(out_buf), contextlib.redirect_stderr(err_buf):
+            code = cli_main(argv)
+        return code, out_buf.getvalue(), err_buf.getvalue()
+
+    def test_cli_edit_dry_run_apply_uncomment_backups_restore(self) -> None:
+        doc, _ = run_scan_pipeline(config_dir=self.cfg_dir, no_live=True, no_sidecar=True)
+        kitty_bind = next(b for b in doc.binds if b.key == "Return")
+        loop_bind = next(b for b in doc.binds if b.generated)
+
+        orig_sha = compute_file_sha256(self.lua_path)
+
+        # 1. Dry-run is default: prints diff + verification, modifies nothing, creates no backup
+        code, stdout, stderr = self._run_cli(
+            ["edit", "--config-dir", self.cfg_dir, "--no-live", "--comment-out", kitty_bind.id]
+        )
+        self.assertEqual(code, 0, f"stderr={stderr}\nstdout={stdout}")
+        self.assertIn("DRY-RUN", stdout)
+        self.assertIn("-- HKS-disabled:", stdout)
+        self.assertIn("Result: VERIFIED", stdout)
+        self.assertEqual(compute_file_sha256(self.lua_path), orig_sha)
+        self.assertEqual(list_backups(), [])
+
+        # 2. Generated loop bind is refused with exit code 1
+        code_loop, _, stderr_loop = self._run_cli(
+            ["edit", "--config-dir", self.cfg_dir, "--no-live", "--comment-out", loop_bind.id]
+        )
+        self.assertEqual(code_loop, 1)
+        self.assertIn("not editable", stderr_loop)
+        self.assertIn(f"{self.lua_path}:4", stderr_loop)
+
+        # 3. Apply comment-out: writes file and creates backup
+        code_apply, stdout_apply, stderr_apply = self._run_cli(
+            [
+                "edit",
+                "--config-dir",
+                self.cfg_dir,
+                "--no-live",
+                "--apply",
+                "--comment-out",
+                kitty_bind.id,
+            ]
+        )
+        self.assertEqual(code_apply, 0, f"stderr={stderr_apply}\nstdout={stdout_apply}")
+        self.assertIn("Result: APPLIED", stdout_apply)
+        self.assertNotEqual(compute_file_sha256(self.lua_path), orig_sha)
+        self.assertEqual(len(list_backups()), 1)
+
+        # 4. Uncomment with --apply: restores the commented-out line
+        code_unc, stdout_unc, stderr_unc = self._run_cli(
+            [
+                "edit",
+                "--config-dir",
+                self.cfg_dir,
+                "--no-live",
+                "--apply",
+                "--uncomment",
+                kitty_bind.id,
+            ]
+        )
+        self.assertEqual(code_unc, 0, f"stderr={stderr_unc}\nstdout={stdout_unc}")
+        self.assertIn("Result: APPLIED", stdout_unc)
+        self.assertEqual(compute_file_sha256(self.lua_path), orig_sha)
+        self.assertEqual(len(list_backups()), 2)
+
+        # 5. Backups list subcommand
+        code_bak, stdout_bak, _ = self._run_cli(["backups"])
+        self.assertEqual(code_bak, 0)
+        baks = list_backups()
+        self.assertIn(baks[0].id, stdout_bak)
+        self.assertIn(baks[1].id, stdout_bak)
+
+        # 6. Restore requires --apply (exit 2 without --apply)
+        code_res_no_apply, _, stderr_res_no_apply = self._run_cli(["restore", baks[0].id])
+        self.assertEqual(code_res_no_apply, 2)
+        self.assertIn("--apply", stderr_res_no_apply)
+
+        # 7. Restore with --apply restores backup
+        code_res, stdout_res, stderr_res = self._run_cli(["restore", baks[1].id, "--apply"])
+        self.assertEqual(code_res, 0, f"stderr={stderr_res}")
+        self.assertIn("Restored", stdout_res)
+
+    def test_cli_edit_usage_and_lookup_errors(self) -> None:
+        # Missing --comment-out / --uncomment -> exit 2
+        code, _, stderr = self._run_cli(["edit", "--config-dir", self.cfg_dir, "--no-live"])
+        self.assertEqual(code, 2)
+        self.assertIn("requires at least one", stderr)
+
+        # --reload without --apply -> exit 2
+        code, _, stderr = self._run_cli(
+            ["edit", "--config-dir", self.cfg_dir, "--no-live", "--reload", "--comment-out", "b_000"]
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("--reload requires --apply", stderr)
+
+        # Unknown bind ID -> exit 1
+        code, _, stderr = self._run_cli(
+            ["edit", "--config-dir", self.cfg_dir, "--no-live", "--comment-out", "b_nonexistent"]
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("not found", stderr)
 
 
 if __name__ == "__main__":
