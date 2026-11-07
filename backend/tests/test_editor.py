@@ -27,6 +27,7 @@ from backend.editor import (
     build_op_for_bind,
     compute_file_sha256,
     create_backup,
+    detect_disabled_binds,
     generate_unified_diff,
     list_backups,
     restore_backup,
@@ -35,6 +36,7 @@ from backend.editor import (
     verify_with_recorder,
 )
 from backend.models.types import BindRecord, DispatcherInfo, default_flags
+from backend.validation.schema_validator import validate_scan_dict
 
 
 def _make_dummy_bind(
@@ -773,6 +775,137 @@ class TestEditorCLI(unittest.TestCase):
         )
         self.assertEqual(code, 1)
         self.assertIn("not found", stderr)
+
+    def test_round_trip_disable_scan_enable_byte_identical(self) -> None:
+        doc0, _ = run_scan_pipeline(config_dir=self.cfg_dir, no_live=True, no_sidecar=True)
+        kitty_bind = next(b for b in doc0.binds if b.key == "Return")
+        orig_sha = compute_file_sha256(self.lua_path)
+
+        # 1. Disable via CLI
+        code1, _, _ = self._run_cli(
+            ["edit", "--config-dir", self.cfg_dir, "--no-live", "--apply", "--comment-out", kitty_bind.id]
+        )
+        self.assertEqual(code1, 0)
+
+        # 2. Rescan: shows in disabled_binds and validates schema
+        doc1, _ = run_scan_pipeline(config_dir=self.cfg_dir, no_live=True, no_sidecar=True)
+        self.assertEqual(doc1.stats.disabled_binds, 1)
+        self.assertEqual(len(doc1.disabled_binds), 1)
+        dis = doc1.disabled_binds[0]
+        self.assertEqual(dis.id, kitty_bind.id)
+        self.assertIn("Return", str(dis.key_hint))
+        self.assertEqual(dis.description_hint, "Launch kitty")
+
+        schema_errors = validate_scan_dict(doc1.to_dict())
+        self.assertEqual(schema_errors, [])
+
+        # 3. Enable (uncomment) via CLI
+        code2, _, _ = self._run_cli(
+            ["edit", "--config-dir", self.cfg_dir, "--no-live", "--apply", "--uncomment", kitty_bind.id]
+        )
+        self.assertEqual(code2, 0)
+
+        # 4. Byte-identical restoration
+        self.assertEqual(compute_file_sha256(self.lua_path), orig_sha)
+        doc2, _ = run_scan_pipeline(config_dir=self.cfg_dir, no_live=True, no_sidecar=True)
+        self.assertEqual(doc2.stats.disabled_binds, 0)
+        self.assertEqual(len(doc2.disabled_binds), 0)
+
+    def test_delete_round_trip_via_restore_latest(self) -> None:
+        doc0, _ = run_scan_pipeline(config_dir=self.cfg_dir, no_live=True, no_sidecar=True)
+        kitty_bind = next(b for b in doc0.binds if b.key == "Return")
+        orig_sha = compute_file_sha256(self.lua_path)
+
+        # 1. Delete bind
+        code_del, stdout_del, _ = self._run_cli(
+            ["edit", "--config-dir", self.cfg_dir, "--no-live", "--apply", "--delete", kitty_bind.id]
+        )
+        self.assertEqual(code_del, 0)
+        self.assertIn("Result: APPLIED", stdout_del)
+
+        # Confirm line deleted and removed from parsed binds
+        doc_after_del, _ = run_scan_pipeline(config_dir=self.cfg_dir, no_live=True, no_sidecar=True)
+        self.assertFalse(any(b.id == kitty_bind.id for b in doc_after_del.binds))
+
+        # 2. Restore using --latest convenience
+        code_res, stdout_res, _ = self._run_cli(["restore", "--latest", "--apply"])
+        self.assertEqual(code_res, 0)
+        self.assertIn("Restored", stdout_res)
+
+        # Confirm file is byte-identical
+        self.assertEqual(compute_file_sha256(self.lua_path), orig_sha)
+
+    def test_cli_json_output_mode(self) -> None:
+        import json
+
+        doc, _ = run_scan_pipeline(config_dir=self.cfg_dir, no_live=True, no_sidecar=True)
+        kitty_bind = next(b for b in doc.binds if b.key == "Return")
+        loop_bind = next(b for b in doc.binds if b.generated)
+
+        # 1. Edit dry-run with --json
+        code_dry, stdout_dry, _ = self._run_cli(
+            ["edit", "--config-dir", self.cfg_dir, "--no-live", "--json", "--comment-out", kitty_bind.id]
+        )
+        self.assertEqual(code_dry, 0)
+        data_dry = json.loads(stdout_dry)
+        self.assertEqual(data_dry["mode"], "dry-run")
+        self.assertFalse(data_dry["applied"])
+        self.assertFalse(data_dry["rolled_back"])
+        self.assertTrue(len(data_dry["diff"]) > 0)
+        self.assertEqual(data_dry["errors"], [])
+        self.assertIsNone(data_dry["backup"])
+
+        # 2. Loop bind refusal with --json
+        code_loop, stdout_loop, _ = self._run_cli(
+            ["edit", "--config-dir", self.cfg_dir, "--no-live", "--json", "--comment-out", loop_bind.id]
+        )
+        self.assertEqual(code_loop, 1)
+        data_loop = json.loads(stdout_loop)
+        self.assertEqual(data_loop["mode"], "dry-run")
+        self.assertFalse(data_loop["applied"])
+        self.assertTrue(any("not editable" in e for e in data_loop["errors"]))
+
+        # 3. Apply with --json
+        code_app, stdout_app, _ = self._run_cli(
+            [
+                "edit",
+                "--config-dir",
+                self.cfg_dir,
+                "--no-live",
+                "--json",
+                "--apply",
+                "--comment-out",
+                kitty_bind.id,
+            ]
+        )
+        self.assertEqual(code_app, 0)
+        data_app = json.loads(stdout_app)
+        self.assertEqual(data_app["mode"], "apply")
+        self.assertTrue(data_app["applied"])
+        self.assertIsNotNone(data_app["backup"])
+        self.assertTrue(len(data_app["backup"]["id"]) > 0)
+
+        # 4. Backups listing with --json
+        code_bak, stdout_bak, _ = self._run_cli(["backups", "--json"])
+        self.assertEqual(code_bak, 0)
+        data_bak = json.loads(stdout_bak)
+        self.assertEqual(data_bak["mode"], "backups")
+        self.assertTrue(len(data_bak["backups"]) >= 1)
+
+        # 5. Restore --latest preview (dry-run) with --json
+        code_res_dry, stdout_res_dry, _ = self._run_cli(["restore", "--latest", "--dry-run", "--json"])
+        self.assertEqual(code_res_dry, 0)
+        data_res_dry = json.loads(stdout_res_dry)
+        self.assertEqual(data_res_dry["mode"], "restore (dry-run)")
+        self.assertFalse(data_res_dry["applied"])
+        self.assertTrue(len(data_res_dry["diff"]) > 0)
+
+        # 6. Restore --latest apply with --json
+        code_res_app, stdout_res_app, _ = self._run_cli(["restore", "--latest", "--apply", "--json"])
+        self.assertEqual(code_res_app, 0)
+        data_res_app = json.loads(stdout_res_app)
+        self.assertEqual(data_res_app["mode"], "restore")
+        self.assertTrue(data_res_app["applied"])
 
 
 if __name__ == "__main__":

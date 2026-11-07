@@ -18,6 +18,7 @@ from backend.editor.backups import (
     resolve_backup_dir,
     restore_backup,
 )
+from backend.editor.disabled import detect_disabled_binds
 from backend.editor.edit_plan import (
     HYPRLANG_DISABLED_PREFIX,
     LUA_DISABLED_PREFIX,
@@ -66,6 +67,7 @@ __all__ = [
     "compare_bind_sets",
     "compute_file_sha256",
     "create_backup",
+    "detect_disabled_binds",
     "generate_unified_diff",
     "list_backups",
     "resolve_backup_dir",

@@ -14,7 +14,8 @@
     "diagnostics",
     "stats",
     "complete",
-    "conflicts"
+    "conflicts",
+    "disabled_binds"
   ],
   "additionalProperties": false,
   "properties": {
@@ -309,11 +310,13 @@
         "ignored_calls",
         "ignored_keywords",
         "sidecar",
-        "conflicts"
+        "conflicts",
+        "disabled_binds"
       ],
       "additionalProperties": false,
       "properties": {
         "total_binds": { "type": "integer", "minimum": 0 },
+        "disabled_binds": { "type": "integer", "minimum": 0 },
         "by_type": {
           "type": "object",
           "additionalProperties": { "type": "integer", "minimum": 0 }
@@ -429,6 +432,29 @@
               }
             }
           }
+        }
+      }
+    },
+    "disabled_binds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "file",
+          "line",
+          "original_text",
+          "key_hint",
+          "description_hint"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": "integer", "minimum": 1 },
+          "original_text": { "type": "string" },
+          "key_hint": { "type": ["string", "null"] },
+          "description_hint": { "type": ["string", "null"] }
         }
       }
     },

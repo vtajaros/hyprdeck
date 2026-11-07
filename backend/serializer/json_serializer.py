@@ -12,6 +12,7 @@ from backend.models.types import (
     BindRecord,
     ConflictRecord,
     Diagnostic,
+    DisabledBindRecord,
     EnvironmentInfo,
     FileRecord,
     ScanDocument,
@@ -29,6 +30,7 @@ def make_scan_document(
     stats: StatsRecord,
     complete: bool,
     conflicts: list[ConflictRecord] | None = None,
+    disabled_binds: list[DisabledBindRecord] | None = None,
     oracle: dict[str, Any] | None = None,
     generated_at: str | None = None,
 ) -> ScanDocument:
@@ -53,6 +55,7 @@ def make_scan_document(
         stats=stats,
         complete=complete,
         conflicts=conflicts if conflicts is not None else [],
+        disabled_binds=disabled_binds if disabled_binds is not None else [],
         oracle=oracle,
     )
 

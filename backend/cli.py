@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from typing import Any
 
@@ -24,13 +25,17 @@ from backend.editor import (
     NotEditableError,
     apply_edit,
     build_op_for_bind,
+    detect_disabled_binds,
+    generate_unified_diff,
     list_backups,
     resolve_uncomment_op,
     restore_backup,
 )
+from backend.editor.apply import _run_live_reload_and_check
 from backend.models.types import (
     ConflictStats,
     Diagnostic,
+    DisabledBindRecord,
     ScanDocument,
     UnbindRecord,
 )
@@ -270,6 +275,21 @@ def build_arg_parser() -> argparse.ArgumentParser:
         metavar="BIND_ID",
         help="Uncomment a previously HKS-disabled bind ID (may be specified multiple times).",
     )
+    edit_p.add_argument(
+        "--delete",
+        dest="delete",
+        action="append",
+        default=[],
+        metavar="BIND_ID",
+        help="Delete the specified bind ID (may be specified multiple times).",
+    )
+    edit_p.add_argument(
+        "--json",
+        dest="json_output",
+        action="store_true",
+        default=False,
+        help="Emit result as JSON to stdout.",
+    )
 
     # backups subcommand
     bak_p = subparsers.add_parser(
@@ -282,11 +302,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="Filter backups by original file path.",
     )
+    bak_p.add_argument(
+        "--json",
+        dest="json_output",
+        action="store_true",
+        default=False,
+        help="Emit backups as JSON to stdout.",
+    )
 
     # restore subcommand
     res_p = subparsers.add_parser(
         "restore",
-        help="Restore a configuration backup by ID (requires --apply).",
+        help="Restore a configuration backup by ID or --latest (requires --apply to write).",
     )
     res_p.add_argument(
         "backup_id",
@@ -301,11 +328,32 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Backup ID to restore (alternative to positional argument).",
     )
     res_p.add_argument(
+        "--latest",
+        dest="latest",
+        action="store_true",
+        default=False,
+        help="Restore the most recent backup.",
+    )
+    res_p.add_argument(
+        "--dry-run",
+        dest="dry_run",
+        action="store_true",
+        default=False,
+        help="Preview diff and verification of the restore without modifying files.",
+    )
+    res_p.add_argument(
         "--apply",
         dest="apply",
         action="store_true",
         default=False,
         help="Required flag to write the restored backup to disk.",
+    )
+    res_p.add_argument(
+        "--reload",
+        dest="reload",
+        action="store_true",
+        default=False,
+        help="Run live reload after restoring.",
     )
     res_p.add_argument(
         "--force",
@@ -319,6 +367,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
         dest="expected_sha256",
         default=None,
         help="Expected SHA-256 hash of the current file before restoring.",
+    )
+    res_p.add_argument(
+        "--json",
+        dest="json_output",
+        action="store_true",
+        default=False,
+        help="Emit restore result as JSON to stdout.",
     )
 
     return parser
@@ -378,6 +433,14 @@ def run_scan_pipeline(
         multiple_actions=sum(1 for c in conflicts if c.kind == "multiple_actions"),
     )
 
+    disabled_binds = detect_disabled_binds(
+        entrypoint=disc.environment.entrypoint,
+        config_dir=disc.environment.config_dir,
+        language=disc.environment.language,
+        env=env,
+    )
+    stats.disabled_binds = len(disabled_binds)
+
     oracle_dict: dict[str, Any] | None = None
     exit_code = 0
 
@@ -426,6 +489,7 @@ def run_scan_pipeline(
         stats=stats,
         complete=complete,
         conflicts=conflicts,
+        disabled_binds=disabled_binds,
         oracle=oracle_dict,
     )
     return doc, exit_code
@@ -501,18 +565,87 @@ def format_backups_table(records: list[BackupRecord]) -> str:
     return "\n".join(lines)
 
 
+def make_editor_json_output(
+    mode: str,
+    applied: bool,
+    rolled_back: bool,
+    diff: str,
+    verify: Any | None,
+    warnings: list[str],
+    backup: Any | None,
+    errors: list[str],
+    **extra: Any,
+) -> dict[str, Any]:
+    """Build a uniform JSON response structure for edit/backups/restore operations."""
+    backup_dict: dict[str, Any] | None = None
+    if backup is not None:
+        if isinstance(backup, dict):
+            backup_dict = {
+                "id": backup.get("id", ""),
+                "path": backup.get("path") or backup.get("backup_path", ""),
+                "sha256": backup.get("sha256", ""),
+            }
+        else:
+            backup_dict = {
+                "id": getattr(backup, "id", ""),
+                "path": getattr(backup, "backup_path", ""),
+                "sha256": getattr(backup, "sha256", ""),
+            }
+    verify_dict: dict[str, Any] | None = None
+    if verify is not None:
+        if isinstance(verify, dict):
+            verify_dict = verify
+        else:
+            verify_dict = verify.to_dict()
+    res = {
+        "applied": applied,
+        "backup": backup_dict,
+        "diff": diff,
+        "errors": list(errors),
+        "mode": mode,
+        "rolled_back": rolled_back,
+        "verify": verify_dict,
+        "warnings": list(warnings),
+    }
+    res.update(extra)
+    return res
+
+
 def _handle_edit(args: argparse.Namespace) -> int:
+    is_json = bool(getattr(args, "json_output", False))
     if args.dry_run and args.apply:
-        sys.stderr.write("hks: error: --dry-run and --apply are mutually exclusive\n")
+        msg = "--dry-run and --apply are mutually exclusive"
+        if is_json:
+            sys.stdout.write(json.dumps(make_editor_json_output(
+                mode="error", applied=False, rolled_back=False, diff="", verify=None,
+                warnings=[], backup=None, errors=[msg]
+            ), indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks: error: {msg}\n")
         return 2
     if args.reload and not args.apply:
-        sys.stderr.write("hks: error: --reload requires --apply\n")
+        msg = "--reload requires --apply"
+        if is_json:
+            sys.stdout.write(json.dumps(make_editor_json_output(
+                mode="error", applied=False, rolled_back=False, diff="", verify=None,
+                warnings=[], backup=None, errors=[msg]
+            ), indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks: error: {msg}\n")
         return 2
-    if not args.comment_out and not args.uncomment:
-        sys.stderr.write("hks: error: edit requires at least one --comment-out or --uncomment BIND_ID\n")
+    if not args.comment_out and not args.uncomment and not args.delete:
+        msg = "edit requires at least one --comment-out, --uncomment, or --delete BIND_ID"
+        if is_json:
+            sys.stdout.write(json.dumps(make_editor_json_output(
+                mode="error", applied=False, rolled_back=False, diff="", verify=None,
+                warnings=[], backup=None, errors=[msg]
+            ), indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks: error: {msg}\n")
         return 2
 
     is_dry_run = not args.apply
+    mode_name = "dry-run" if is_dry_run else ("apply+reload" if args.reload else "apply")
     doc, _ = run_scan_pipeline(
         config_dir=args.config_dir,
         entrypoint=args.entrypoint,
@@ -530,16 +663,28 @@ def _handle_edit(args: argparse.Namespace) -> int:
         for bid in args.comment_out:
             b = bind_by_id.get(bid)
             if b is None:
-                sys.stderr.write(f"hks edit: error: bind '{bid}' not found in active configuration.\n")
+                msg = f"bind '{bid}' not found in active configuration."
+                if is_json:
+                    sys.stdout.write(json.dumps(make_editor_json_output(
+                        mode=mode_name, applied=False, rolled_back=False, diff="", verify=None,
+                        warnings=[], backup=None, errors=[msg]
+                    ), indent=2) + "\n")
+                else:
+                    sys.stderr.write(f"hks edit: error: {msg}\n")
                 return 1
             ops.append(build_op_for_bind(b, "comment_out"))
 
         for bid in args.uncomment:
             if bid in bind_by_id:
                 b = bind_by_id[bid]
-                sys.stderr.write(
-                    f"hks edit: error: bind '{bid}' at {b.source_file}:{b.source_line} is already active.\n"
-                )
+                msg = f"bind '{bid}' at {b.source_file}:{b.source_line} is already active."
+                if is_json:
+                    sys.stdout.write(json.dumps(make_editor_json_output(
+                        mode=mode_name, applied=False, rolled_back=False, diff="", verify=None,
+                        warnings=[], backup=None, errors=[msg]
+                    ), indent=2) + "\n")
+                else:
+                    sys.stderr.write(f"hks edit: error: {msg}\n")
                 return 1
             op = resolve_uncomment_op(
                 bind_id=bid,
@@ -548,6 +693,33 @@ def _handle_edit(args: argparse.Namespace) -> int:
                 candidate_files=candidate_files,
             )
             ops.append(op)
+
+        for bid in args.delete:
+            b = bind_by_id.get(bid)
+            if b is not None:
+                ops.append(build_op_for_bind(b, "delete_line"))
+            else:
+                d = next((x for x in doc.disabled_binds if x.id == bid), None)
+                if d is not None:
+                    ops.append(
+                        EditOp(
+                            kind="delete_line",
+                            file=d.file,
+                            line_number=d.line,
+                            expected_text=d.original_text,
+                            language=doc.environment.language,
+                        )
+                    )
+                else:
+                    msg = f"bind '{bid}' not found in active or disabled configuration."
+                    if is_json:
+                        sys.stdout.write(json.dumps(make_editor_json_output(
+                            mode=mode_name, applied=False, rolled_back=False, diff="", verify=None,
+                            warnings=[], backup=None, errors=[msg]
+                        ), indent=2) + "\n")
+                    else:
+                        sys.stderr.write(f"hks edit: error: {msg}\n")
+                    return 1
 
         result = apply_edit(
             ops=ops,
@@ -559,22 +731,64 @@ def _handle_edit(args: argparse.Namespace) -> int:
             before_binds=doc.binds,
         )
     except NotEditableError as exc:
-        sys.stderr.write(f"hks edit: not editable: {exc}\n")
+        msg = f"not editable: {exc}"
+        if is_json:
+            sys.stdout.write(json.dumps(make_editor_json_output(
+                mode=mode_name, applied=False, rolled_back=False, diff="", verify=None,
+                warnings=[], backup=None, errors=[msg]
+            ), indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks edit: {msg}\n")
         return 1
     except EditConflict as exc:
-        sys.stderr.write(f"hks edit: conflict: {exc}\n")
+        msg = f"conflict: {exc}"
+        if is_json:
+            sys.stdout.write(json.dumps(make_editor_json_output(
+                mode=mode_name, applied=False, rolled_back=False, diff="", verify=None,
+                warnings=[], backup=None, errors=[msg]
+            ), indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks edit: {msg}\n")
         return 1
     except KeyError as exc:
-        msg = exc.args[0] if exc.args else str(exc)
-        sys.stderr.write(f"hks edit: error: {msg}\n")
+        raw_msg = exc.args[0] if exc.args else str(exc)
+        if is_json:
+            sys.stdout.write(json.dumps(make_editor_json_output(
+                mode=mode_name, applied=False, rolled_back=False, diff="", verify=None,
+                warnings=[], backup=None, errors=[raw_msg]
+            ), indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks edit: error: {raw_msg}\n")
         return 1
     except BackupError as exc:
-        sys.stderr.write(f"hks edit: backup error: {exc}\n")
+        msg = f"backup error: {exc}"
+        if is_json:
+            sys.stdout.write(json.dumps(make_editor_json_output(
+                mode=mode_name, applied=False, rolled_back=False, diff="", verify=None,
+                warnings=[], backup=None, errors=[msg]
+            ), indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks edit: {msg}\n")
         return 1
 
-    output = format_apply_result(result, dry_run=is_dry_run, reload=args.reload)
-    sys.stdout.write(output + "\n")
-    sys.stdout.flush()
+    if is_json:
+        warnings = [result.companion_warning] if result.companion_warning else []
+        out_data = make_editor_json_output(
+            mode=mode_name,
+            applied=result.applied,
+            rolled_back=result.rolled_back,
+            diff=result.diff,
+            verify=result.verify,
+            warnings=warnings,
+            backup=result.backup,
+            errors=result.errors,
+        )
+        sys.stdout.write(json.dumps(out_data, indent=2, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
+    else:
+        output = format_apply_result(result, dry_run=is_dry_run, reload=args.reload)
+        sys.stdout.write(output + "\n")
+        sys.stdout.flush()
 
     if result.errors or result.rolled_back:
         return 1
@@ -582,48 +796,193 @@ def _handle_edit(args: argparse.Namespace) -> int:
 
 
 def _handle_backups(args: argparse.Namespace) -> int:
+    is_json = bool(getattr(args, "json_output", False))
     try:
         records = list_backups(path=args.path)
     except BackupError as exc:
-        sys.stderr.write(f"hks backups: error: {exc}\n")
+        msg = str(exc)
+        if is_json:
+            sys.stdout.write(json.dumps(make_editor_json_output(
+                mode="backups", applied=False, rolled_back=False, diff="", verify=None,
+                warnings=[], backup=None, errors=[msg], backups=[]
+            ), indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks backups: error: {msg}\n")
         return 1
-    sys.stdout.write(format_backups_table(records) + "\n")
-    sys.stdout.flush()
+
+    if is_json:
+        out_data = make_editor_json_output(
+            mode="backups",
+            applied=False,
+            rolled_back=False,
+            diff="",
+            verify=None,
+            warnings=[],
+            backup=None,
+            errors=[],
+            backups=[r.to_dict() for r in records],
+        )
+        sys.stdout.write(json.dumps(out_data, indent=2, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
+    else:
+        sys.stdout.write(format_backups_table(records) + "\n")
+        sys.stdout.flush()
     return 0
 
 
 def _handle_restore(args: argparse.Namespace) -> int:
-    target_id = args.id_flag or args.backup_id
-    if not target_id:
-        sys.stderr.write("hks: error: restore requires a backup ID\n")
-        return 2
+    is_json = bool(getattr(args, "json_output", False))
+    if getattr(args, "latest", False):
+        try:
+            records = list_backups()
+        except BackupError as exc:
+            msg = str(exc)
+            if is_json:
+                sys.stdout.write(json.dumps(make_editor_json_output(
+                    mode="restore", applied=False, rolled_back=False, diff="", verify=None,
+                    warnings=[], backup=None, errors=[msg]
+                ), indent=2) + "\n")
+            else:
+                sys.stderr.write(f"hks restore: error: {msg}\n")
+            return 1
+        if not records:
+            msg = "no backups available to restore."
+            if is_json:
+                sys.stdout.write(json.dumps(make_editor_json_output(
+                    mode="restore", applied=False, rolled_back=False, diff="", verify=None,
+                    warnings=[], backup=None, errors=[msg]
+                ), indent=2) + "\n")
+            else:
+                sys.stderr.write(f"hks restore: error: {msg}\n")
+            return 1
+        matched = records[-1]
+    else:
+        target_id = args.id_flag or args.backup_id
+        if not target_id:
+            msg = "restore requires a backup ID or --latest"
+            if is_json:
+                sys.stdout.write(json.dumps(make_editor_json_output(
+                    mode="restore", applied=False, rolled_back=False, diff="", verify=None,
+                    warnings=[], backup=None, errors=[msg]
+                ), indent=2) + "\n")
+            else:
+                sys.stderr.write(f"hks: error: {msg}\n")
+            return 2
+
+        try:
+            records = list_backups()
+            matched = next((r for r in records if r.id == target_id), None)
+            if matched is None:
+                msg = f"backup '{target_id}' not found."
+                if is_json:
+                    sys.stdout.write(json.dumps(make_editor_json_output(
+                        mode="restore", applied=False, rolled_back=False, diff="", verify=None,
+                        warnings=[], backup=None, errors=[msg]
+                    ), indent=2) + "\n")
+                else:
+                    sys.stderr.write(f"hks restore: error: {msg}\n")
+                return 1
+        except BackupError as exc:
+            msg = str(exc)
+            if is_json:
+                sys.stdout.write(json.dumps(make_editor_json_output(
+                    mode="restore", applied=False, rolled_back=False, diff="", verify=None,
+                    warnings=[], backup=None, errors=[msg]
+                ), indent=2) + "\n")
+            else:
+                sys.stderr.write(f"hks restore: error: {msg}\n")
+            return 1
+
+    # Diff preview between current target file and backup
+    diff_text = ""
+    if os.path.isfile(matched.original_path) and os.path.isfile(matched.backup_path):
+        with open(matched.original_path, "r", encoding="utf-8") as f:
+            curr_text = f.read()
+        with open(matched.backup_path, "r", encoding="utf-8") as f:
+            bak_text = f.read()
+        diff_text = generate_unified_diff(
+            curr_text,
+            bak_text,
+            file_path=os.path.basename(matched.original_path),
+        )
+
+    if not args.apply and not getattr(args, "dry_run", False):
+        if not is_json:
+            sys.stderr.write("hks: error: restore requires --apply to write files (use --dry-run to preview)\n")
+            return 2
+
     if not args.apply:
-        sys.stderr.write("hks: error: restore requires --apply to write files\n")
-        return 2
+        # Dry-run preview
+        if is_json:
+            out_data = make_editor_json_output(
+                mode="restore (dry-run)",
+                applied=False,
+                rolled_back=False,
+                diff=diff_text,
+                verify={"ok": True, "message": "backup verified", "line": None, "reason": None},
+                warnings=[],
+                backup=matched,
+                errors=[],
+            )
+            sys.stdout.write(json.dumps(out_data, indent=2, ensure_ascii=False) + "\n")
+            sys.stdout.flush()
+        else:
+            sys.stdout.write("[HKS Restore] Mode: DRY-RUN (no files modified)\n\n" + diff_text + "\nResult: PREVIEW\n")
+            sys.stdout.flush()
+        return 0
 
     try:
-        records = list_backups()
-        matched = next((r for r in records if r.id == target_id), None)
-        if matched is None:
-            sys.stderr.write(f"hks restore: error: backup '{target_id}' not found.\n")
-            return 1
         restore_backup(
             matched,
             expected_current_sha256=args.expected_sha256,
             force=args.force,
         )
     except BackupConflictError as exc:
-        sys.stderr.write(f"hks restore: conflict: {exc}\n")
+        msg = f"conflict: {exc}"
+        if is_json:
+            sys.stdout.write(json.dumps(make_editor_json_output(
+                mode="restore", applied=False, rolled_back=False, diff="", verify=None,
+                warnings=[], backup=matched, errors=[msg]
+            ), indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks restore: {msg}\n")
         return 1
     except BackupError as exc:
-        sys.stderr.write(f"hks restore: error: {exc}\n")
+        msg = str(exc)
+        if is_json:
+            sys.stdout.write(json.dumps(make_editor_json_output(
+                mode="restore", applied=False, rolled_back=False, diff="", verify=None,
+                warnings=[], backup=matched, errors=[msg]
+            ), indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks restore: error: {msg}\n")
         return 1
 
-    sys.stdout.write(
-        f"Restored {matched.original_path} from backup {matched.id} (sha256={matched.sha256})\n"
-    )
-    sys.stdout.flush()
-    return 0
+    errors: list[str] = []
+    if getattr(args, "reload", False):
+        reload_ok, reload_err = _run_live_reload_and_check()
+        if not reload_ok:
+            errors.append(f"Live reload failed: {reload_err}")
+
+    if is_json:
+        out_data = make_editor_json_output(
+            mode="restore",
+            applied=True,
+            rolled_back=False,
+            diff=diff_text,
+            verify={"ok": True, "message": "restored ok", "line": None, "reason": None},
+            warnings=[],
+            backup=matched,
+            errors=errors,
+        )
+        sys.stdout.write(json.dumps(out_data, indent=2, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
+    else:
+        sys.stdout.write(
+            f"Restored {matched.original_path} from backup {matched.id} (sha256={matched.sha256})\n"
+        )
+        sys.stdout.flush()
+    return 1 if errors else 0
 
 
 def main(argv: list[str] | None = None) -> int:

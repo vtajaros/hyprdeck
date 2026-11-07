@@ -250,6 +250,26 @@ class UnbindRecord:
 
 
 @dataclass(slots=True)
+class DisabledBindRecord:
+    id: str
+    file: str
+    line: int
+    original_text: str
+    key_hint: str | None = None
+    description_hint: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "description_hint": self.description_hint,
+            "file": self.file,
+            "id": self.id,
+            "key_hint": self.key_hint,
+            "line": self.line,
+            "original_text": self.original_text,
+        }
+
+
+@dataclass(slots=True)
 class SandboxStats:
     instructions_used: int
     instruction_limit: int
@@ -342,6 +362,7 @@ class StatsRecord:
     sandbox: SandboxStats | None = None
     sidecar: SidecarStats = field(default_factory=SidecarStats)
     conflicts: ConflictStats = field(default_factory=ConflictStats)
+    disabled_binds: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         res: dict[str, Any] = {
@@ -349,6 +370,7 @@ class StatsRecord:
             "by_modmask": dict(sorted(self.by_modmask.items(), key=lambda kv: int(kv[0]))),
             "by_type": dict(sorted(self.by_type.items())),
             "conflicts": self.conflicts.to_dict(),
+            "disabled_binds": self.disabled_binds,
             "flag_counts": dict(sorted(self.flag_counts.items())),
             "generated_binds": self.generated_binds,
             "ignored_calls": dict(sorted(self.ignored_calls.items())),
@@ -377,6 +399,7 @@ class ScanDocument:
     stats: StatsRecord
     complete: bool
     conflicts: list[ConflictRecord] = field(default_factory=list)
+    disabled_binds: list[DisabledBindRecord] = field(default_factory=list)
     oracle: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -385,6 +408,7 @@ class ScanDocument:
             "complete": self.complete,
             "conflicts": [c.to_dict() for c in self.conflicts],
             "diagnostics": [d.to_dict() for d in self.diagnostics],
+            "disabled_binds": [d.to_dict() for d in self.disabled_binds],
             "environment": self.environment.to_dict(),
             "files": [f.to_dict() for f in self.files],
             "generated_at": self.generated_at,
