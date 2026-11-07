@@ -89,6 +89,24 @@
 
 ---
 
+## Phase 3a Milestones (Editing UI & Services)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Real-config round trip gate test on `SUPER+grave` | `backend/editor/`, `~/.config/hypr/hyprland.lua` | [x] Complete |
+| Scan detection of disabled binds (`disabled_binds`, `stats.disabled_binds`) | `backend/editor/disabled.py`, schema, models | [x] Complete |
+| CLI `--delete BIND_ID`, `--json` output across edit/backups/restore | `backend/cli.py`, `backend/tests/test_editor.py` | [x] Complete |
+| Edit service singleton with async Process execution & toast coordinator | `frontend/services/EditService.qml`, `frontend/services/qmldir` | [x] Complete |
+| Row-level Disable and Delete actions with loop-generated guard | `frontend/components/KeybindRow.qml` | [x] Complete |
+| Modal confirmation dialog with verification badges, diff viewer & delete confirm | `frontend/components/EditConfirmDialog.qml`, `frontend/components/qmldir` | [x] Complete |
+| Floating action toast with instant Undo restore trigger | `frontend/WindowShell.qml` | [x] Complete |
+| Disabled keybindings page with Enable action | `frontend/pages/Disabled.qml`, `frontend/pages/qmldir` | [x] Complete |
+| Configuration backups page with Restore action | `frontend/pages/Backups.qml`, `frontend/pages/qmldir` | [x] Complete |
+| Companion file warning banner (`hyprland.conf is not modified by HKS`) | `frontend/pages/AllKeybindings.qml`, `frontend/services/KeybindData.qml` | [x] Complete |
+| Phase 3a documentation & milestones update | `docs/PHASE3A.md`, `docs/MILESTONES.md`, `README.md` | [x] Complete |
+
+---
+
 ## Verified on Real Config
 
 - **Binds**: 126 binds
