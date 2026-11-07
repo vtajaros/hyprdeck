@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from backend.editor.apply import (
+    ApplyResult,
+    apply_edit,
+)
 from backend.editor.backups import (
     BackupConflictError,
     BackupError,
@@ -16,7 +20,7 @@ from backend.editor.backups import (
 from backend.editor.edit_plan import (
     HYPRLANG_DISABLED_PREFIX,
     LUA_DISABLED_PREFIX,
-     VALID_EDIT_KINDS,
+    VALID_EDIT_KINDS,
     EditConflict,
     EditError,
     EditOp,
@@ -26,11 +30,23 @@ from backend.editor.edit_plan import (
     build_op_for_bind,
     generate_unified_diff,
 )
+from backend.editor.validator import (
+    BindSetComparison,
+    RecorderVerificationError,
+    VerifyResult,
+    bind_semantic_signature,
+    compare_bind_sets,
+    stage_candidate_config,
+    verify_with_hyprland,
+    verify_with_recorder,
+)
 
 __all__ = [
+    "ApplyResult",
     "BackupConflictError",
     "BackupError",
     "BackupRecord",
+    "BindSetComparison",
     "EditConflict",
     "EditError",
     "EditOp",
@@ -38,14 +54,22 @@ __all__ = [
     "LUA_DISABLED_PREFIX",
     "LineMismatch",
     "NotEditableError",
+    "RecorderVerificationError",
     "VALID_EDIT_KINDS",
+    "VerifyResult",
+    "apply_edit",
     "apply_ops_to_text",
     "atomic_write_bytes",
+    "bind_semantic_signature",
     "build_op_for_bind",
+    "compare_bind_sets",
     "compute_file_sha256",
     "create_backup",
     "generate_unified_diff",
     "list_backups",
     "resolve_backup_dir",
     "restore_backup",
+    "stage_candidate_config",
+    "verify_with_hyprland",
+    "verify_with_recorder",
 ]

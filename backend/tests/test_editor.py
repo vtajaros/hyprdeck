@@ -5,8 +5,10 @@ from __future__ import annotations
 import hashlib
 import os
 import stat
+import subprocess
 import tempfile
 import unittest
+from typing import Any
 
 from backend.editor import (
     BackupConflictError,
@@ -14,13 +16,19 @@ from backend.editor import (
     EditConflict,
     EditOp,
     NotEditableError,
+    RecorderVerificationError,
+    apply_edit,
     apply_ops_to_text,
     atomic_write_bytes,
     build_op_for_bind,
+    compute_file_sha256,
     create_backup,
     generate_unified_diff,
     list_backups,
     restore_backup,
+    stage_candidate_config,
+    verify_with_hyprland,
+    verify_with_recorder,
 )
 from backend.models.types import BindRecord, DispatcherInfo, default_flags
 
@@ -307,6 +315,326 @@ class TestBackups(unittest.TestCase):
             bad_bkp_dir = os.path.join(cfg_dir, "backups")
             with self.assertRaises(BackupError):
                 create_backup(cfg_file, backup_dir=bad_bkp_dir)
+
+
+class TestValidator(unittest.TestCase):
+    def test_verify_with_hyprland_ok_error_timeout_unavailable(self) -> None:
+        # 1. OK with IPC/Socket noise ignored
+        def fake_ok(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            stdout = (
+                "DEBUG ]: [main] User-specified config location: '/tmp/hyprland.lua'\n"
+                "ERR ]: [IPC::Socket2::CUnixImpl::CUnixImpl] [Socket2::UnixImpl] Couldn't bind the Hyprland Socket 2.\n"
+                "\n======== Config parsing result:\n\nconfig ok\n"
+            )
+            return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
+
+        res_ok = verify_with_hyprland("/tmp/hyprland.lua", runner=fake_ok)
+        self.assertIs(res_ok.ok, True)
+        self.assertEqual(res_ok.exit_code, 0)
+        self.assertEqual(res_ok.message, "config ok")
+
+        # 2. Error output with line number extraction
+        def fake_err(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            stdout = (
+                "ERR ]: [Socket2::UnixImpl] Couldn't bind the Hyprland Socket 2.\n"
+                "======== Config parsing result:\n\n"
+                "=[C]:-1: hl.window.move: invalid direction \"bogus\"\n"
+                "/tmp/hyprland.lua:42: hl.bind: expected a dispatcher\n"
+            )
+            return subprocess.CompletedProcess(cmd, 1, stdout=stdout, stderr="")
+
+        res_err = verify_with_hyprland("/tmp/hyprland.lua", runner=fake_err)
+        self.assertIs(res_err.ok, False)
+        self.assertEqual(res_err.line, 42)
+        self.assertIn("/tmp/hyprland.lua:42:", res_err.message)
+        self.assertIn("invalid direction", res_err.message)
+
+        # 3. Timeout
+        def fake_timeout(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=20.0)
+
+        res_to = verify_with_hyprland("/tmp/hyprland.lua", runner=fake_timeout)
+        self.assertIs(res_to.ok, False)
+        self.assertEqual(res_to.reason, "timeout")
+        self.assertIn("timed out", res_to.message)
+
+        # 4. Unavailable (FileNotFoundError)
+        def fake_missing(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            raise FileNotFoundError("No such file or directory: 'Hyprland'")
+
+        res_unavail = verify_with_hyprland("/tmp/hyprland.lua", runner=fake_missing)
+        self.assertIsNone(res_unavail.ok)
+        self.assertEqual(res_unavail.reason, "hyprland_unavailable")
+        self.assertEqual(res_unavail.message, "hyprland_unavailable")
+
+    def test_stage_candidate_skips_bak_files_and_verifies_with_recorder(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_root:
+            cfg_dir = os.path.join(tmp_root, "hypr")
+            os.makedirs(cfg_dir)
+            entry = os.path.join(cfg_dir, "hyprland.lua")
+            helper = os.path.join(cfg_dir, "extra.lua")
+            bak_file = os.path.join(cfg_dir, "hyprland.lua.bak.1")
+
+            with open(helper, "w") as f:
+                f.write('return "SUPER"\n')
+            with open(bak_file, "w") as f:
+                f.write("-- old backup\n")
+            with open(entry, "w") as f:
+                f.write(
+                    'local mod = dofile("extra.lua")\n'
+                    'hl.bind(mod .. " + Return", hl.dsp.exec_cmd("kitty"))\n'
+                )
+
+            new_bytes = (
+                b'local mod = dofile("extra.lua")\n'
+                b'hl.bind(mod .. " + Return", hl.dsp.exec_cmd("kitty"))\n'
+                b'hl.bind(mod .. " + Q", hl.dsp.window.close())\n'
+            )
+
+            with stage_candidate_config(cfg_dir, entry, entry, new_bytes) as (
+                staged_dir,
+                staged_entry,
+                _,
+            ):
+                self.assertTrue(os.path.isfile(os.path.join(staged_dir, "extra.lua")))
+                self.assertFalse(os.path.exists(os.path.join(staged_dir, "hyprland.lua.bak.1")))
+                binds = verify_with_recorder(staged_entry, staged_dir)
+                self.assertEqual(len(binds), 2)
+
+            # Broken Lua syntax raises RecorderVerificationError
+            with stage_candidate_config(cfg_dir, entry, entry, b"invalid lua !!!\n") as (
+                staged_dir,
+                staged_entry,
+                _,
+            ):
+                with self.assertRaises(RecorderVerificationError):
+                    verify_with_recorder(staged_entry, staged_dir)
+
+
+class TestApplyPipeline(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = self._tmp.name
+        self.cfg_dir = os.path.join(self.root, "hypr")
+        self.bkp_dir = os.path.join(self.root, "backups")
+        os.makedirs(self.cfg_dir)
+        self.env = {"HKS_BACKUP_DIR": self.bkp_dir}
+
+        self.lua_path = os.path.join(self.cfg_dir, "hyprland.lua")
+        self.conf_path = os.path.join(self.cfg_dir, "hyprland.conf")
+
+        self.initial_lua = (
+            'local mainMod = "SUPER"\n'
+            'hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("kitty"))\n'
+            'hl.bind("ALT + Tab", hl.dsp.window.cyclenext())\n'
+            'hl.bind("ALT + Tab", hl.dsp.window.bringactivetotop())\n'
+            'hl.bind(mainMod .. " + X", hl.dsp.window.close())\n'
+        )
+        with open(self.lua_path, "w", encoding="utf-8") as f:
+            f.write(self.initial_lua)
+
+        self.initial_conf = (
+            "$mainMod = SUPER\n"
+            "bind = $mainMod, Return, exec, kitty\n"
+            "bind = ALT, Tab, cyclenext,\n"
+            "bind = ALT, Tab, bringactivetotop,\n"
+            "bind = $mainMod, X, killactive,\n"
+        )
+        with open(self.conf_path, "w", encoding="utf-8") as f:
+            f.write(self.initial_conf)
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    @staticmethod
+    def _hyprland_ok_runner(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            cmd,
+            0,
+            stdout="======== Config parsing result:\n\nconfig ok\n",
+            stderr="",
+        )
+
+    @staticmethod
+    def _hyprland_fail_runner(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            cmd,
+            1,
+            stdout="======== Config parsing result:\n\n/tmp/hyprland.lua:2: syntax error\n",
+            stderr="",
+        )
+
+    def test_dry_run_writes_nothing_and_checks_stacked_bind_removal(self) -> None:
+        orig_sha = compute_file_sha256(self.lua_path)
+        op = EditOp(
+            kind="comment_out",
+            file=self.lua_path,
+            line_number=4,
+            expected_text='hl.bind("ALT + Tab", hl.dsp.window.bringactivetotop())',
+            language="lua",
+        )
+        res = apply_edit(
+            [op],
+            config_dir=self.cfg_dir,
+            entrypoint=self.lua_path,
+            dry_run=True,
+            scan_sha256=orig_sha,
+            hyprland_runner=self._hyprland_ok_runner,
+            env=self.env,
+        )
+        self.assertFalse(res.applied)
+        self.assertFalse(res.rolled_back)
+        self.assertIsNone(res.backup)
+        self.assertEqual(res.errors, [])
+        self.assertIsNotNone(res.verify)
+        assert res.verify is not None
+        self.assertTrue(res.verify.ok)
+        self.assertIsNotNone(res.bind_comparison)
+        assert res.bind_comparison is not None
+        # Stacked bind: commenting out 1 of the 2 ALT+Tab binds reduces count from 4 to 3 (-1)
+        self.assertTrue(res.bind_comparison.ok)
+        self.assertEqual(res.bind_comparison.before_count, 4)
+        self.assertEqual(res.bind_comparison.after_count, 3)
+        self.assertEqual(res.bind_comparison.removed_count, 1)
+        self.assertEqual(res.bind_comparison.added_count, 0)
+        # Companion .conf warning is populated, .conf is untouched
+        self.assertIsNotNone(res.companion_warning)
+        assert res.companion_warning is not None
+        self.assertIn("hyprland.conf", res.companion_warning)
+
+        # Verify nothing written and no backup created
+        self.assertEqual(compute_file_sha256(self.lua_path), orig_sha)
+        self.assertEqual(list_backups(env=self.env), [])
+
+    def test_apply_writes_and_creates_backup(self) -> None:
+        orig_sha = compute_file_sha256(self.lua_path)
+        op = EditOp(
+            kind="comment_out",
+            file=self.lua_path,
+            line_number=2,
+            expected_text='hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("kitty"))',
+            language="lua",
+        )
+        res = apply_edit(
+            [op],
+            config_dir=self.cfg_dir,
+            entrypoint=self.lua_path,
+            dry_run=False,
+            scan_sha256=orig_sha,
+            hyprland_runner=self._hyprland_ok_runner,
+            env=self.env,
+        )
+        self.assertTrue(res.applied)
+        self.assertFalse(res.rolled_back)
+        self.assertEqual(res.errors, [])
+        self.assertIsNotNone(res.backup)
+        assert res.backup is not None
+        self.assertEqual(res.backup.sha256, orig_sha)
+
+        with open(self.lua_path, "r", encoding="utf-8") as f:
+            updated = f.read()
+        self.assertIn(
+            '-- HKS-disabled: hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("kitty"))',
+            updated,
+        )
+        # Companion .conf was NOT modified
+        with open(self.conf_path, "r", encoding="utf-8") as f:
+            self.assertEqual(f.read(), self.initial_conf)
+
+    def test_verification_failure_writes_nothing(self) -> None:
+        orig_sha = compute_file_sha256(self.lua_path)
+        op = EditOp(
+            kind="comment_out",
+            file=self.lua_path,
+            line_number=2,
+            expected_text='hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("kitty"))',
+            language="lua",
+        )
+        res = apply_edit(
+            [op],
+            config_dir=self.cfg_dir,
+            entrypoint=self.lua_path,
+            dry_run=False,
+            hyprland_runner=self._hyprland_fail_runner,
+            env=self.env,
+        )
+        self.assertFalse(res.applied)
+        self.assertFalse(res.rolled_back)
+        self.assertIsNone(res.backup)
+        self.assertTrue(len(res.errors) > 0)
+        self.assertEqual(compute_file_sha256(self.lua_path), orig_sha)
+        self.assertEqual(list_backups(env=self.env), [])
+
+    def test_reload_failure_triggers_automatic_rollback(self) -> None:
+        with open(self.lua_path, "rb") as f:
+            orig_bytes = f.read()
+        orig_sha = hashlib.sha256(orig_bytes).hexdigest()
+
+        def fake_reload_runner(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            if cmd[:2] == ["hyprctl", "reload"]:
+                return subprocess.CompletedProcess(cmd, 0, stdout="ok\n", stderr="")
+            if cmd[:2] == ["hyprctl", "configerrors"]:
+                return subprocess.CompletedProcess(
+                    cmd,
+                    0,
+                    stdout="Config error at line 2: runtime reload rejected bind\n",
+                    stderr="",
+                )
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        sleep_calls: list[float] = []
+        op = EditOp(
+            kind="comment_out",
+            file=self.lua_path,
+            line_number=2,
+            expected_text='hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("kitty"))',
+            language="lua",
+        )
+        res = apply_edit(
+            [op],
+            config_dir=self.cfg_dir,
+            entrypoint=self.lua_path,
+            dry_run=False,
+            reload=True,
+            hyprland_runner=self._hyprland_ok_runner,
+            reload_runner=fake_reload_runner,
+            sleep_fn=lambda s: sleep_calls.append(s),
+            env=self.env,
+        )
+        self.assertFalse(res.applied)
+        self.assertTrue(res.rolled_back)
+        self.assertIsNotNone(res.backup)
+        self.assertEqual(sleep_calls, [1.0])
+        self.assertTrue(any("rolled back" in e for e in res.errors))
+
+        # Bytes on disk restored 100% identically
+        with open(self.lua_path, "rb") as f:
+            self.assertEqual(f.read(), orig_bytes)
+        self.assertEqual(compute_file_sha256(self.lua_path), orig_sha)
+
+    def test_scan_sha256_mismatch_refuses(self) -> None:
+        orig_sha = compute_file_sha256(self.lua_path)
+        op = EditOp(
+            kind="comment_out",
+            file=self.lua_path,
+            line_number=2,
+            expected_text='hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("kitty"))',
+            language="lua",
+        )
+        res = apply_edit(
+            [op],
+            config_dir=self.cfg_dir,
+            entrypoint=self.lua_path,
+            dry_run=False,
+            scan_sha256="0" * 64,
+            hyprland_runner=self._hyprland_ok_runner,
+            env=self.env,
+        )
+        self.assertFalse(res.applied)
+        self.assertFalse(res.rolled_back)
+        self.assertIsNone(res.backup)
+        self.assertTrue(any("Concurrent edit detected" in e for e in res.errors))
+        self.assertEqual(compute_file_sha256(self.lua_path), orig_sha)
 
 
 if __name__ == "__main__":
