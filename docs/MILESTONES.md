@@ -45,6 +45,23 @@
 
 ---
 
+## Phase 2b-1 Milestones (Quickshell UI Foundation)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Theme singleton & Matugen color palette integration | `frontend/theme/HKS.qml`, `frontend/theme/qmldir` | [x] Complete |
+| Headless CLI scanner data service & reactive filters | `frontend/services/KeybindData.qml`, `frontend/services/qmldir` | [x] Complete |
+| Shared UI components (Keycap, KeybindRow, CategoryChips, SearchField, EmptyState, SidebarItem) | `frontend/components/` | [x] Complete |
+| Primary list page with virtualization, submaps & keyboard nav | `frontend/pages/AllKeybindings.qml` | [x] Complete |
+| Window shell with navigation sidebar & runtime info | `frontend/WindowShell.qml` | [x] Complete |
+| Wayland Layershell HUD popup with backdrop dismissal | `frontend/PopupShell.qml` | [x] Complete |
+| Unified mode router & IPC target ("hks") | `frontend/shell.qml` | [x] Complete |
+| Window and popup toggle launcher scripts | `scripts/hks-window`, `scripts/hks-popup` | [x] Complete |
+| Verification runner (unit tests + qmllint) | `scripts/hks-check` | [x] Complete |
+| Phase 2b-1 documentation & milestones update | `docs/PHASE2B1.md`, `docs/MILESTONES.md`, `README.md` | [x] Complete |
+
+---
+
 ## Verified on Real Config
 
 - **Binds**: 126 binds
