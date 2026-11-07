@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import io
 import os
+import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 
-from backend.cli import run_scan_pipeline
+from backend.cli import main, run_scan_pipeline
 from backend.conflicts import detect_conflicts
 from backend.discovery import discover_config
 from backend.models.types import (
@@ -201,6 +204,72 @@ class TestConflictDetection(unittest.TestCase):
 
         assert_valid_scan_dict(doc_lua.to_dict())
         assert_valid_scan_dict(doc_hypr.to_dict())
+
+
+class TestConflictsCLI(unittest.TestCase):
+    def test_cli_conflicts_table_output(self) -> None:
+        out_buf = io.StringIO()
+        err_buf = io.StringIO()
+        with redirect_stdout(out_buf), redirect_stderr(err_buf):
+            rc = main(
+                [
+                    "conflicts",
+                    "--config-dir",
+                    LUA_FIXTURE_DIR,
+                    "--no-live",
+                    "--no-sidecar",
+                ]
+            )
+        self.assertEqual(rc, 0)
+        output = out_buf.getvalue()
+        self.assertIn("Conflicts: 2 total (0 duplicate, 2 multiple_actions)", output)
+        self.assertIn("ID", output)
+        self.assertIn("SEVERITY", output)
+        self.assertIn("KIND", output)
+        self.assertIn("SHORTCUT", output)
+        self.assertIn("BINDS", output)
+        self.assertIn("SOURCES", output)
+        self.assertIn("conflict-1", output)
+        self.assertIn("ALT + Tab", output)
+        self.assertIn("conflict-2", output)
+        self.assertIn("ALT + SHIFT + Tab", output)
+        self.assertIn("multiple_actions", output)
+
+    def test_cli_conflicts_none_found(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            conf_path = os.path.join(tmpdir, "hyprland.conf")
+            with open(conf_path, "w", encoding="utf-8") as f:
+                f.write("bind = SUPER, Return, exec, kitty\n")
+
+            out_buf = io.StringIO()
+            with redirect_stdout(out_buf), redirect_stderr(io.StringIO()):
+                rc = main(
+                    [
+                        "conflicts",
+                        "--config-dir",
+                        tmpdir,
+                        "--no-live",
+                        "--no-sidecar",
+                    ]
+                )
+            self.assertEqual(rc, 0)
+            self.assertEqual(out_buf.getvalue().strip(), "No conflicts found.")
+
+    def test_cli_conflicts_error_exit(self) -> None:
+        with tempfile.TemporaryDirectory() as empty_dir:
+            err_buf = io.StringIO()
+            with redirect_stdout(io.StringIO()), redirect_stderr(err_buf):
+                rc = main(
+                    [
+                        "conflicts",
+                        "--config-dir",
+                        empty_dir,
+                        "--no-live",
+                    ]
+                )
+            self.assertEqual(rc, 2)
+            self.assertNotIn("Traceback", err_buf.getvalue())
+            self.assertIn("hks: error:", err_buf.getvalue())
 
 
 if __name__ == "__main__":

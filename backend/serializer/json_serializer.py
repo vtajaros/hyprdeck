@@ -140,3 +140,58 @@ def format_summary_table(doc: ScanDocument) -> str:
             f"{sb.elapsed_ms:.1f}ms elapsed | cpu_limit={sb.cpu_limit_s:.0f}s | wall_timeout={sb.wall_timeout_s:.0f}s"
         )
     return "\n".join(lines)
+
+
+def format_conflicts_table(doc: ScanDocument) -> str:
+    """Format a plain-text table of conflicting and stacked keybindings."""
+    if not doc.conflicts:
+        return "No conflicts found."
+
+    stats = doc.stats.conflicts
+    header_summary = (
+        f"Conflicts: {stats.total} total "
+        f"({stats.duplicate} duplicate, {stats.multiple_actions} multiple_actions)"
+    )
+
+    rows: list[tuple[str, str, str, str, str, str]] = []
+    for c in doc.conflicts:
+        cid = c.id
+        sev = c.severity
+        kind = c.kind
+        if c.modifiers:
+            shortcut = " + ".join([*c.modifiers, c.key])
+        else:
+            shortcut = c.key
+        if c.submap:
+            shortcut = f"[{c.submap}] {shortcut}"
+        binds_cnt = str(len(c.bind_ids))
+        sources_str = ", ".join(
+            f"{os.path.basename(s['file'])}:{s['line']}" for s in c.sources
+        )
+        rows.append((cid, sev, kind, shortcut, binds_cnt, sources_str))
+
+    headers = ("ID", "SEVERITY", "KIND", "SHORTCUT", "BINDS", "SOURCES")
+    w0 = max([len(headers[0]), *(len(r[0]) for r in rows)], default=len(headers[0]))
+    w1 = max([len(headers[1]), *(len(r[1]) for r in rows)], default=len(headers[1]))
+    w2 = max([len(headers[2]), *(len(r[2]) for r in rows)], default=len(headers[2]))
+    w3 = max([len(headers[3]), *(len(r[3]) for r in rows)], default=len(headers[3]))
+    w4 = max([len(headers[4]), *(len(r[4]) for r in rows)], default=len(headers[4]))
+    w5 = max([len(headers[5]), *(len(r[5]) for r in rows)], default=len(headers[5]))
+
+    lines: list[str] = [header_summary, ""]
+    header_line = (
+        f"{headers[0]:<{w0}} | {headers[1]:<{w1}} | {headers[2]:<{w2}} | "
+        f"{headers[3]:<{w3}} | {headers[4]:<{w4}} | {headers[5]}"
+    )
+    sep_line = (
+        f"{'-' * w0}-+-{'-' * w1}-+-{'-' * w2}-+-"
+        f"{'-' * w3}-+-{'-' * w4}-+-{'-' * w5}"
+    )
+    lines.append(header_line)
+    lines.append(sep_line)
+    for r in rows:
+        lines.append(
+            f"{r[0]:<{w0}} | {r[1]:<{w1}} | {r[2]:<{w2}} | "
+            f"{r[3]:<{w3}} | {r[4]:<{w4}} | {r[5]}"
+        )
+    return "\n".join(lines)

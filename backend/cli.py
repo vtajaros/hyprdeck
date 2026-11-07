@@ -22,6 +22,7 @@ from backend.models.types import (
 )
 from backend.parser import parse_hyprlang_config, parse_lua_config
 from backend.serializer import (
+    format_conflicts_table,
     format_summary_table,
     make_scan_document,
     serialize_scan_document,
@@ -159,6 +160,42 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Disable optional live hyprctl probing during discovery (used with --all).",
     )
 
+    # conflicts subcommand
+    conf_p = subparsers.add_parser(
+        "conflicts",
+        help="Print a human-readable table of conflicting and stacked keybindings.",
+    )
+    conf_p.add_argument(
+        "--config-dir",
+        dest="config_dir",
+        default=None,
+        help="Override Hyprland configuration directory.",
+    )
+    conf_p.add_argument(
+        "--entrypoint",
+        dest="entrypoint",
+        default=None,
+        help="Override entrypoint configuration file.",
+    )
+    conf_p.add_argument(
+        "--no-live",
+        dest="no_live",
+        action="store_true",
+        help="Disable optional live hyprctl probing during discovery.",
+    )
+    conf_p.add_argument(
+        "--sidecar",
+        dest="sidecar",
+        default=None,
+        help="Explicit path to a sidecar descriptions.json override file.",
+    )
+    conf_p.add_argument(
+        "--no-sidecar",
+        dest="no_sidecar",
+        action="store_true",
+        help="Disable loading any sidecar overrides.",
+    )
+
     return parser
 
 
@@ -279,7 +316,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.subcommand:
         parser.print_usage(sys.stderr)
         sys.stderr.write(
-            "hks: error: subcommand required (choose from 'scan', 'summary', 'sidecar-template')\n"
+            "hks: error: subcommand required (choose from 'scan', 'summary', 'sidecar-template', 'conflicts')\n"
         )
         return 2
 
@@ -323,6 +360,19 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 tpl = build_sidecar_template(include_all=False)
             sys.stdout.write(json.dumps(tpl, indent=2, ensure_ascii=False) + "\n")
+            sys.stdout.flush()
+            return 0
+
+        if args.subcommand == "conflicts":
+            doc, _ = run_scan_pipeline(
+                config_dir=args.config_dir,
+                entrypoint=args.entrypoint,
+                no_live=args.no_live,
+                with_oracle=False,
+                sidecar_path=args.sidecar,
+                no_sidecar=args.no_sidecar,
+            )
+            sys.stdout.write(format_conflicts_table(doc) + "\n")
             sys.stdout.flush()
             return 0
     except DiscoveryError as exc:
