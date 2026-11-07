@@ -6,6 +6,7 @@ import argparse
 import sys
 from typing import Any
 
+from backend.describe import load_and_apply_sidecar
 from backend.discovery import (
     DiscoveryError,
     discover_config,
@@ -106,8 +107,11 @@ def run_scan_pipeline(
     no_live: bool = False,
     with_oracle: bool = False,
     live_binds_override: list[dict[str, Any]] | None = None,
+    sidecar_path: str | None = None,
+    no_sidecar: bool = False,
+    env: dict[str, str] | None = None,
 ) -> tuple[ScanDocument, int]:
-    """Execute discovery, parsing, and optional oracle verification.
+    """Execute discovery, parsing, sidecar overrides, and optional oracle verification.
 
     Returns (ScanDocument, exit_code).
     """
@@ -116,6 +120,7 @@ def run_scan_pipeline(
         entrypoint=entrypoint,
         no_live=no_live,
         live_binds_override=live_binds_override,
+        env=env,
     )
 
     all_diagnostics: list[Diagnostic] = list(disc.diagnostics)
@@ -125,6 +130,7 @@ def run_scan_pipeline(
         binds, files, parse_diags, stats, complete = parse_lua_config(
             entrypoint=disc.environment.entrypoint,
             config_dir=disc.environment.config_dir,
+            env=env,
         )
     else:
         binds, unbinds, files, parse_diags, stats, complete = parse_hyprlang_config(
@@ -132,6 +138,15 @@ def run_scan_pipeline(
         )
 
     all_diagnostics.extend(parse_diags)
+
+    sidecar_stats, sidecar_diags = load_and_apply_sidecar(
+        binds=binds,
+        cli_path=sidecar_path,
+        no_sidecar=no_sidecar,
+        env=env,
+    )
+    stats.sidecar = sidecar_stats
+    all_diagnostics.extend(sidecar_diags)
 
     oracle_dict: dict[str, Any] | None = None
     exit_code = 0

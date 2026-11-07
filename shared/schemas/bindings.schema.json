@@ -301,7 +301,8 @@
         "unsupported",
         "unresolved",
         "ignored_calls",
-        "ignored_keywords"
+        "ignored_keywords",
+        "sidecar"
       ],
       "additionalProperties": false,
       "properties": {
@@ -350,6 +351,24 @@
             "instruction_limit": { "type": "integer", "minimum": 0 },
             "instructions_used": { "type": "integer", "minimum": 0 },
             "wall_timeout_s": { "type": "number", "minimum": 0 }
+          }
+        },
+        "sidecar": {
+          "type": "object",
+          "required": [
+            "path",
+            "loaded",
+            "overrides",
+            "matched",
+            "unmatched"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "path": { "type": ["string", "null"] },
+            "loaded": { "type": "boolean" },
+            "overrides": { "type": "integer", "minimum": 0 },
+            "matched": { "type": "integer", "minimum": 0 },
+            "unmatched": { "type": "integer", "minimum": 0 }
           }
         }
       }

@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import unittest
 
+from backend.cli import run_scan_pipeline
+from backend.describe.sidecar import resolve_sidecar_path
 from backend.parser.hyprlang_parser import parse_hyprlang_config
 from backend.parser.lua_normalizer import parse_lua_config
+from backend.validation import assert_valid_scan_dict
 
 FIXTURES_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "fixtures"))
 LUA_FIXTURE_DIR = os.path.join(FIXTURES_ROOT, "lua_user_like")
@@ -214,6 +218,247 @@ hl.bind("SUPER + U", hl.dsp.custom.unknown_action("arg1"))
             self.assertEqual(gen_b.description_effective.source, "derived")
             self.assertTrue(gen_b.description_effective.generic)
             self.assertEqual(gen_b.category, "Other")
+
+
+class TestSidecarOverrides(unittest.TestCase):
+    def test_sidecar_path_precedence_and_no_sidecar(self) -> None:
+        env = {
+            "HKS_SIDECAR": "/tmp/from_env.json",
+            "XDG_CONFIG_HOME": "/tmp/xdg_cfg",
+            "HOME": "/tmp/home_dir",
+        }
+        self.assertIsNone(resolve_sidecar_path(cli_path="/tmp/cli.json", no_sidecar=True, env=env))
+        self.assertEqual(resolve_sidecar_path(cli_path="/tmp/cli.json", env=env), "/tmp/cli.json")
+        self.assertEqual(resolve_sidecar_path(env=env), "/tmp/from_env.json")
+
+        env_no_hks = {"XDG_CONFIG_HOME": "/tmp/xdg_cfg", "HOME": "/tmp/home_dir"}
+        self.assertEqual(
+            resolve_sidecar_path(env=env_no_hks),
+            "/tmp/xdg_cfg/hks/descriptions.json",
+        )
+
+        env_home_only = {"HOME": "/tmp/home_dir"}
+        self.assertEqual(
+            resolve_sidecar_path(env=env_home_only),
+            "/tmp/home_dir/.config/hks/descriptions.json",
+        )
+
+    def test_missing_sidecar_is_silent(self) -> None:
+        doc, rc = run_scan_pipeline(
+            config_dir=LUA_FIXTURE_DIR,
+            no_live=True,
+            sidecar_path="/tmp/definitely_missing_hks_sidecar_file_12345.json",
+        )
+        self.assertEqual(rc, 0)
+        self.assertTrue(doc.complete)
+        self.assertFalse(doc.stats.sidecar.loaded)
+        self.assertEqual(doc.stats.sidecar.overrides, 0)
+        sidecar_codes = [d.code for d in doc.diagnostics if d.code.startswith("sidecar_")]
+        self.assertEqual(sidecar_codes, [])
+        assert_valid_scan_dict(doc.to_dict())
+
+    def test_sidecar_precedence_over_config_and_derived_and_read_only(self) -> None:
+        lua_src = """
+hl.bind("SUPER + Q", hl.dsp.exec_cmd("kitty"), { description = "Config Description" })
+hl.bind("SUPER + SHIFT + Return", hl.dsp.exec_cmd("alacritty"))
+"""
+        sidecar_payload = {
+            "_note": "Root note ignored",
+            "version": 1,
+            "overrides": [
+                {
+                    "_note": "Override config description",
+                    "match": {
+                        "_comment": "Match note ignored",
+                        "modifiers": ["SUPER"],
+                        "key": "q",
+                        "submap": "",
+                    },
+                    "description": "Sidecar Wins Over Config",
+                    "category": "System",
+                },
+                {
+                    "match": {
+                        "modifiers": ["SHIFT", "WIN"],
+                        "key": "return",
+                    },
+                    "description": "Sidecar Wins Over Derived",
+                },
+            ],
+        }
+        with tempfile.TemporaryDirectory() as cfg_dir, tempfile.TemporaryDirectory() as ext_dir:
+            lua_path = os.path.join(cfg_dir, "hyprland.lua")
+            with open(lua_path, "w", encoding="utf-8") as f:
+                f.write(lua_src)
+
+            sidecar_file = os.path.join(ext_dir, "descriptions.json")
+            raw_sidecar = json.dumps(sidecar_payload, indent=2)
+            with open(sidecar_file, "w", encoding="utf-8") as f:
+                f.write(raw_sidecar)
+            os.chmod(sidecar_file, 0o400)
+
+            try:
+                doc, rc = run_scan_pipeline(
+                    config_dir=cfg_dir,
+                    no_live=True,
+                    sidecar_path=sidecar_file,
+                )
+                self.assertEqual(rc, 0)
+                self.assertTrue(doc.complete)
+                self.assertTrue(doc.stats.sidecar.loaded)
+                self.assertEqual(doc.stats.sidecar.overrides, 2)
+                self.assertEqual(doc.stats.sidecar.matched, 2)
+                self.assertEqual(doc.stats.sidecar.unmatched, 0)
+
+                b_q = _find_bind(doc.binds, ["SUPER"], "Q")
+                # Raw config description stays untouched
+                self.assertEqual(b_q.description, "Config Description")
+                self.assertEqual(b_q.description_effective.text, "Sidecar Wins Over Config")
+                self.assertEqual(b_q.description_effective.source, "sidecar")
+                self.assertFalse(b_q.description_effective.generic)
+                self.assertEqual(b_q.category, "System")
+                self.assertEqual(b_q.category_source, "sidecar")
+
+                b_ret = _find_bind(doc.binds, ["SUPER", "SHIFT"], "Return")
+                self.assertEqual(b_ret.description_effective.text, "Sidecar Wins Over Derived")
+                self.assertEqual(b_ret.description_effective.source, "sidecar")
+                self.assertEqual(b_ret.category, "Apps")
+                self.assertEqual(b_ret.category_source, "derived")
+
+                with open(sidecar_file, "r", encoding="utf-8") as f:
+                    self.assertEqual(f.read(), raw_sidecar)
+                assert_valid_scan_dict(doc.to_dict())
+            finally:
+                os.chmod(sidecar_file, 0o600)
+
+    def test_stacked_binds_ambiguous_vs_dispatcher_disambiguated_and_unmatched(self) -> None:
+        # Step 1: Match ALT+Tab without dispatcher => hits both stacked binds and emits sidecar_ambiguous
+        sidecar_ambig = {
+            "version": 1,
+            "overrides": [
+                {
+                    "match": {"modifiers": ["ALT"], "key": "Tab"},
+                    "description": "Switch active window",
+                },
+                {
+                    "match": {"modifiers": ["SUPER"], "key": "NonExistentKey99"},
+                    "description": "Stale override",
+                },
+            ],
+        }
+        with tempfile.TemporaryDirectory() as ext_dir:
+            sc_path = os.path.join(ext_dir, "ambig.json")
+            with open(sc_path, "w", encoding="utf-8") as f:
+                json.dump(sidecar_ambig, f)
+
+            doc, _ = run_scan_pipeline(
+                config_dir=LUA_FIXTURE_DIR,
+                no_live=True,
+                sidecar_path=sc_path,
+            )
+            self.assertTrue(doc.complete)
+            self.assertEqual(doc.stats.sidecar.overrides, 2)
+            self.assertEqual(doc.stats.sidecar.matched, 1)
+            self.assertEqual(doc.stats.sidecar.unmatched, 1)
+
+            alt_tabs = [b for b in doc.binds if b.modifiers == ["ALT"] and b.key == "Tab"]
+            self.assertEqual(len(alt_tabs), 2)
+            for b in alt_tabs:
+                self.assertEqual(b.description_effective.text, "Switch active window")
+                self.assertEqual(b.description_effective.source, "sidecar")
+
+            ambig_diags = [d for d in doc.diagnostics if d.code == "sidecar_ambiguous"]
+            self.assertEqual(len(ambig_diags), 1)
+            self.assertEqual(ambig_diags[0].level, "info")
+            for b in alt_tabs:
+                self.assertIn(b.id, ambig_diags[0].message)
+
+            unmatched_diags = [d for d in doc.diagnostics if d.code == "sidecar_unmatched"]
+            self.assertEqual(len(unmatched_diags), 1)
+            self.assertEqual(unmatched_diags[0].level, "warning")
+            self.assertIn("1", unmatched_diags[0].message)
+
+        # Step 2: Match ALT+Tab WITH dispatcher => hits only one and emits no sidecar_ambiguous
+        sidecar_specific = {
+            "version": 1,
+            "overrides": [
+                {
+                    "match": {
+                        "modifiers": ["ALT"],
+                        "key": "Tab",
+                        "dispatcher": "cycle_next",
+                    },
+                    "description": "Cycle next window only",
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as ext_dir:
+            sc_path = os.path.join(ext_dir, "specific.json")
+            with open(sc_path, "w", encoding="utf-8") as f:
+                json.dump(sidecar_specific, f)
+
+            doc2, _ = run_scan_pipeline(
+                config_dir=LUA_FIXTURE_DIR,
+                no_live=True,
+                sidecar_path=sc_path,
+            )
+            b_cycle = _find_bind(doc2.binds, ["ALT"], "Tab", "cycle_next")
+            b_top = _find_bind(doc2.binds, ["ALT"], "Tab", "bring_to_top")
+            self.assertEqual(b_cycle.description_effective.text, "Cycle next window only")
+            self.assertEqual(b_cycle.description_effective.source, "sidecar")
+            self.assertEqual(b_top.description_effective.text, "Bring window to top")
+            self.assertEqual(b_top.description_effective.source, "derived")
+            self.assertEqual([d for d in doc2.diagnostics if d.code == "sidecar_ambiguous"], [])
+
+    def test_invalid_sidecar_emits_error_and_scan_completes(self) -> None:
+        invalid_payloads = [
+            "{not valid json",
+            json.dumps({"version": 2, "overrides": []}),
+            json.dumps({"version": 1, "overrides": "not-a-list"}),
+            json.dumps(
+                {
+                    "version": 1,
+                    "overrides": [
+                        {
+                            "match": {"modifiers": ["SUPER"], "key": "Return"},
+                            "category": "NotACategory",
+                        }
+                    ],
+                }
+            ),
+            json.dumps(
+                {
+                    "version": 1,
+                    "overrides": [
+                        {
+                            "match": {"modifiers": ["SUPER"], "key": "Return"},
+                        }
+                    ],
+                }
+            ),
+        ]
+        with tempfile.TemporaryDirectory() as ext_dir:
+            for idx, payload in enumerate(invalid_payloads):
+                with self.subTest(case_idx=idx):
+                    sc_path = os.path.join(ext_dir, f"bad_{idx}.json")
+                    with open(sc_path, "w", encoding="utf-8") as f:
+                        f.write(payload)
+
+                    doc, rc = run_scan_pipeline(
+                        config_dir=LUA_FIXTURE_DIR,
+                        no_live=True,
+                        sidecar_path=sc_path,
+                    )
+                    self.assertEqual(rc, 0)
+                    self.assertTrue(doc.complete)
+                    self.assertFalse(doc.stats.sidecar.loaded)
+                    inv_diags = [d for d in doc.diagnostics if d.code == "sidecar_invalid"]
+                    self.assertEqual(len(inv_diags), 1)
+                    self.assertEqual(inv_diags[0].level, "error")
+                    b_ret = _find_bind(doc.binds, ["SUPER"], "Return")
+                    self.assertEqual(b_ret.description_effective.text, "Launch kitty")
+                    self.assertEqual(b_ret.description_effective.source, "derived")
+                    assert_valid_scan_dict(doc.to_dict())
 
 
 if __name__ == "__main__":

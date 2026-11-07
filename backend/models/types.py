@@ -266,6 +266,24 @@ class SandboxStats:
 
 
 @dataclass(slots=True)
+class SidecarStats:
+    path: str | None = None
+    loaded: bool = False
+    overrides: int = 0
+    matched: int = 0
+    unmatched: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "loaded": self.loaded,
+            "matched": self.matched,
+            "overrides": self.overrides,
+            "path": self.path,
+            "unmatched": self.unmatched,
+        }
+
+
+@dataclass(slots=True)
 class StatsRecord:
     total_binds: int = 0
     by_type: dict[str, int] = field(default_factory=dict)
@@ -279,6 +297,7 @@ class StatsRecord:
     ignored_calls: dict[str, int] = field(default_factory=dict)
     ignored_keywords: dict[str, int] = field(default_factory=dict)
     sandbox: SandboxStats | None = None
+    sidecar: SidecarStats = field(default_factory=SidecarStats)
 
     def to_dict(self) -> dict[str, Any]:
         res: dict[str, Any] = {
@@ -290,6 +309,7 @@ class StatsRecord:
             "ignored_calls": dict(sorted(self.ignored_calls.items())),
             "ignored_keywords": dict(sorted(self.ignored_keywords.items())),
             "partial": self.partial,
+            "sidecar": self.sidecar.to_dict(),
             "total_binds": self.total_binds,
             "unresolved": self.unresolved,
             "unsupported": self.unsupported,
