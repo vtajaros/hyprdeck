@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from typing import Any
 
-from backend.describe import load_and_apply_sidecar
+from backend.describe import build_sidecar_template, load_and_apply_sidecar
 from backend.discovery import (
     DiscoveryError,
     discover_config,
@@ -73,6 +74,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable optional live hyprctl probing during discovery.",
     )
+    scan_p.add_argument(
+        "--sidecar",
+        dest="sidecar",
+        default=None,
+        help="Explicit path to a sidecar descriptions.json override file.",
+    )
+    scan_p.add_argument(
+        "--no-sidecar",
+        dest="no_sidecar",
+        action="store_true",
+        help="Disable loading any sidecar overrides.",
+    )
 
     # summary subcommand
     sum_p = subparsers.add_parser(
@@ -96,6 +109,48 @@ def build_arg_parser() -> argparse.ArgumentParser:
         dest="no_live",
         action="store_true",
         help="Disable optional live hyprctl probing during discovery.",
+    )
+    sum_p.add_argument(
+        "--sidecar",
+        dest="sidecar",
+        default=None,
+        help="Explicit path to a sidecar descriptions.json override file.",
+    )
+    sum_p.add_argument(
+        "--no-sidecar",
+        dest="no_sidecar",
+        action="store_true",
+        help="Disable loading any sidecar overrides.",
+    )
+
+    # sidecar-template subcommand
+    tpl_p = subparsers.add_parser(
+        "sidecar-template",
+        help="Print a valid sidecar descriptions.json template to stdout.",
+    )
+    tpl_p.add_argument(
+        "--all",
+        dest="include_all",
+        action="store_true",
+        help="Scan current config and emit an override entry per unique keybind.",
+    )
+    tpl_p.add_argument(
+        "--config-dir",
+        dest="config_dir",
+        default=None,
+        help="Override Hyprland configuration directory (used with --all).",
+    )
+    tpl_p.add_argument(
+        "--entrypoint",
+        dest="entrypoint",
+        default=None,
+        help="Override entrypoint configuration file (used with --all).",
+    )
+    tpl_p.add_argument(
+        "--no-live",
+        dest="no_live",
+        action="store_true",
+        help="Disable optional live hyprctl probing during discovery (used with --all).",
     )
 
     return parser
@@ -209,7 +264,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.subcommand:
         parser.print_usage(sys.stderr)
-        sys.stderr.write("hks: error: subcommand required (choose from 'scan', 'summary')\n")
+        sys.stderr.write(
+            "hks: error: subcommand required (choose from 'scan', 'summary', 'sidecar-template')\n"
+        )
         return 2
 
     try:
@@ -219,6 +276,8 @@ def main(argv: list[str] | None = None) -> int:
                 entrypoint=args.entrypoint,
                 no_live=args.no_live,
                 with_oracle=args.oracle,
+                sidecar_path=args.sidecar,
+                no_sidecar=args.no_sidecar,
             )
             sys.stdout.write(serialize_scan_document(doc, compact=args.compact) + "\n")
             sys.stdout.flush()
@@ -230,8 +289,26 @@ def main(argv: list[str] | None = None) -> int:
                 entrypoint=args.entrypoint,
                 no_live=args.no_live,
                 with_oracle=False,
+                sidecar_path=args.sidecar,
+                no_sidecar=args.no_sidecar,
             )
             sys.stdout.write(format_summary_table(doc) + "\n")
+            sys.stdout.flush()
+            return 0
+
+        if args.subcommand == "sidecar-template":
+            if args.include_all:
+                doc, _ = run_scan_pipeline(
+                    config_dir=args.config_dir,
+                    entrypoint=args.entrypoint,
+                    no_live=args.no_live,
+                    with_oracle=False,
+                    no_sidecar=True,
+                )
+                tpl = build_sidecar_template(binds=doc.binds, include_all=True)
+            else:
+                tpl = build_sidecar_template(include_all=False)
+            sys.stdout.write(json.dumps(tpl, indent=2, ensure_ascii=False) + "\n")
             sys.stdout.flush()
             return 0
     except DiscoveryError as exc:

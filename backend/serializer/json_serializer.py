@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 from typing import Any
 
 import backend
@@ -71,9 +72,19 @@ def serialize_scan_document(doc: ScanDocument, compact: bool = False) -> str:
     )
 
 
+def _truncate_cell(value: str, width: int) -> str:
+    if len(value) <= width:
+        return value
+    if width <= 3:
+        return value[:width]
+    return value[: width - 3] + "..."
+
+
 def format_summary_table(doc: ScanDocument) -> str:
-    """Format a plain-text summary table: SHORTCUT | DISPATCHER | ARGS | file:line."""
-    rows: list[tuple[str, str, str, str]] = []
+    """Format a plain-text summary table within 120 columns:
+    SHORTCUT | DISPATCHER | ARGS | DESCRIPTION | CATEGORY | file:line
+    """
+    rows: list[tuple[str, str, str, str, str, str]] = []
     for b in doc.binds:
         if b.modifiers:
             shortcut = " + ".join([*b.modifiers, b.key])
@@ -81,22 +92,43 @@ def format_summary_table(doc: ScanDocument) -> str:
             shortcut = b.key
         dsp = b.dispatcher.path
         args = b.dispatcher.arg_summary
-        loc = f"{b.source_file}:{b.source_line}"
-        rows.append((shortcut, dsp, args, loc))
+        desc = b.description_effective.text
+        cat = b.category
+        loc = f"{os.path.basename(b.source_file)}:{b.source_line}"
+        rows.append((shortcut, dsp, args, desc, cat, loc))
 
-    headers = ("SHORTCUT", "DISPATCHER", "ARGS", "file:line")
-    w0 = max([len(headers[0]), *(len(r[0]) for r in rows)], default=len(headers[0]))
-    w1 = max([len(headers[1]), *(len(r[1]) for r in rows)], default=len(headers[1]))
-    w2 = min(48, max([len(headers[2]), *(len(r[2]) for r in rows)], default=len(headers[2])))
+    headers = ("SHORTCUT", "DISPATCHER", "ARGS", "DESCRIPTION", "CATEGORY", "file:line")
+    w0 = min(22, max([len(headers[0]), *(len(r[0]) for r in rows)], default=len(headers[0])))
+    w1 = min(22, max([len(headers[1]), *(len(r[1]) for r in rows)], default=len(headers[1])))
+    w3 = min(28, max([len(headers[3]), *(len(r[3]) for r in rows)], default=len(headers[3])))
+    w4 = min(16, max([len(headers[4]), *(len(r[4]) for r in rows)], default=len(headers[4])))
+    w5 = min(18, max([len(headers[5]), *(len(r[5]) for r in rows)], default=len(headers[5])))
+
+    # 5 separators of " | " take 15 columns; keep total table width <= 120 columns
+    max_args_width = max(len(headers[2]), 120 - (w0 + w1 + w3 + w4 + w5 + 15))
+    w2 = min(max_args_width, max([len(headers[2]), *(len(r[2]) for r in rows)], default=len(headers[2])))
 
     lines: list[str] = []
-    header_line = f"{headers[0]:<{w0}} | {headers[1]:<{w1}} | {headers[2]:<{w2}} | {headers[3]}"
-    sep_line = f"{'-' * w0}-+-{'-' * w1}-+-{'-' * w2}-+-{'-' * len(headers[3])}"
+    header_line = (
+        f"{headers[0]:<{w0}} | {headers[1]:<{w1}} | {headers[2]:<{w2}} | "
+        f"{headers[3]:<{w3}} | {headers[4]:<{w4}} | {headers[5]}"
+    )
+    sep_line = (
+        f"{'-' * w0}-+-{'-' * w1}-+-{'-' * w2}-+-"
+        f"{'-' * w3}-+-{'-' * w4}-+-{'-' * max(len(headers[5]), w5)}"
+    )
     lines.append(header_line)
     lines.append(sep_line)
-    for sc, dsp, arg_str, loc in rows:
-        trunc_arg = arg_str if len(arg_str) <= w2 else (arg_str[: w2 - 3] + "...")
-        lines.append(f"{sc:<{w0}} | {dsp:<{w1}} | {trunc_arg:<{w2}} | {loc}")
+    for sc, dsp, arg_str, desc, cat, loc in rows:
+        c0 = _truncate_cell(sc, w0)
+        c1 = _truncate_cell(dsp, w1)
+        c2 = _truncate_cell(arg_str, w2)
+        c3 = _truncate_cell(desc, w3)
+        c4 = _truncate_cell(cat, w4)
+        c5 = _truncate_cell(loc, w5)
+        lines.append(
+            f"{c0:<{w0}} | {c1:<{w1}} | {c2:<{w2}} | {c3:<{w3}} | {c4:<{w4}} | {c5}"
+        )
 
     if doc.stats.sandbox is not None:
         sb = doc.stats.sandbox

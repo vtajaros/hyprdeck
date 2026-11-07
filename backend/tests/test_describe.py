@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 
-from backend.cli import run_scan_pipeline
-from backend.describe.sidecar import resolve_sidecar_path
+from backend.cli import main, run_scan_pipeline
+from backend.describe.sidecar import resolve_sidecar_path, validate_sidecar_data
 from backend.parser.hyprlang_parser import parse_hyprlang_config
 from backend.parser.lua_normalizer import parse_lua_config
 from backend.validation import assert_valid_scan_dict
@@ -459,6 +461,141 @@ hl.bind("SUPER + SHIFT + Return", hl.dsp.exec_cmd("alacritty"))
                     self.assertEqual(b_ret.description_effective.text, "Launch kitty")
                     self.assertEqual(b_ret.description_effective.source, "derived")
                     assert_valid_scan_dict(doc.to_dict())
+
+
+class TestPhase2aCLI(unittest.TestCase):
+    def test_summary_columns_and_width_limit(self) -> None:
+        out_buf = io.StringIO()
+        err_buf = io.StringIO()
+        with redirect_stdout(out_buf), redirect_stderr(err_buf):
+            rc = main(
+                [
+                    "summary",
+                    "--config-dir",
+                    LUA_FIXTURE_DIR,
+                    "--no-live",
+                    "--no-sidecar",
+                ]
+            )
+        self.assertEqual(rc, 0)
+        lines = out_buf.getvalue().splitlines()
+        self.assertGreater(len(lines), 10)
+        header = lines[0]
+        self.assertIn("SHORTCUT", header)
+        self.assertIn("DISPATCHER", header)
+        self.assertIn("ARGS", header)
+        self.assertIn("DESCRIPTION", header)
+        self.assertIn("CATEGORY", header)
+        self.assertIn("file:line", header)
+
+        # Every table row (excluding footer Sandbox: line) fits in 120 columns
+        for row_line in lines[:-1]:
+            self.assertLessEqual(
+                len(row_line),
+                120,
+                f"Summary table row exceeds 120 columns ({len(row_line)}): {row_line!r}",
+            )
+
+        full_table = out_buf.getvalue()
+        self.assertIn("Launch kitty", full_table)
+        self.assertIn("Apps", full_table)
+        self.assertIn("Launch hyprlock", full_table)
+        self.assertIn("System", full_table)
+        self.assertIn("Media & Hardware", full_table)
+        self.assertIn("Close window", full_table)
+        self.assertIn("Windows", full_table)
+        self.assertIn("Switch to workspace 1", full_table)
+        self.assertIn("Workspaces", full_table)
+        self.assertIn("Drag window with mouse", full_table)
+        self.assertIn("Mouse", full_table)
+
+    def test_sidecar_template_default_and_all(self) -> None:
+        # 1) Default template (1 example, valid sidecar JSON, no file writes)
+        out_default = io.StringIO()
+        with redirect_stdout(out_default), redirect_stderr(io.StringIO()):
+            rc1 = main(["sidecar-template"])
+        self.assertEqual(rc1, 0)
+        parsed_default = json.loads(out_default.getvalue())
+        self.assertEqual(parsed_default["version"], 1)
+        self.assertIn("_note", parsed_default)
+        self.assertEqual(len(parsed_default["overrides"]), 1)
+        self.assertIn("_note", parsed_default["overrides"][0])
+        validated_default = validate_sidecar_data(parsed_default)
+        self.assertEqual(len(validated_default), 1)
+
+        # 2) Full template (--all) on Lua fixture
+        out_all = io.StringIO()
+        with redirect_stdout(out_all), redirect_stderr(io.StringIO()):
+            rc2 = main(
+                [
+                    "sidecar-template",
+                    "--all",
+                    "--config-dir",
+                    LUA_FIXTURE_DIR,
+                    "--no-live",
+                ]
+            )
+        self.assertEqual(rc2, 0)
+        parsed_all = json.loads(out_all.getvalue())
+        self.assertEqual(parsed_all["version"], 1)
+        self.assertEqual(len(parsed_all["overrides"]), 68)
+        validated_all = validate_sidecar_data(parsed_all)
+        self.assertEqual(len(validated_all), 68)
+        first_ov = parsed_all["overrides"][0]
+        self.assertTrue(first_ov["_note"].startswith("hyprland.lua:"))
+        self.assertEqual(first_ov["description"], "Launch kitty")
+        self.assertEqual(first_ov["category"], "Apps")
+
+    def test_cli_scan_and_summary_with_sidecar_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as ext_dir:
+            sc_path = os.path.join(ext_dir, "cli_sidecar.json")
+            with open(sc_path, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "version": 1,
+                        "overrides": [
+                            {
+                                "match": {"modifiers": ["SUPER"], "key": "Return"},
+                                "description": "CLI Custom Terminal",
+                                "category": "System",
+                            }
+                        ],
+                    },
+                    f,
+                )
+
+            out_scan = io.StringIO()
+            with redirect_stdout(out_scan), redirect_stderr(io.StringIO()):
+                rc_scan = main(
+                    [
+                        "scan",
+                        "--config-dir",
+                        LUA_FIXTURE_DIR,
+                        "--no-live",
+                        "--sidecar",
+                        sc_path,
+                    ]
+                )
+            self.assertEqual(rc_scan, 0)
+            scan_data = json.loads(out_scan.getvalue())
+            assert_valid_scan_dict(scan_data)
+            self.assertTrue(scan_data["stats"]["sidecar"]["loaded"])
+            self.assertEqual(scan_data["stats"]["sidecar"]["matched"], 1)
+
+            out_sum = io.StringIO()
+            with redirect_stdout(out_sum), redirect_stderr(io.StringIO()):
+                rc_sum = main(
+                    [
+                        "summary",
+                        "--config-dir",
+                        LUA_FIXTURE_DIR,
+                        "--no-live",
+                        "--sidecar",
+                        sc_path,
+                    ]
+                )
+            self.assertEqual(rc_sum, 0)
+            self.assertIn("CLI Custom Terminal", out_sum.getvalue())
 
 
 if __name__ == "__main__":
