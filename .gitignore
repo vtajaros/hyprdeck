@@ -34,3 +34,7 @@ Thumbs.db
 *~
 *.swp
 *.swo
+
+# Local scan outputs and scratch directories
+*.scan.json
+/local/
