@@ -782,6 +782,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
             warnings=warnings,
             backup=result.backup,
             errors=result.errors,
+            bind_comparison=result.bind_comparison.to_dict() if result.bind_comparison else None,
         )
         sys.stdout.write(json.dumps(out_data, indent=2, ensure_ascii=False) + "\n")
         sys.stdout.flush()

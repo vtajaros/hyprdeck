@@ -8,12 +8,25 @@ Singleton {
 
     property var binds: []
     property var conflicts: []
+    property var disabledBinds: []
+    property var diagnostics: []
     property var stats: ({})
     property var environment: ({})
     property bool loading: true
     property string error: ""
     property var categories: []
     property var submaps: []
+
+    readonly property bool hasCompanionConf: {
+        if (!root.diagnostics) return false;
+        for (var i = 0; i < root.diagnostics.length; i++) {
+            var d = root.diagnostics[i];
+            if (d && (d.code === "conf_shadowed" || (d.message && d.message.indexOf("hyprland.conf") !== -1))) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     readonly property string rootPath: Quickshell.env("HKS_ROOT") || "."
     readonly property string fixturePath: Quickshell.env("HKS_FIXTURE") || ""
@@ -92,6 +105,8 @@ Singleton {
         root.error = "";
         root.binds = doc.binds || [];
         root.conflicts = doc.conflicts || [];
+        root.disabledBinds = doc.disabled_binds || [];
+        root.diagnostics = doc.diagnostics || [];
         root.stats = doc.stats || {};
         root.environment = doc.environment || {};
 

@@ -399,5 +399,106 @@ FloatingWindow {
                 color: HKS.alpha(HKS.muted, 0.7)
             }
         }
+
+        // Floating Toast Notification
+        Rectangle {
+            id: toastBox
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: statusBar.top
+            anchors.bottomMargin: 16
+            height: 38
+            width: toastRow.implicitWidth + 28
+            radius: 19
+            color: HKS.elevated
+            border.width: 1
+            border.color: HKS.alpha(HKS.accent, 0.5)
+            visible: EditService.toastVisible
+            z: 99
+
+            Row {
+                id: toastRow
+                anchors.centerIn: parent
+                spacing: 12
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: ""
+                    font.family: HKS.fontFamily
+                    font.pixelSize: 12
+                    color: HKS.accent
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: EditService.toastMessage
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSizeSmall
+                    font.weight: Font.DemiBold
+                    color: HKS.fg
+                }
+
+                // Undo Button (when canUndo is true)
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: EditService.canUndo
+                    height: 24
+                    width: undoTxt.implicitWidth + 16
+                    radius: 12
+                    color: undoMa.containsMouse ? HKS.alpha(HKS.accent, 0.3) : HKS.alpha(HKS.accent, 0.15)
+                    border.width: 1
+                    border.color: HKS.alpha(HKS.accent, 0.5)
+
+                    Text {
+                        id: undoTxt
+                        anchors.centerIn: parent
+                        text: "Undo"
+                        font.family: HKS.fontFamily
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        color: HKS.accent
+                    }
+
+                    MouseArea {
+                        id: undoMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: EditService.requestRestoreLatest()
+                    }
+                }
+
+                // Dismiss Button
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 20
+                    height: 20
+                    radius: 10
+                    color: dismissMa.containsMouse ? HKS.alpha(HKS.muted, 0.25) : "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        font.family: HKS.fontFamily
+                        font.pixelSize: 10
+                        color: HKS.muted
+                    }
+
+                    MouseArea {
+                        id: dismissMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: EditService.hideToast()
+                    }
+                }
+            }
+        }
+
+        // Confirmation Dialog Modal Overlay
+        EditConfirmDialog {
+            anchors.fill: parent
+            visible: EditService.dialogOpen
+            z: 100
+        }
     }
 }

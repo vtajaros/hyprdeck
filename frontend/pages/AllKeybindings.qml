@@ -221,7 +221,7 @@ Item {
         // Main List Area
         Item {
             width: parent.width
-            height: parent.height - y
+            height: parent.height - y - (companionBanner.visible ? (companionBanner.height + parent.spacing) : 0)
 
             // Loading state
             Item {
@@ -299,6 +299,40 @@ Item {
                         root.selectedIndex = index;
                         root.expandedIndex = (root.expandedIndex === index) ? -1 : index;
                     }
+                }
+            }
+        }
+
+        // Persistent Companion Warning Footer Banner
+        Rectangle {
+            id: companionBanner
+            width: parent.width
+            height: 26
+            radius: 4
+            color: HKS.alpha(HKS.muted, 0.12)
+            border.width: 1
+            border.color: HKS.alpha(HKS.muted, 0.25)
+            visible: (EditService.companionWarning.length > 0) || KeybindData.hasCompanionConf
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: ""
+                    font.family: HKS.fontFamily
+                    font.pixelSize: 11
+                    color: HKS.muted
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "hyprland.conf is not modified by HKS"
+                    font.family: HKS.fontFamily
+                    font.pixelSize: 10
+                    color: HKS.muted
+                    font.italic: true
                 }
             }
         }
