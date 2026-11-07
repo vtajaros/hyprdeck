@@ -46,7 +46,7 @@ Item {
             spacing: 12
 
             // Header Bar
-            Row {
+            Item {
                 width: parent.width
                 height: 28
 
@@ -374,7 +374,7 @@ Item {
                 }
 
                 // Action Buttons Row
-                Row {
+                Item {
                     width: parent.width
                     height: 32
 

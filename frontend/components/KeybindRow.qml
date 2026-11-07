@@ -55,6 +55,14 @@ Rectangle {
             width: parent.width
             height: Math.max(shortcutCol.implicitHeight, Math.max(descCol.implicitHeight, Math.max(badgesCol.implicitHeight, 28)))
 
+            MouseArea {
+                id: mouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.toggleExpand()
+            }
+
             // 1. Shortcut column: fixed width ~300px, content left-aligned, keycaps never wrap or overlap
             Item {
                 id: shortcutCol
@@ -415,13 +423,5 @@ Rectangle {
                 }
             }
         }
-    }
-
-    MouseArea {
-        id: mouseArea
-        anchors.fill: topRowItem
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.toggleExpand()
     }
 }

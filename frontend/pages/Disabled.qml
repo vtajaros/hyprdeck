@@ -39,7 +39,7 @@ Item {
         spacing: HKS.space16
 
         // Page Header
-        Row {
+        Item {
             width: parent.width
             height: 36
 
