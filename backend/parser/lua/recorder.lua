@@ -1,0 +1,2 @@
+-- Hyprland Keybind Studio (HKS) Sandboxed Lua Bind Recorder
+-- Phase 1 implementation populated in step 3.

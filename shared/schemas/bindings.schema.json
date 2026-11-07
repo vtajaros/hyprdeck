@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hyprland-keybind-studio.local/schemas/bindings.schema.json",
+  "title": "Hyprland Keybind Studio Normalized Scan Output (v1)",
+  "type": "object"
+}
