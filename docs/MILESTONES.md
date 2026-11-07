@@ -33,6 +33,18 @@
 
 ---
 
+## Phase 2b-0 Milestones (Conflict & Duplicate Detection)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Conflict detection algorithm & duplicate classification | `backend/conflicts/detect.py`, `backend/conflicts/__init__.py` | [x] Complete |
+| Additive schema fields (`conflicts`, `binds[].conflict_ids`, `stats.conflicts`) | `shared/schemas/bindings.schema.json`, `backend/models/types.py` | [x] Complete |
+| CLI `conflicts` table command & plain-text formatter | `backend/cli.py`, `backend/serializer/json_serializer.py` | [x] Complete |
+| Parity & synthetic conflict detection unit tests | `backend/tests/test_conflicts.py` | [x] Complete |
+| Phase 2b-0 documentation & design rationale | `docs/PHASE2B0.md`, `docs/MILESTONES.md` | [x] Complete |
+
+---
+
 ## Verified on Real Config
 
 - **Binds**: 126 binds
