@@ -124,7 +124,9 @@ def discover_config(
     diagnostics: list[Diagnostic] = []
     shadowed: list[ShadowedFile] = []
 
+    entrypoint_source = "auto"
     if entrypoint is not None:
+        entrypoint_source = "explicit"
         exp_entry = os.path.expanduser(entrypoint)
         if config_dir is not None:
             resolved_dir = os.path.abspath(os.path.expanduser(config_dir))
@@ -157,6 +159,27 @@ def discover_config(
                 ShadowedFile(
                     path=lua_default,
                     reason="explicit --entrypoint selected hyprland.conf over hyprland.lua",
+                )
+            )
+    elif config_dir is not None and os.path.isfile(os.path.expanduser(config_dir)):
+        entrypoint_source = "explicit"
+        resolved_entry = os.path.abspath(os.path.expanduser(config_dir))
+        resolved_dir = os.path.dirname(resolved_entry)
+        language = "lua" if resolved_entry.endswith(".lua") else "hyprlang"
+        lua_default = os.path.join(resolved_dir, "hyprland.lua")
+        conf_default = os.path.join(resolved_dir, "hyprland.conf")
+        if resolved_entry == lua_default and os.path.isfile(conf_default):
+            shadowed.append(
+                ShadowedFile(
+                    path=conf_default,
+                    reason="hyprland.lua takes precedence over hyprland.conf",
+                )
+            )
+        elif resolved_entry == conf_default and os.path.isfile(lua_default):
+            shadowed.append(
+                ShadowedFile(
+                    path=lua_default,
+                    reason="explicit entrypoint selected hyprland.conf over hyprland.lua",
                 )
             )
     else:
@@ -208,18 +231,19 @@ def discover_config(
             detected_by = "live-hyprctl"
         else:
             detected_by = "file-precedence"
-            diagnostics.append(
-                Diagnostic(
-                    level="warning",
-                    code="entrypoint_live_mismatch",
-                    message=(
-                        f"File precedence selected {language} ({os.path.basename(resolved_entry)}), "
-                        f"but live hyprctl binds indicate {live_lang} is currently active."
-                    ),
-                    file=resolved_entry,
-                    line=1,
+            if entrypoint_source == "auto":
+                diagnostics.append(
+                    Diagnostic(
+                        level="warning",
+                        code="entrypoint_live_mismatch",
+                        message=(
+                            f"File precedence selected {language} ({os.path.basename(resolved_entry)}), "
+                            f"but live hyprctl binds indicate {live_lang} is currently active."
+                        ),
+                        file=resolved_entry,
+                        line=1,
+                    )
                 )
-            )
 
     entry_record = build_file_record(resolved_entry, role="entrypoint")
     env_info = EnvironmentInfo(
@@ -227,6 +251,7 @@ def discover_config(
         entrypoint=resolved_entry,
         language=language,
         detected_by=detected_by,
+        entrypoint_source=entrypoint_source,
         shadowed=shadowed,
         hyprland_version=hypr_version,
         python=platform.python_version(),

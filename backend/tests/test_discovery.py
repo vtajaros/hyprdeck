@@ -88,16 +88,37 @@ class TestDiscovery(unittest.TestCase):
             self.assertEqual(res_agree.environment.detected_by, "live-hyprctl")
             self.assertEqual(res_agree.diagnostics, [])
 
-            # Live disagrees (reports hyprlang dispatcher)
+            # Live disagrees (reports hyprlang dispatcher) - auto entrypoint
             res_mismatch = discover_config(
                 config_dir=tmpdir,
                 no_live=True,
                 live_binds_override=[{"dispatcher": "exec", "key": "Q"}],
             )
             self.assertEqual(res_mismatch.environment.detected_by, "file-precedence")
+            self.assertEqual(res_mismatch.environment.entrypoint_source, "auto")
             self.assertEqual(len(res_mismatch.diagnostics), 1)
             self.assertEqual(res_mismatch.diagnostics[0].code, "entrypoint_live_mismatch")
             self.assertEqual(res_mismatch.diagnostics[0].level, "warning")
+
+            # Explicit entrypoint with live disagreement => no warning, entrypoint_source == "explicit"
+            res_explicit = discover_config(
+                entrypoint=lua_path,
+                no_live=True,
+                live_binds_override=[{"dispatcher": "exec", "key": "Q"}],
+            )
+            self.assertEqual(res_explicit.environment.detected_by, "file-precedence")
+            self.assertEqual(res_explicit.environment.entrypoint_source, "explicit")
+            self.assertEqual(res_explicit.diagnostics, [])
+
+            # Explicit via config_dir with explicit file => no warning, entrypoint_source == "explicit"
+            res_explicit_file = discover_config(
+                config_dir=lua_path,
+                no_live=True,
+                live_binds_override=[{"dispatcher": "exec", "key": "Q"}],
+            )
+            self.assertEqual(res_explicit_file.environment.detected_by, "file-precedence")
+            self.assertEqual(res_explicit_file.environment.entrypoint_source, "explicit")
+            self.assertEqual(res_explicit_file.diagnostics, [])
 
 
 if __name__ == "__main__":

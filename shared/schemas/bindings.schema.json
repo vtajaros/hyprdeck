@@ -39,6 +39,7 @@
       "required": [
         "config_dir",
         "entrypoint",
+        "entrypoint_source",
         "language",
         "detected_by",
         "shadowed",
@@ -48,6 +49,10 @@
       "properties": {
         "config_dir": { "type": "string", "minLength": 1 },
         "entrypoint": { "type": "string", "minLength": 1 },
+        "entrypoint_source": {
+          "type": "string",
+          "enum": ["auto", "explicit"]
+        },
         "language": { "type": "string", "enum": ["lua", "hyprlang"] },
         "detected_by": {
           "type": "string",

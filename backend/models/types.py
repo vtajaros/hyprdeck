@@ -42,6 +42,7 @@ class EnvironmentInfo:
     entrypoint: str
     language: str  # "lua" | "hyprlang"
     detected_by: str  # "file-precedence" | "live-hyprctl"
+    entrypoint_source: str = "auto"  # "auto" | "explicit"
     shadowed: list[ShadowedFile] = field(default_factory=list)
     hyprland_version: str | None = None
     python: str = ""
@@ -51,6 +52,7 @@ class EnvironmentInfo:
             "config_dir": self.config_dir,
             "detected_by": self.detected_by,
             "entrypoint": self.entrypoint,
+            "entrypoint_source": self.entrypoint_source,
             "hyprland_version": self.hyprland_version,
             "language": self.language,
             "python": self.python,
