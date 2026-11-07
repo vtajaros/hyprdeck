@@ -10,6 +10,7 @@ from typing import Any
 import backend
 from backend.models.types import (
     BindRecord,
+    ConflictRecord,
     Diagnostic,
     EnvironmentInfo,
     FileRecord,
@@ -27,6 +28,7 @@ def make_scan_document(
     diagnostics: list[Diagnostic],
     stats: StatsRecord,
     complete: bool,
+    conflicts: list[ConflictRecord] | None = None,
     oracle: dict[str, Any] | None = None,
     generated_at: str | None = None,
 ) -> ScanDocument:
@@ -50,6 +52,7 @@ def make_scan_document(
         diagnostics=diagnostics,
         stats=stats,
         complete=complete,
+        conflicts=conflicts if conflicts is not None else [],
         oracle=oracle,
     )
 

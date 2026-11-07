@@ -184,6 +184,7 @@ class BindRecord:
     )
     category: str = "Other"
     category_source: str = "derived"  # "sidecar" | "derived"
+    conflict_ids: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -191,6 +192,7 @@ class BindRecord:
             "bind_type": self.bind_type,
             "category": self.category,
             "category_source": self.category_source,
+            "conflict_ids": list(self.conflict_ids),
             "declared_via": self.declared_via,
             "description": self.description,
             "description_effective": self.description_effective.to_dict(),
@@ -284,6 +286,47 @@ class SidecarStats:
 
 
 @dataclass(slots=True)
+class ConflictStats:
+    total: int = 0
+    duplicate: int = 0
+    multiple_actions: int = 0
+
+    def to_dict(self) -> dict[str, int]:
+        return {
+            "duplicate": self.duplicate,
+            "multiple_actions": self.multiple_actions,
+            "total": self.total,
+        }
+
+
+@dataclass(slots=True)
+class ConflictRecord:
+    id: str
+    kind: str  # "duplicate" | "multiple_actions"
+    severity: str  # "warning" | "info"
+    submap: str
+    modifiers: list[str]
+    key: str
+    bind_ids: list[str]
+    sources: list[dict[str, Any]]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "bind_ids": list(self.bind_ids),
+            "id": self.id,
+            "key": self.key,
+            "kind": self.kind,
+            "modifiers": list(self.modifiers),
+            "severity": self.severity,
+            "sources": [
+                {"file": s["file"], "line": s["line"]}
+                for s in self.sources
+            ],
+            "submap": self.submap,
+        }
+
+
+@dataclass(slots=True)
 class StatsRecord:
     total_binds: int = 0
     by_type: dict[str, int] = field(default_factory=dict)
@@ -298,12 +341,14 @@ class StatsRecord:
     ignored_keywords: dict[str, int] = field(default_factory=dict)
     sandbox: SandboxStats | None = None
     sidecar: SidecarStats = field(default_factory=SidecarStats)
+    conflicts: ConflictStats = field(default_factory=ConflictStats)
 
     def to_dict(self) -> dict[str, Any]:
         res: dict[str, Any] = {
             "by_dispatcher_path": dict(sorted(self.by_dispatcher_path.items())),
             "by_modmask": dict(sorted(self.by_modmask.items(), key=lambda kv: int(kv[0]))),
             "by_type": dict(sorted(self.by_type.items())),
+            "conflicts": self.conflicts.to_dict(),
             "flag_counts": dict(sorted(self.flag_counts.items())),
             "generated_binds": self.generated_binds,
             "ignored_calls": dict(sorted(self.ignored_calls.items())),
@@ -331,12 +376,14 @@ class ScanDocument:
     diagnostics: list[Diagnostic]
     stats: StatsRecord
     complete: bool
+    conflicts: list[ConflictRecord] = field(default_factory=list)
     oracle: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         res: dict[str, Any] = {
             "binds": [b.to_dict() for b in self.binds],
             "complete": self.complete,
+            "conflicts": [c.to_dict() for c in self.conflicts],
             "diagnostics": [d.to_dict() for d in self.diagnostics],
             "environment": self.environment.to_dict(),
             "files": [f.to_dict() for f in self.files],

@@ -13,7 +13,8 @@
     "unbinds",
     "diagnostics",
     "stats",
-    "complete"
+    "complete",
+    "conflicts"
   ],
   "additionalProperties": false,
   "properties": {
@@ -110,6 +111,7 @@
           "description_effective",
           "category",
           "category_source",
+          "conflict_ids",
           "dispatcher",
           "submap",
           "source_file",
@@ -198,6 +200,10 @@
           "category_source": {
             "type": "string",
             "enum": ["sidecar", "derived"]
+          },
+          "conflict_ids": {
+            "type": "array",
+            "items": { "type": "string" }
           },
           "dispatcher": {
             "type": "object",
@@ -302,7 +308,8 @@
         "unresolved",
         "ignored_calls",
         "ignored_keywords",
-        "sidecar"
+        "sidecar",
+        "conflicts"
       ],
       "additionalProperties": false,
       "properties": {
@@ -310,6 +317,20 @@
         "by_type": {
           "type": "object",
           "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "conflicts": {
+          "type": "object",
+          "required": [
+            "total",
+            "duplicate",
+            "multiple_actions"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "total": { "type": "integer", "minimum": 0 },
+            "duplicate": { "type": "integer", "minimum": 0 },
+            "multiple_actions": { "type": "integer", "minimum": 0 }
+          }
         },
         "by_dispatcher_path": {
           "type": "object",
@@ -369,6 +390,44 @@
             "overrides": { "type": "integer", "minimum": 0 },
             "matched": { "type": "integer", "minimum": 0 },
             "unmatched": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "submap",
+          "modifiers",
+          "key",
+          "bind_ids",
+          "sources"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string", "enum": ["duplicate", "multiple_actions"] },
+          "severity": { "type": "string", "enum": ["warning", "info"] },
+          "submap": { "type": "string" },
+          "modifiers": { "type": "array", "items": { "type": "string" } },
+          "key": { "type": "string" },
+          "bind_ids": { "type": "array", "items": { "type": "string" } },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["file", "line"],
+              "additionalProperties": false,
+              "properties": {
+                "file": { "type": "string" },
+                "line": { "type": "integer", "minimum": 0 }
+              }
+            }
           }
         }
       }

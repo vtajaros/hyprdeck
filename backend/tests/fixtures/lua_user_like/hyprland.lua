@@ -90,10 +90,11 @@ hl.bind(mainMod .. " + N",              hl.dsp.exec_cmd("dunstctl history-pop ||
 hl.bind(mainMod .. " + M",              hl.dsp.window.fullscreen({ mode = "maximized" }))
 hl.bind(mainMod .. " + J",              hl.dsp.layout("togglesplit"))
 
--- Two binds on ALT + Tab (both must be kept!)
+-- Two binds on ALT + Tab and ALT + SHIFT + Tab (stacked pairs)
 hl.bind("ALT + Tab",                    hl.dsp.window.cycle_next())
 hl.bind("ALT + Tab",                    hl.dsp.window.bring_to_top())
 hl.bind("ALT + SHIFT + Tab",            hl.dsp.window.cycle_next({ prev = true }))
+hl.bind("ALT + SHIFT + Tab",            hl.dsp.window.bring_to_top())
 
 -- Loop over {"ALT", mainMod .. " + ALT"} with 4 focus binds (8 binds total)
 for _, fmod in ipairs({ "ALT", mainMod .. " + ALT" }) do

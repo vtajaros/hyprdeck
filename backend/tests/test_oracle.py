@@ -117,7 +117,7 @@ class TestOracleAndCLI(unittest.TestCase):
         self.assertEqual(rc, 0)
         parsed = json.loads(out_buf.getvalue().strip())
         assert_valid_scan_dict(parsed)
-        self.assertEqual(parsed["stats"]["total_binds"], 68)
+        self.assertEqual(parsed["stats"]["total_binds"], 69)
 
         out_sum = io.StringIO()
         with redirect_stdout(out_sum), redirect_stderr(err_buf):

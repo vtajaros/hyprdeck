@@ -53,12 +53,12 @@ class TestLuaUserLikeFixture(unittest.TestCase):
         self.assertEqual(self.files[1].role, "loaded")
 
     def test_exact_bind_and_call_site_counts(self) -> None:
-        # 33 distinct call sites expanding to 68 total binds (46 generated, 22 static)
-        self.assertEqual(len(self.binds), 68)
-        self.assertEqual(self.stats.total_binds, 68)
+        # 34 distinct call sites expanding to 69 total binds (46 generated, 23 static)
+        self.assertEqual(len(self.binds), 69)
+        self.assertEqual(self.stats.total_binds, 69)
         self.assertEqual(self.stats.generated_binds, 46)
         distinct_sites = {(b.source_file, b.source_line) for b in self.binds}
-        self.assertEqual(len(distinct_sites), 33)
+        self.assertEqual(len(distinct_sites), 34)
 
     def test_mouse_binds_and_source_lines(self) -> None:
         mouse_binds = [b for b in self.binds if b.flags["mouse"]]

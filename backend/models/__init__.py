@@ -3,6 +3,8 @@
 from backend.models.types import (
     VALID_CATEGORIES,
     BindRecord,
+    ConflictRecord,
+    ConflictStats,
     DescriptionEffective,
     Diagnostic,
     DispatcherInfo,
@@ -20,6 +22,8 @@ from backend.models.types import (
 
 __all__ = [
     "BindRecord",
+    "ConflictRecord",
+    "ConflictStats",
     "DescriptionEffective",
     "Diagnostic",
     "DispatcherInfo",

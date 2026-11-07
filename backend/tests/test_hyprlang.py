@@ -41,7 +41,7 @@ class TestHyprlangParser(unittest.TestCase):
             self.assertTrue(complete)
             self.assertEqual(diags, [])
             self.assertEqual(unbinds, [])
-            self.assertEqual(len(binds), 16)
+            self.assertEqual(len(binds), 18)
             self.assertEqual(
                 [os.path.basename(f.path) for f in files],
                 ["hyprland.conf", "theme-colors.conf"],

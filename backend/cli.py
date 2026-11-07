@@ -7,13 +7,19 @@ import json
 import sys
 from typing import Any
 
+from backend.conflicts import detect_conflicts
 from backend.describe import build_sidecar_template, load_and_apply_sidecar
 from backend.discovery import (
     DiscoveryError,
     discover_config,
     probe_hyprctl_binds,
 )
-from backend.models.types import Diagnostic, ScanDocument, UnbindRecord
+from backend.models.types import (
+    ConflictStats,
+    Diagnostic,
+    ScanDocument,
+    UnbindRecord,
+)
 from backend.parser import parse_hyprlang_config, parse_lua_config
 from backend.serializer import (
     format_summary_table,
@@ -203,6 +209,13 @@ def run_scan_pipeline(
     stats.sidecar = sidecar_stats
     all_diagnostics.extend(sidecar_diags)
 
+    conflicts = detect_conflicts(binds)
+    stats.conflicts = ConflictStats(
+        total=len(conflicts),
+        duplicate=sum(1 for c in conflicts if c.kind == "duplicate"),
+        multiple_actions=sum(1 for c in conflicts if c.kind == "multiple_actions"),
+    )
+
     oracle_dict: dict[str, Any] | None = None
     exit_code = 0
 
@@ -250,6 +263,7 @@ def run_scan_pipeline(
         diagnostics=all_diagnostics,
         stats=stats,
         complete=complete,
+        conflicts=conflicts,
         oracle=oracle_dict,
     )
     return doc, exit_code

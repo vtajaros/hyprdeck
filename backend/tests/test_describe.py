@@ -538,9 +538,9 @@ class TestPhase2aCLI(unittest.TestCase):
         self.assertEqual(rc2, 0)
         parsed_all = json.loads(out_all.getvalue())
         self.assertEqual(parsed_all["version"], 1)
-        self.assertEqual(len(parsed_all["overrides"]), 68)
+        self.assertEqual(len(parsed_all["overrides"]), 69)
         validated_all = validate_sidecar_data(parsed_all)
-        self.assertEqual(len(validated_all), 68)
+        self.assertEqual(len(validated_all), 69)
         first_ov = parsed_all["overrides"][0]
         self.assertTrue(first_ov["_note"].startswith("hyprland.lua:"))
         self.assertEqual(first_ov["description"], "Launch kitty")
