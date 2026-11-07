@@ -221,6 +221,19 @@ Singleton {
         return parts;
     }
 
+    function parseShortcutString(str) {
+        if (!str) return [];
+        var raw = String(str).split("+");
+        var res = [];
+        for (var i = 0; i < raw.length; i++) {
+            var p = raw[i].trim();
+            if (p.length > 0) {
+                res.push(friendlyKey(p));
+            }
+        }
+        return res;
+    }
+
     function conflictSearchQuery(conflict) {
         var parts = conflictShortcutParts(conflict);
         return parts.join(" ").toLowerCase();

@@ -67,23 +67,17 @@ Rectangle {
             Item {
                 id: shortcutCol
                 width: 300
-                implicitHeight: keycapsRow.implicitHeight
+                implicitHeight: shortcutKeys.implicitHeight
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 clip: true
 
-                Row {
-                    id: keycapsRow
+                ShortcutKeys {
+                    id: shortcutKeys
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 4
-
-                    Repeater {
-                        model: root.bindData ? KeybindData.shortcutParts(root.bindData) : []
-                        delegate: Keycap {
-                            text: modelData
-                        }
-                    }
+                    width: parent.width
+                    parts: root.bindData ? KeybindData.shortcutParts(root.bindData) : []
                 }
             }
 

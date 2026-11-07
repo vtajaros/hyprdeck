@@ -136,6 +136,7 @@ Singleton {
             action: "comment-out",
             bindId: bind.id,
             label: (bind.keys_raw || bind.key || "bind"),
+            parts: KeybindData.shortcutParts(bind),
             description: (bind.description_effective ? bind.description_effective.text : ""),
             isDestructive: false,
             title: "Disable Keybinding"
@@ -149,6 +150,7 @@ Singleton {
             action: "uncomment",
             bindId: disabledBind.id,
             label: (disabledBind.key_hint || "disabled bind"),
+            parts: KeybindData.parseShortcutString(disabledBind.key_hint),
             description: (disabledBind.description_hint || disabledBind.original_text || ""),
             isDestructive: false,
             title: "Enable Keybinding"
@@ -158,11 +160,20 @@ Singleton {
 
     function requestDelete(bind) {
         if (root.busy || !bind || !bind.id) return;
+        var parts = [];
+        if (bind.modifiers || bind.key) {
+            parts = KeybindData.shortcutParts(bind);
+        } else if (bind.key_hint) {
+            parts = KeybindData.parseShortcutString(bind.key_hint);
+        } else if (bind.keys_raw) {
+            parts = KeybindData.parseShortcutString(bind.keys_raw);
+        }
         root.activeOp = {
             action: "delete",
             bindId: bind.id,
-            label: (bind.keys_raw || bind.key || "bind"),
-            description: (bind.description_effective ? bind.description_effective.text : ""),
+            label: (bind.keys_raw || bind.key_hint || bind.key || "bind"),
+            parts: parts,
+            description: (bind.description_effective ? bind.description_effective.text : (bind.description_hint || "")),
             isDestructive: true,
             title: "Delete Keybinding"
         };
@@ -175,6 +186,7 @@ Singleton {
             action: "restore",
             backupId: backupId,
             label: "backup " + backupId,
+            parts: [],
             description: "Restore configuration from backup snapshot",
             isDestructive: true,
             title: "Restore Backup"
@@ -189,6 +201,7 @@ Singleton {
             action: "restore-latest",
             backupId: "--latest",
             label: "latest backup",
+            parts: [],
             description: "Undo last change by restoring latest snapshot",
             isDestructive: true,
             title: "Undo: Restore Latest Backup"

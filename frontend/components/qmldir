@@ -5,3 +5,4 @@ SearchField 1.0 SearchField.qml
 EmptyState 1.0 EmptyState.qml
 SidebarItem 1.0 SidebarItem.qml
 EditConfirmDialog 1.0 EditConfirmDialog.qml
+ShortcutKeys 1.0 ShortcutKeys.qml

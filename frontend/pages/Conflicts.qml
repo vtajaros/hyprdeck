@@ -236,15 +236,9 @@ Item {
                                 spacing: 8
 
                                 // Keycaps
-                                Row {
+                                ShortcutKeys {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    spacing: 4
-                                    Repeater {
-                                        model: KeybindData.conflictShortcutParts(conflictItem)
-                                        delegate: Keycap {
-                                            text: modelData
-                                        }
-                                    }
+                                    parts: KeybindData.conflictShortcutParts(conflictItem)
                                 }
 
                                 // Kind badge (Duplicate in critical, Stacked in warning)

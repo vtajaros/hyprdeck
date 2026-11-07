@@ -124,7 +124,19 @@ Item {
                         color: HKS.muted
                     }
 
+                    // Shortcut Target (when operation targets a keybinding)
+                    ShortcutKeys {
+                        id: targetShortcutKeys
+                        anchors.verticalCenter: parent.verticalCenter
+                        parts: (EditService.activeOp && EditService.activeOp.parts) ? EditService.activeOp.parts : []
+                        visible: !!(EditService.activeOp && EditService.activeOp.parts && EditService.activeOp.parts.length > 0)
+                    }
+
+                    // Text Label Fallback (e.g. for restore operations)
                     Rectangle {
+                        id: targetLabelRect
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: !targetShortcutKeys.visible
                         height: 22
                         width: targetLabel.implicitWidth + 12
                         radius: 4
@@ -150,7 +162,7 @@ Item {
                         font.pixelSize: HKS.fontSizeSmall
                         color: HKS.muted
                         elide: Text.ElideRight
-                        width: parent.width - targetLabel.implicitWidth - 80
+                        width: Math.max(100, parent.width - (targetShortcutKeys.visible ? targetShortcutKeys.width : targetLabelRect.width) - 80)
                     }
                 }
             }

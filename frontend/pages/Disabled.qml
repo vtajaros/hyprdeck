@@ -156,25 +156,10 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 spacing: 10
 
-                                // Key Hint Badge
-                                Rectangle {
+                                // Key Hint (ShortcutKeys)
+                                ShortcutKeys {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    height: 24
-                                    width: keyHintTxt.implicitWidth + 14
-                                    radius: 4
-                                    color: HKS.alpha(HKS.accent, 0.15)
-                                    border.width: 1
-                                    border.color: HKS.alpha(HKS.accent, 0.35)
-
-                                    Text {
-                                        id: keyHintTxt
-                                        anchors.centerIn: parent
-                                        text: modelData.key_hint || "disabled"
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: 11
-                                        font.weight: Font.Bold
-                                        color: HKS.accent
-                                    }
+                                    parts: KeybindData.parseShortcutString(modelData.key_hint)
                                 }
 
                                 // Description Hint
