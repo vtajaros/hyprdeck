@@ -174,33 +174,6 @@ Item {
                             }
                         }
                     }
-
-                    // Close Button
-                    Rectangle {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 24
-                        height: 24
-                        radius: 12
-                        color: closeMouse.containsMouse ? HKS.elevated : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: ""
-                            font.family: HKS.fontFamily
-                            font.pixelSize: 12
-                            color: closeMouse.containsMouse ? HKS.fg : HKS.muted
-                        }
-
-                        MouseArea {
-                            id: closeMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.dismiss("close_button")
-                        }
-                    }
                 }
 
                 // Shared List Content
