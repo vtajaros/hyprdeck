@@ -105,3 +105,31 @@ python3 -m backend.cli restore <BACKUP_ID> --apply
 - `0`: Success (dry-run verified cleanly, edit applied, backups listed, or backup restored).
 - `1`: Verification failed, bind is loop-generated (`NotEditableError`), line/hash conflict (`EditConflict` / `BackupConflictError`), bind ID not found, or live reload failed and rolled back.
 - `2`: CLI usage error (e.g., missing `--comment-out`/`--uncomment`, `--reload` without `--apply`, `restore` without `--apply`).
+
+---
+
+## 5. Real-Config Apply/Undo Round-Trip Verification (SUPER+grave)
+
+A live end-to-end gate was executed against `~/.config/hypr/hyprland.lua` under explicit user approval using only `python3 -m backend.cli edit/restore`:
+
+| Check | Expected | Actual | PASS/FAIL |
+| :--- | :--- | :--- | :--- |
+| **Step 1**: Pre-edit hash $H_0$ | `12c896420f61a39ee1492e661503e17a9e12b1fc5ac125f3792af8eeb79838f2` | `12c896420f61a39ee1492e661503e17a9e12b1fc5ac125f3792af8eeb79838f2` | **PASS** |
+| **Step 1**: Pre-edit live count $N_0$ | `123` | `123` | **PASS** |
+| **Step 1**: Pre-edit `hyprctl configerrors` | Empty | Empty (`""`) | **PASS** |
+| **Step 1**: Pre-edit oracle comparison | Status: MATCH (parser=123, live=123) | Status: MATCH (parser=123, live=123) | **PASS** |
+| **Step 2**: Dynamic bind lookup (`SUPER+grave`) | Single match `b_3d670662aa1d` at line 230 | Single match `b_3d670662aa1d` at line 230 | **PASS** |
+| **Step 2**: Dry-run preview | Exit code 0, unified diff displayed, zero disk writes | Exit code 0, unified diff displayed, zero disk writes | **PASS** |
+| **Step 3**: Apply `--comment-out` + `--reload` | Exit code 0, `rolled_back=false`, `Result: APPLIED` | Exit code 0, `rolled_back=false`, `Result: APPLIED` | **PASS** |
+| **Step 3**: Post-apply live count | $N_0 - 1 = 122$ | `122` | **PASS** |
+| **Step 3**: Post-apply `hyprctl configerrors` | Empty | Empty (`""`) | **PASS** |
+| **Step 3**: Disabled line content | Starts with `-- HKS-disabled:` | `-- HKS-disabled: hl.bind(mainMod .. " + grave", ...)` | **PASS** |
+| **Step 3**: Backup creation | Created in `~/.local/share/hks/backups/` | `hyprland.lua.20261107-112406-12c89642` created | **PASS** |
+| **Step 3**: Post-apply oracle comparison | Status: MATCH (parser=122, live=122) | Status: MATCH (parser=122, live=122) | **PASS** |
+| **Step 4**: Undo `restore --apply` + live reload | Exit code 0, restored from backup | Exit code 0, restored from backup | **PASS** |
+| **Step 4**: Post-restore hash | Exactly $H_0$ (`12c89642...`) | Byte-identical to $H_0$ | **PASS** |
+| **Step 4**: Post-restore live count | $N_0 = 123$ | `123` | **PASS** |
+| **Step 4**: Post-restore `hyprctl configerrors` | Empty | Empty (`""`) | **PASS** |
+| **Step 4**: Post-restore oracle comparison | Status: MATCH (parser=123, live=123) | Status: MATCH (parser=123, live=123) | **PASS** |
+| **Step 5**: Injected runner reload failure test | Automatic rollback to backup on reload failure | `TestApplyPipeline.test_reload_failure_triggers_automatic_rollback` verified | **PASS** |
+
