@@ -205,6 +205,33 @@ hl.bind("SUPER + Z", hl.dsp.submap("resize"), { custom_opt = 42, description = "
         parsed = json.loads(raw_json)
         assert_valid_scan_dict(parsed)
 
+    def test_unexecuted_callbacks_reported_as_info_diagnostic(self) -> None:
+        code = """-- Config with unexecuted callback
+hl.on("hyprland.start", function()
+    hl.bind("SUPER + Z", hl.dsp.window.close())
+end)
+"""
+        binds, diags, complete, doc = self._run_snippet(code)
+        self.assertTrue(complete)
+        # Must NOT produce that bind
+        self.assertEqual(len(binds), 0)
+        self.assertNotIn("Z", [b.key for b in binds])
+
+        # MUST produce the info diagnostic with correct line
+        cb_diags = [d for d in diags if d.code == "callbacks_not_executed"]
+        self.assertEqual(len(cb_diags), 1)
+        self.assertEqual(cb_diags[0].level, "info")
+        self.assertEqual(cb_diags[0].line, 2)
+        self.assertIn("hyprland.start", cb_diags[0].message)
+        self.assertIn("2", cb_diags[0].message)
+
+        # Counted in ignored_calls
+        self.assertEqual(doc.stats.ignored_calls.get("on"), 1)
+
+        raw_json = serialize_scan_document(doc)
+        parsed = json.loads(raw_json)
+        assert_valid_scan_dict(parsed)
+
 
 if __name__ == "__main__":
     unittest.main()

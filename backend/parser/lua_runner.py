@@ -31,6 +31,7 @@ class RawRecorderOutput:
     files_loaded: list[str] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
     ignored_calls: dict[str, int] = field(default_factory=dict)
+    unexecuted_callbacks: list[dict[str, Any]] = field(default_factory=list)
     complete: bool = False
 
 
@@ -211,11 +212,19 @@ def run_lua_recorder(
         else {}
     )
 
+    raw_unexec = parsed.get("unexecuted_callbacks")
+    unexec_list = (
+        [dict(item) for item in raw_unexec if isinstance(item, dict)]
+        if isinstance(raw_unexec, list)
+        else []
+    )
+
     return RawRecorderOutput(
         recorder_version=int(parsed.get("recorder_version", 1)),
         binds=binds_list,
         files_loaded=files_list,
         diagnostics=diags,
         ignored_calls=ignored_map,
+        unexecuted_callbacks=unexec_list,
         complete=bool(parsed.get("complete", False)),
     )

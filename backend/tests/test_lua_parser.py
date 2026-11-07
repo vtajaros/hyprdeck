@@ -41,7 +41,9 @@ class TestLuaUserLikeFixture(unittest.TestCase):
 
     def test_schema_and_completeness(self) -> None:
         self.assertTrue(self.complete)
-        self.assertEqual(self.diagnostics, [])
+        self.assertEqual([d.code for d in self.diagnostics], ["callbacks_not_executed"])
+        self.assertEqual(self.diagnostics[0].level, "info")
+        self.assertEqual(self.diagnostics[0].line, 45)
         assert_valid_scan_dict(self.doc.to_dict())
 
     def test_loaded_files_includes_theme_colors(self) -> None:

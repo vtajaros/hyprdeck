@@ -54,6 +54,7 @@ local binds = make_array()
 local files_loaded = make_array()
 local files_loaded_seen = {}
 local diagnostics = make_array()
+local unexecuted_callbacks = make_array()
 local ignored_calls = {}
 local unknown_api_seen = {}
 local submap_warning_emitted = false
@@ -157,6 +158,7 @@ end
 local function find_caller_location(hl_tbl)
     local bind_fn = hl_tbl and _rawget(hl_tbl, "bind") or nil
     local bindm_fn = hl_tbl and _rawget(hl_tbl, "bindm") or nil
+    local on_fn = hl_tbl and _rawget(hl_tbl, "on") or nil
     local frames = make_array()
     local skipping_wrappers = true
 
@@ -171,9 +173,10 @@ local function find_caller_location(hl_tbl)
             if file_path ~= recorder_path then
                 if skipping_wrappers and (
                     (bind_fn and info.func == bind_fn) or
-                    (bindm_fn and info.func == bindm_fn)
+                    (bindm_fn and info.func == bindm_fn) or
+                    (on_fn and info.func == on_fn)
                 ) then
-                    -- skip user's hl.bind / hl.bindm wrapper frame
+                    -- skip user's hl.bind / hl.bindm / hl.on wrapper frame
                 else
                     skipping_wrappers = false
                     frames[#frames + 1] = {
@@ -420,6 +423,26 @@ local function record_bind(keys, action, opts)
 end
 
 hl.bind = record_bind
+
+local function record_on(event, fn)
+    ignored_calls["on"] = (ignored_calls["on"] or 0) + 1
+    local source_file, source_line, _ = find_caller_location(hl)
+    local ev_str = _type(event) == "string" and event or "?"
+    unexecuted_callbacks[#unexecuted_callbacks + 1] = {
+        event = ev_str,
+        line = source_line,
+    }
+    add_diagnostic(
+        "info",
+        "callbacks_not_executed",
+        "Event callback for '" .. ev_str .. "' at line " .. _tostring(source_line) .. " was not executed",
+        source_file,
+        source_line
+    )
+    return nil
+end
+
+hl.on = record_on
 hl.dsp = make_dsp_proxy(nil)
 
 _setmetatable(hl, {
@@ -901,6 +924,7 @@ local output_doc = {
     files_loaded = files_loaded,
     diagnostics = diagnostics,
     ignored_calls = ignored_calls,
+    unexecuted_callbacks = unexecuted_callbacks,
     complete = complete,
 }
 
