@@ -192,6 +192,35 @@ Singleton {
         return parts;
     }
 
+    function conflictShortcutParts(conflict) {
+        if (!conflict) return [];
+        var parts = [];
+        if (conflict.modifiers && conflict.modifiers.length > 0) {
+            for (var i = 0; i < conflict.modifiers.length; i++) {
+                parts.push(conflict.modifiers[i]);
+            }
+        }
+        if (conflict.key) {
+            parts.push(friendlyKey(conflict.key));
+        }
+        return parts;
+    }
+
+    function conflictSearchQuery(conflict) {
+        var parts = conflictShortcutParts(conflict);
+        return parts.join(" ").toLowerCase();
+    }
+
+    function getBindById(id) {
+        if (!id || !root.binds) return null;
+        for (var i = 0; i < root.binds.length; i++) {
+            if (root.binds[i] && root.binds[i].id === id) {
+                return root.binds[i];
+            }
+        }
+        return null;
+    }
+
     function descriptionText(bind) {
         if (!bind) return "";
         if (bind.description_effective && bind.description_effective.text) {

@@ -14,7 +14,7 @@ FloatingWindow {
     implicitHeight: 700
     color: HKS.bg
 
-    property string currentPage: "all" // "all" | "settings"
+    property string currentPage: Quickshell.env("HKS_PAGE") || "all" // "all" | "conflicts" | "settings"
 
     Rectangle {
         anchors.fill: parent
@@ -105,8 +105,9 @@ FloatingWindow {
                             width: parent.width
                             icon: ""
                             text: "Conflicts"
-                            disabled: true
-                            badge: "soon"
+                            active: win.currentPage === "conflicts"
+                            badge: String(KeybindData.conflicts ? KeybindData.conflicts.length : 0)
+                            onClicked: win.currentPage = "conflicts"
                         }
 
                         SidebarItem {
@@ -126,9 +127,23 @@ FloatingWindow {
                 height: parent.height
 
                 AllKeybindings {
+                    id: allBindsPage
                     anchors.fill: parent
                     visible: win.currentPage === "all"
                     onRequestClose: win.visible = false
+                }
+
+                Conflicts {
+                    id: conflictsPage
+                    anchors.fill: parent
+                    visible: win.currentPage === "conflicts"
+                    onRequestShowInList: function(query) {
+                        allBindsPage.showSearch(query);
+                        win.currentPage = "all";
+                    }
+                    onRequestClose: {
+                        win.currentPage = "all";
+                    }
                 }
 
                 // Settings Page Stub

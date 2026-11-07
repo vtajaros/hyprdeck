@@ -14,6 +14,15 @@ Item {
     property int selectedIndex: 0
     signal requestClose()
 
+    function showSearch(text) {
+        var q = text || "";
+        searchField.text = q;
+        root.searchText = q;
+        root.selectedCategory = "All";
+        root.selectedSubmap = "All";
+        searchField.forceFocus();
+    }
+
     readonly property var filteredBinds: KeybindData.filter(searchText, selectedCategory, selectedSubmap)
 
     onFilteredBindsChanged: {
