@@ -151,7 +151,7 @@ Item {
         }
 
         // Submap note or selector + Results header count
-        Row {
+        Item {
             width: parent.width
             height: 22
 

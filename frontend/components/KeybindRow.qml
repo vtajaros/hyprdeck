@@ -35,13 +35,14 @@ Rectangle {
         spacing: 8
 
         // Top line: Shortcut + Badges + Category
-        Row {
+        Item {
             width: parent.width
-            spacing: 8
+            height: Math.max(keycapsRow.implicitHeight, Math.max(descCol.implicitHeight, rightPills.implicitHeight))
 
             // Shortcut keycaps
             Row {
                 id: keycapsRow
+                anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 4
 
@@ -55,8 +56,12 @@ Rectangle {
 
             // Description and action
             Column {
+                id: descCol
+                anchors.left: keycapsRow.right
+                anchors.leftMargin: 12
+                anchors.right: rightPills.left
+                anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(100, parent.width - keycapsRow.width - rightPills.width - 24)
                 spacing: 2
                 clip: true
 

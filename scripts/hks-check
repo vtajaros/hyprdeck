@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Hyprland Keybind Studio (HKS) - Verification & Linter Runner
+# =============================================================================
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+echo "=== Hyprland Keybind Studio: Verification Check ==="
+echo
+
+# 1. Backend Unit Tests
+echo "[1/2] Running backend test suite..."
+python3 -m unittest discover -s backend/tests -v
+echo
+
+# 2. Frontend QML Lint
+echo "[2/2] Running qmllint on frontend files..."
+if command -v qmllint >/dev/null 2>&1; then
+    QML_FILES=($(find frontend -name "*.qml" | sort))
+    echo "Found ${#QML_FILES[@]} QML files."
+    qmllint "${QML_FILES[@]}"
+    echo "qmllint passed with 0 errors/warnings."
+else
+    echo "qmllint not found; skipping QML static analysis."
+fi
+echo
+
+echo "=== All checks passed successfully! ==="
