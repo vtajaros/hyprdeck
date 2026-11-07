@@ -1,6 +1,6 @@
 # Hyprland Keybind Studio (HKS)
 
-**Phases 1, 2a, 2b-0 & 2b-1**: Read-only Hyprland configuration discovery engine, dual-language keybinding parser (`hyprland.lua` & `hyprland.conf`), live `hyprctl` oracle verification, human description derivation, conflict detection, and a desktop GUI built with Quickshell (QtQuick / QML).
+**Phases 1, 2a, 2b-0, 2b-1, 2b-2a & 4a**: Hyprland configuration discovery engine, dual-language keybinding parser (`hyprland.lua` & `hyprland.conf`), live `hyprctl` oracle verification, human description derivation, conflict detection, a desktop GUI built with Quickshell (QtQuick / QML), and a verified safe edit engine with automatic backups and rollback.
 
 ## Requirements
 
@@ -49,7 +49,14 @@ python3 -m backend.cli sidecar-template --all
 python3 -m backend.cli scan --sidecar ~/.config/hks/descriptions.json
 python3 -m backend.cli summary --no-sidecar
 
-# 7. Run the unit test suite (uses isolated fixtures only)
+# 7. Safely preview (dry-run default) or apply a keybind edit, list backups, or restore
+python3 -m backend.cli edit --comment-out <BIND_ID>
+python3 -m backend.cli edit --apply --comment-out <BIND_ID>
+python3 -m backend.cli edit --apply --uncomment <BIND_ID>
+python3 -m backend.cli backups
+python3 -m backend.cli restore <BACKUP_ID> --apply
+
+# 8. Run the unit test suite (uses isolated fixtures only)
 python3 -m unittest discover -s backend/tests -v
 ```
 
@@ -60,5 +67,6 @@ python3 -m unittest discover -s backend/tests -v
 - [docs/PHASE2B0.md](docs/PHASE2B0.md): Phase 2b-0 conflict detection algorithm, stacked binds rationale, and CLI conflicts usage.
 - [docs/PHASE2B1.md](docs/PHASE2B1.md): Phase 2b-1 Quickshell desktop UI architecture, window/popup modes, theme integration, keyboard navigation, and IPC.
 - [docs/PHASE2B2A.md](docs/PHASE2B2A.md): Phase 2b-2a Conflicts page, card breakdown, cross-page search navigation, and safety against unknown bind IDs.
+- [docs/PHASE4A.md](docs/PHASE4A.md): Phase 4a safe edit engine, 3-layer verification pipeline, backups/atomic writes, live reload rollback, and known limitations.
 - [docs/MILESTONES.md](docs/MILESTONES.md): Deliverables checklist across all project phases.
 - [shared/schemas/bindings.schema.json](shared/schemas/bindings.schema.json): JSON Schema 2020-12 specification.

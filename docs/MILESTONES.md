@@ -75,6 +75,20 @@
 
 ---
 
+## Phase 4a Milestones (Safe Edit Engine — Backend Only)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| External backup manager & atomic file writer (`HKS_BACKUP_DIR`) | `backend/editor/backups.py` | [x] Complete |
+| Line-oriented edit plan (`comment_out`, `uncomment`, loop guard, CRLF preservation) | `backend/editor/edit_plan.py` | [x] Complete |
+| Staged 3-layer verification (`Hyprland --verify-config`, recorder, bind-set diff) | `backend/editor/validator.py` | [x] Complete |
+| Safe apply pipeline, companion parity warning & live reload auto-rollback | `backend/editor/apply.py`, `backend/editor/__init__.py` | [x] Complete |
+| CLI `edit` (dry-run default), `backups` & `restore` subcommands | `backend/cli.py` | [x] Complete |
+| Isolated unit test suite for backups, edit plan, validator, apply & CLI | `backend/tests/test_editor.py` | [x] Complete |
+| Phase 4a architecture & known limitations documentation | `docs/PHASE4A.md`, `docs/MILESTONES.md`, `README.md` | [x] Complete |
+
+---
+
 ## Verified on Real Config
 
 - **Binds**: 126 binds
