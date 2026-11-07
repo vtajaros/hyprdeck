@@ -109,6 +109,7 @@ Defense-in-depth layers applied during execution:
 
 ## 5. Known Limitations & TODOs
 
+- **Binds Registered Inside `hl.on` Callbacks**: Binds registered inside `hl.on` callbacks are not discovered because event callbacks are not executed during static discovery (reported as `info` diagnostics: `callbacks_not_executed`), and Lua submap semantics are unverified.
 - **Lua Submap Semantics Unverified**: We have not verified how Hyprland's Lua API scopes submaps. All Lua binds set `submap = ""` and emit a `lua_submap_unsupported` warning if any `hl.dsp` path or `hl.*` call contains `"submap"`.
 - **Hyprlang Flag Letters & `##` Escape (`TODO`)**: The Hyprlang parser supports flag letters `l, r, e, n, m, t, i, o, s, d` and treats `##` as an escaped literal `#` while single `#` starts a comment. Verify any newly added flag letters or edge-case comment escaping rules against the official Hyprland wiki when targeting newer Hyprland releases.
 
