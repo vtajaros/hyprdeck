@@ -28,7 +28,7 @@ Singleton {
         return false;
     }
 
-    readonly property string rootPath: Quickshell.env("HKS_ROOT") || "."
+    readonly property string rootPath: Quickshell.env("HKS_ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprland-keybind-studio")
     readonly property string fixturePath: Quickshell.env("HKS_FIXTURE") || ""
 
     FileView {
