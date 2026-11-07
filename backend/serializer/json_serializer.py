@@ -97,4 +97,11 @@ def format_summary_table(doc: ScanDocument) -> str:
     for sc, dsp, arg_str, loc in rows:
         trunc_arg = arg_str if len(arg_str) <= w2 else (arg_str[: w2 - 3] + "...")
         lines.append(f"{sc:<{w0}} | {dsp:<{w1}} | {trunc_arg:<{w2}} | {loc}")
+
+    if doc.stats.sandbox is not None:
+        sb = doc.stats.sandbox
+        lines.append(
+            f"Sandbox: {sb.instructions_used:,}/{sb.instruction_limit:,} instructions | "
+            f"{sb.elapsed_ms:.1f}ms elapsed | cpu_limit={sb.cpu_limit_s:.0f}s | wall_timeout={sb.wall_timeout_s:.0f}s"
+        )
     return "\n".join(lines)

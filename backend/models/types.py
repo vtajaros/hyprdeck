@@ -215,6 +215,24 @@ class UnbindRecord:
 
 
 @dataclass(slots=True)
+class SandboxStats:
+    instructions_used: int
+    instruction_limit: int
+    elapsed_ms: float
+    cpu_limit_s: float
+    wall_timeout_s: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "cpu_limit_s": self.cpu_limit_s,
+            "elapsed_ms": self.elapsed_ms,
+            "instruction_limit": self.instruction_limit,
+            "instructions_used": self.instructions_used,
+            "wall_timeout_s": self.wall_timeout_s,
+        }
+
+
+@dataclass(slots=True)
 class StatsRecord:
     total_binds: int = 0
     by_type: dict[str, int] = field(default_factory=dict)
@@ -227,9 +245,10 @@ class StatsRecord:
     unresolved: int = 0
     ignored_calls: dict[str, int] = field(default_factory=dict)
     ignored_keywords: dict[str, int] = field(default_factory=dict)
+    sandbox: SandboxStats | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        res: dict[str, Any] = {
             "by_dispatcher_path": dict(sorted(self.by_dispatcher_path.items())),
             "by_modmask": dict(sorted(self.by_modmask.items(), key=lambda kv: int(kv[0]))),
             "by_type": dict(sorted(self.by_type.items())),
@@ -242,6 +261,9 @@ class StatsRecord:
             "unresolved": self.unresolved,
             "unsupported": self.unsupported,
         }
+        if self.sandbox is not None:
+            res["sandbox"] = self.sandbox.to_dict()
+        return res
 
 
 @dataclass(slots=True)

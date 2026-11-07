@@ -46,15 +46,23 @@ class TestSerializer(unittest.TestCase):
         _, dict1 = self._scan_fixture()
         _, dict2 = self._scan_fixture()
 
-        # Normalize generated_at before comparing full JSON strings
+        # Normalize generated_at and sandbox.elapsed_ms before comparing full JSON strings
         dict1["generated_at"] = "2026-11-07T00:00:00Z"
         dict2["generated_at"] = "2026-11-07T00:00:00Z"
+        if "sandbox" in dict1.get("stats", {}) and dict1["stats"]["sandbox"]:
+            dict1["stats"]["sandbox"]["elapsed_ms"] = 0.0
+            dict2["stats"]["sandbox"]["elapsed_ms"] = 0.0
         self.assertEqual(
             json.dumps(dict1, sort_keys=True),
             json.dumps(dict2, sort_keys=True),
         )
 
         assert_valid_scan_dict(dict1)
+        self.assertIn("sandbox", dict1["stats"])
+        self.assertIn("instructions_used", dict1["stats"]["sandbox"])
+        self.assertEqual(dict1["stats"]["sandbox"]["instruction_limit"], 50000000)
+        self.assertEqual(dict1["stats"]["sandbox"]["cpu_limit_s"], 10.0)
+        self.assertEqual(dict1["stats"]["sandbox"]["wall_timeout_s"], 15.0)
 
         ids1 = [b["id"] for b in dict1["binds"]]
         ids2 = [b["id"] for b in dict2["binds"]]
@@ -87,6 +95,7 @@ class TestSerializer(unittest.TestCase):
         self.assertIn("SHORTCUT", table)
         self.assertIn("DISPATCHER", table)
         self.assertIn("SUPER + Return", table)
+        self.assertIn("Sandbox:", table)
 
 
 if __name__ == "__main__":

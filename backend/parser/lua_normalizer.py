@@ -14,6 +14,7 @@ from backend.models.types import (
     Diagnostic,
     DispatcherInfo,
     FileRecord,
+    SandboxStats,
     StatsRecord,
     TraceFrame,
     default_flags,
@@ -71,6 +72,7 @@ def compute_stats(
     binds: list[BindRecord],
     ignored_calls: dict[str, int] | None = None,
     ignored_keywords: dict[str, int] | None = None,
+    sandbox: SandboxStats | None = None,
 ) -> StatsRecord:
     """Aggregate statistics across all normalized binds."""
     by_type: dict[str, int] = {}
@@ -112,6 +114,7 @@ def compute_stats(
         unresolved=unresolved,
         ignored_calls=dict(ignored_calls or {}),
         ignored_keywords=dict(ignored_keywords or {}),
+        sandbox=sandbox,
     )
 
 
@@ -345,13 +348,18 @@ def normalize_lua_output(
             role = "entrypoint" if fpath == abs_entry else "loaded"
             file_records.append(build_file_record(fpath, role=role))
 
-    stats = compute_stats(binds, ignored_calls=raw_output.ignored_calls)
+    stats = compute_stats(
+        binds,
+        ignored_calls=raw_output.ignored_calls,
+        sandbox=raw_output.sandbox,
+    )
     return binds, file_records, diagnostics, stats, raw_output.complete
 
 
 def parse_lua_config(
     entrypoint: str,
     config_dir: str,
+    instruction_limit: int | None = None,
     timeout: float = 15.0,
     env: dict[str, str] | None = None,
 ) -> tuple[list[BindRecord], list[FileRecord], list[Diagnostic], StatsRecord, bool]:
@@ -359,6 +367,7 @@ def parse_lua_config(
     raw = run_lua_recorder(
         entrypoint=entrypoint,
         config_dir=config_dir,
+        instruction_limit=instruction_limit,
         timeout=timeout,
         env=env,
     )

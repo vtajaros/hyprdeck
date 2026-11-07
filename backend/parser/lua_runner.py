@@ -7,21 +7,25 @@ import os
 import resource
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from backend.models.types import Diagnostic
+from backend.models.types import Diagnostic, SandboxStats
 
 RECORDER_SCRIPT = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "lua", "recorder.lua")
 )
 
 ALLOWED_ENV_KEYS = ("HOME", "XDG_CONFIG_HOME", "XDG_SESSION_TYPE", "USER", "LANG")
+INSTRUCTION_LIMIT_DEFAULT = 50_000_000
 CPU_LIMIT_SECONDS = 10
+WALL_TIMEOUT_SECONDS = 15.0
 AS_LIMIT_BYTES = 512 * 1024 * 1024
 FSIZE_LIMIT_BYTES = 0
 NOFILE_LIMIT = 64
-DEFAULT_TIMEOUT_SECONDS = 15.0
+NPROC_LIMIT = 0
+DEFAULT_TIMEOUT_SECONDS = WALL_TIMEOUT_SECONDS
 
 
 @dataclass(slots=True)
@@ -32,6 +36,7 @@ class RawRecorderOutput:
     diagnostics: list[Diagnostic] = field(default_factory=list)
     ignored_calls: dict[str, int] = field(default_factory=dict)
     unexecuted_callbacks: list[dict[str, Any]] = field(default_factory=list)
+    sandbox: SandboxStats | None = None
     complete: bool = False
 
 
@@ -66,11 +71,16 @@ def _apply_rlimits() -> None:
         resource.setrlimit(resource.RLIMIT_NOFILE, (NOFILE_LIMIT, NOFILE_LIMIT))
     except (ValueError, OSError):
         pass
+    try:
+        resource.setrlimit(resource.RLIMIT_NPROC, (NPROC_LIMIT, NPROC_LIMIT))
+    except (ValueError, OSError, AttributeError):
+        pass
 
 
 def run_lua_recorder(
     entrypoint: str,
     config_dir: str,
+    instruction_limit: int | None = None,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
     env: dict[str, str] | None = None,
     lua_binary: str = "lua5.4",
@@ -80,10 +90,24 @@ def run_lua_recorder(
     abs_config_dir = os.path.abspath(config_dir)
     clean_env = _build_sandbox_env(env)
 
+    limit_env = os.environ.get("HKS_INSTRUCTION_LIMIT")
+    effective_instruction_limit = (
+        int(instruction_limit)
+        if instruction_limit is not None
+        else (int(limit_env) if limit_env and limit_env.isdigit() else INSTRUCTION_LIMIT_DEFAULT)
+    )
+
+    t0 = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="hks_sandbox_cwd_") as empty_cwd:
         try:
             proc = subprocess.run(
-                [lua_binary, RECORDER_SCRIPT, abs_entry, abs_config_dir],
+                [
+                    lua_binary,
+                    RECORDER_SCRIPT,
+                    abs_entry,
+                    abs_config_dir,
+                    str(effective_instruction_limit),
+                ],
                 stdin=subprocess.DEVNULL,
                 capture_output=True,
                 text=True,
@@ -93,7 +117,9 @@ def run_lua_recorder(
                 preexec_fn=_apply_rlimits,
                 check=False,
             )
+            elapsed_ms = (time.monotonic() - t0) * 1000.0
         except subprocess.TimeoutExpired:
+            elapsed_ms = (time.monotonic() - t0) * 1000.0
             return RawRecorderOutput(
                 binds=[],
                 files_loaded=[abs_entry] if os.path.isfile(abs_entry) else [],
@@ -107,9 +133,18 @@ def run_lua_recorder(
                     )
                 ],
                 ignored_calls={},
+                unexecuted_callbacks=[],
+                sandbox=SandboxStats(
+                    instructions_used=0,
+                    instruction_limit=effective_instruction_limit,
+                    elapsed_ms=round(elapsed_ms, 2),
+                    cpu_limit_s=float(CPU_LIMIT_SECONDS),
+                    wall_timeout_s=float(timeout),
+                ),
                 complete=False,
             )
         except OSError as exc:
+            elapsed_ms = (time.monotonic() - t0) * 1000.0
             return RawRecorderOutput(
                 binds=[],
                 files_loaded=[abs_entry] if os.path.isfile(abs_entry) else [],
@@ -123,6 +158,14 @@ def run_lua_recorder(
                     )
                 ],
                 ignored_calls={},
+                unexecuted_callbacks=[],
+                sandbox=SandboxStats(
+                    instructions_used=0,
+                    instruction_limit=effective_instruction_limit,
+                    elapsed_ms=round(elapsed_ms, 2),
+                    cpu_limit_s=float(CPU_LIMIT_SECONDS),
+                    wall_timeout_s=float(timeout),
+                ),
                 complete=False,
             )
 
@@ -144,6 +187,14 @@ def run_lua_recorder(
                 )
             ],
             ignored_calls={},
+            unexecuted_callbacks=[],
+            sandbox=SandboxStats(
+                instructions_used=0,
+                instruction_limit=effective_instruction_limit,
+                elapsed_ms=round(elapsed_ms, 2),
+                cpu_limit_s=float(CPU_LIMIT_SECONDS),
+                wall_timeout_s=float(timeout),
+            ),
             complete=False,
         )
 
@@ -162,6 +213,14 @@ def run_lua_recorder(
                 )
             ],
             ignored_calls={},
+            unexecuted_callbacks=[],
+            sandbox=SandboxStats(
+                instructions_used=0,
+                instruction_limit=effective_instruction_limit,
+                elapsed_ms=round(elapsed_ms, 2),
+                cpu_limit_s=float(CPU_LIMIT_SECONDS),
+                wall_timeout_s=float(timeout),
+            ),
             complete=False,
         )
 
@@ -183,6 +242,14 @@ def run_lua_recorder(
                 )
             ],
             ignored_calls={},
+            unexecuted_callbacks=[],
+            sandbox=SandboxStats(
+                instructions_used=0,
+                instruction_limit=effective_instruction_limit,
+                elapsed_ms=round(elapsed_ms, 2),
+                cpu_limit_s=float(CPU_LIMIT_SECONDS),
+                wall_timeout_s=float(timeout),
+            ),
             complete=False,
         )
 
@@ -219,6 +286,16 @@ def run_lua_recorder(
         else []
     )
 
+    instructions_used = int(parsed.get("instructions_used", 0))
+    instruction_limit_val = int(parsed.get("instruction_limit", effective_instruction_limit))
+    sandbox_stats = SandboxStats(
+        instructions_used=instructions_used,
+        instruction_limit=instruction_limit_val,
+        elapsed_ms=round(elapsed_ms, 2),
+        cpu_limit_s=float(CPU_LIMIT_SECONDS),
+        wall_timeout_s=float(timeout),
+    )
+
     return RawRecorderOutput(
         recorder_version=int(parsed.get("recorder_version", 1)),
         binds=binds_list,
@@ -226,5 +303,6 @@ def run_lua_recorder(
         diagnostics=diags,
         ignored_calls=ignored_map,
         unexecuted_callbacks=unexec_list,
+        sandbox=sandbox_stats,
         complete=bool(parsed.get("complete", False)),
     )

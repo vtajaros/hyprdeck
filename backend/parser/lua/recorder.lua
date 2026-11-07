@@ -32,11 +32,15 @@ local _debug = debug
 local _collectgarbage = collectgarbage
 
 local RECORDER_VERSION = 1
-local INSTRUCTION_STEP = 100000
-local MAX_HOOK_CALLS = 500
-
 local entry_arg = arg and arg[1]
 local config_dir_arg = arg and arg[2]
+local limit_arg = arg and _tonumber(arg[3])
+local INSTRUCTION_LIMIT = limit_arg or 50000000
+local INSTRUCTION_STEP = 100000
+local MAX_HOOK_CALLS = _math.floor(INSTRUCTION_LIMIT / INSTRUCTION_STEP)
+if MAX_HOOK_CALLS < 1 then
+    MAX_HOOK_CALLS = 1
+end
 local recorder_info = _debug.getinfo(1, "S")
 local recorder_source = (recorder_info and recorder_info.source) or ""
 local recorder_path = recorder_source:sub(1, 1) == "@" and recorder_source:sub(2) or ""
@@ -60,6 +64,7 @@ local unknown_api_seen = {}
 local submap_warning_emitted = false
 local site_occurrences = {}
 local complete = true
+local hook_calls = 0
 
 local function add_diagnostic(level, code, message, file, line)
     diagnostics[#diagnostics + 1] = {
@@ -856,7 +861,7 @@ local function run_entry()
         return
     end
 
-    local hook_calls = 0
+    hook_calls = 0
     local err_file = entry_path
     local err_line = nil
 
@@ -890,7 +895,7 @@ local function run_entry()
             add_diagnostic(
                 "error",
                 "instruction_limit",
-                "Execution exceeded instruction budget (" .. _tostring(INSTRUCTION_STEP * MAX_HOOK_CALLS) .. " instructions)",
+                "Execution exceeded instruction budget (" .. _tostring(INSTRUCTION_LIMIT) .. " instructions)",
                 err_file,
                 err_line
             )
@@ -918,6 +923,8 @@ for i = 1, #binds do
     b.occurrences_at_site = site_occurrences[site_key] or 1
 end
 
+local instructions_used = hook_calls * INSTRUCTION_STEP
+
 local output_doc = {
     recorder_version = RECORDER_VERSION,
     binds = binds,
@@ -926,6 +933,8 @@ local output_doc = {
     ignored_calls = ignored_calls,
     unexecuted_callbacks = unexecuted_callbacks,
     complete = complete,
+    instructions_used = instructions_used,
+    instruction_limit = INSTRUCTION_LIMIT,
 }
 
 _io.stdout:write(encode_json(output_doc) .. "\n")

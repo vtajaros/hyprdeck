@@ -301,6 +301,24 @@
         "ignored_keywords": {
           "type": "object",
           "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "sandbox": {
+          "type": ["object", "null"],
+          "required": [
+            "cpu_limit_s",
+            "elapsed_ms",
+            "instruction_limit",
+            "instructions_used",
+            "wall_timeout_s"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "cpu_limit_s": { "type": "number", "minimum": 0 },
+            "elapsed_ms": { "type": "number", "minimum": 0 },
+            "instruction_limit": { "type": "integer", "minimum": 0 },
+            "instructions_used": { "type": "integer", "minimum": 0 },
+            "wall_timeout_s": { "type": "number", "minimum": 0 }
+          }
         }
       }
     },
