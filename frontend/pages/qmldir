@@ -2,3 +2,4 @@ AllKeybindings 1.0 AllKeybindings.qml
 Conflicts 1.0 Conflicts.qml
 Disabled 1.0 Disabled.qml
 Backups 1.0 Backups.qml
+Settings 1.0 Settings.qml

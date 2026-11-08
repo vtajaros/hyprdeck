@@ -101,7 +101,11 @@ def compare_with_oracle(
 ) -> OracleReport:
     """Compare parsed BindRecords against live `hyprctl binds -j` entries as multisets."""
     parser_tuples = [bind_record_to_tuple(b) for b in parser_binds]
-    live_tuples = [live_entry_to_tuple(lb) for lb in live_binds if isinstance(lb, dict)]
+    live_tuples = [
+        live_entry_to_tuple(lb)
+        for lb in live_binds
+        if isinstance(lb, dict) and lb.get("submap") != "hks_record"
+    ]
 
     parser_counter = Counter(parser_tuples)
     live_counter = Counter(live_tuples)

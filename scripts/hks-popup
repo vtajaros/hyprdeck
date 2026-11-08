@@ -5,7 +5,7 @@
 set -euo pipefail
 
 # If quickshell desktop shell is running with native HKS popup, toggle via IPC
-if quickshell ipc call popups toggle hks >/dev/null 2>&1; then
+if quickshell ipc call popups toggle hks 2>/dev/null | grep -q '"open":true'; then
     exit 0
 fi
 

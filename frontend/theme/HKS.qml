@@ -33,15 +33,18 @@ Singleton {
     property color accent: "#7fae8b"
     property color secondary: "#85867c"
     property color warning: "#d79921"
+    property color amber: warning
     property color critical: "#e06c6c"
     property color borderColor: alpha(accent, 0.5)
 
     // Metrics
     readonly property int radius: 10
+    readonly property int radiusMedium: 8
     readonly property int radiusSmall: 6
     readonly property int border: 1
     readonly property int fontSize: 13
     readonly property int fontSizeSmall: 11
+    readonly property int fontSizeMedium: 14
     readonly property int fontSizeLarge: 15
     readonly property int fontSizeTitle: 18
 
@@ -71,6 +74,7 @@ Singleton {
         blockLoading: true
         watchChanges: true
         onFileChanged: {
+            colorFile.reload();
             if (root.themeMode === "system") {
                 root.applyTheme();
             }

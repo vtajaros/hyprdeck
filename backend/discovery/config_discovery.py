@@ -96,7 +96,7 @@ def probe_hyprctl_binds(timeout: float = 3.0) -> list[dict[str, Any]] | None:
             return None
         data = json.loads(proc.stdout)
         if isinstance(data, list):
-            return data
+            return [b for b in data if isinstance(b, dict) and b.get("submap") != "hks_record"]
     except (OSError, subprocess.SubprocessError, ValueError):
         return None
     return None

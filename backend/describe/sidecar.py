@@ -184,6 +184,7 @@ def _dispatcher_matches(bind_dsp_path: str, filter_dsp: str) -> bool:
 def apply_sidecar_overrides(
     binds: list[BindRecord],
     overrides: list[SidecarOverride],
+    disabled_binds: list[DisabledBindRecord] | None = None,
     sidecar_path: str | None = None,
 ) -> tuple[int, int, list[Diagnostic]]:
     """Apply validated sidecar overrides to binds in-place and return (matched, unmatched, diagnostics)."""
@@ -207,6 +208,24 @@ def apply_sidecar_overrides(
             matched_binds.append(b)
 
         if not matched_binds:
+            matched_disabled = False
+            if disabled_binds:
+                from backend.describe.sidecar_store import match_override_to_disabled
+                ov_dict = {
+                    "modifiers": ov.modifiers,
+                    "key": ov.key,
+                    "submap": ov.submap,
+                    "dispatcher": ov.dispatcher,
+                }
+                for d in disabled_binds:
+                    if match_override_to_disabled(ov_dict, d):
+                        if ov.description is not None:
+                            d.description_hint = ov.description
+                        matched_disabled = True
+            if matched_disabled:
+                matched_count += 1
+                continue
+
             unmatched_count += 1
             diagnostics.append(
                 Diagnostic(
@@ -254,6 +273,7 @@ def apply_sidecar_overrides(
 
 def load_and_apply_sidecar(
     binds: list[BindRecord],
+    disabled_binds: list[DisabledBindRecord] | None = None,
     cli_path: str | None = None,
     no_sidecar: bool = False,
     env: dict[str, str] | None = None,
@@ -292,6 +312,7 @@ def load_and_apply_sidecar(
     matched, unmatched, diags = apply_sidecar_overrides(
         binds=binds,
         overrides=overrides,
+        disabled_binds=disabled_binds,
         sidecar_path=path,
     )
     return (

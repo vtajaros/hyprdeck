@@ -11,12 +11,30 @@ echo "=== Hyprland Keybind Studio: Verification Check ==="
 echo
 
 # 1. Backend Unit Tests
-echo "[1/2] Running backend test suite..."
+echo "[1/3] Running backend test suite..."
 python3 -m unittest discover -s backend/tests -v
 echo
 
-# 2. Frontend QML Lint
-echo "[2/2] Running qmllint on frontend files..."
+# 2. Frontend QML Unit Tests
+echo "[2/3] Running frontend QML unit tests..."
+if [ -x /usr/lib/qt6/bin/qmltestrunner ]; then
+    QMLTESTRUNNER="/usr/lib/qt6/bin/qmltestrunner"
+elif command -v qmltestrunner >/dev/null 2>&1; then
+    QMLTESTRUNNER="qmltestrunner"
+else
+    QMLTESTRUNNER=""
+fi
+
+if [ -n "$QMLTESTRUNNER" ]; then
+    QT_QPA_PLATFORM=offscreen "$QMLTESTRUNNER" -import "$REPO_ROOT/frontend/tests/mocks" -input "$REPO_ROOT/frontend/tests/"
+    echo "QML unit tests passed successfully."
+else
+    echo "qmltestrunner not found; skipping QML unit tests."
+fi
+echo
+
+# 3. Frontend QML Lint
+echo "[3/3] Running qmllint on frontend files..."
 if command -v qmllint >/dev/null 2>&1; then
     QML_FILES=($(find frontend -name "*.qml" | sort))
     echo "Found ${#QML_FILES[@]} QML files."

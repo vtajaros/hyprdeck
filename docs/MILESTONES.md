@@ -107,9 +107,34 @@
 
 ---
 
+## Phase 3b Milestones (Keybinding Modification, Arbitrary Addition & Sidecar Persistence)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Dual-language line generation & mainMod preservation | `backend/editor/codegen.py` | [x] Complete |
+| Top-level anchor insertion policy & indentation preservation | `backend/editor/insert_policy.py` | [x] Complete |
+| Dynamic submap recording coordinator (Strategy A) | `backend/editor/recorder_submap.py` | [x] Complete |
+| Qt modifier & keysym hardware normalizer | `frontend/components/keymap.js` | [x] Complete |
+| Interactive keybind recorder component & test harness | `frontend/components/KeybindRecorder.qml`, `frontend/dev/RecorderHarness.qml` | [x] Complete |
+| Data-driven dispatcher catalog & argument validation | `backend/editor/dispatchers.py`, `frontend/services/DispatcherCatalog.qml` | [x] Complete |
+| Full keybind edit modal dialog & live conflict evaluation | `frontend/components/KeybindEditDialog.qml`, `frontend/services/ConflictCheckService.qml` | [x] Complete |
+| Duplicate shortcut match badge ("shared with N other bind(s)") | `frontend/components/KeybindEditDialog.qml` | [x] Complete |
+| Arbitrary addition flow (`edit add`, flags, submaps, escaping) | `backend/cli.py`, `backend/editor/apply.py`, `frontend/services/EditService.qml` | [x] Complete |
+| Persistent sidecar storage, `fcntl` locking & atomic writes | `backend/describe/sidecar_store.py` | [x] Complete |
+| Sidecar override migration on key replace & orphan detection | `backend/describe/sidecar_store.py`, `backend/cli.py` | [x] Complete |
+| Structured collision warnings (`sidecar_warning`) | `backend/cli.py`, `frontend/components/EditConfirmDialog.qml` | [x] Complete |
+| Sidecar settings & orphan management UI | `frontend/pages/Settings.qml`, `frontend/services/SidecarService.qml` | [x] Complete |
+| Multi-file transactional undo (config + sidecar) | `backend/editor/backups.py`, `frontend/services/EditService.qml` | [x] Complete |
+| Headless component tests & mock isolation verification | `backend/tests/test_hardening.py`, `frontend/tests/tst_components_headless.qml` | [x] Complete |
+| Phase 3b documentation & runbook | `docs/PHASE3B.md`, `docs/RUNBOOK.md`, `docs/HANDOFF.md` | [x] Complete |
+
+---
+
 ## Verified on Real Config
 
-- **Binds**: 126 binds
+- **Binds**: 123 active binds (3 disabled)
 - **Oracle Comparison**: MATCH (exact count and order match against live `hyprctl binds -j`)
 - **Parity**: Hyprlang vs Lua parity equal
+- **Test Suite**: 148 backend unit tests, 19 QML unit tests
+- **QML Lint**: 0 errors / 0 warnings across 34 files
 - **Performance**: Scan time about 0.1 s

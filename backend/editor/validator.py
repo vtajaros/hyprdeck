@@ -340,14 +340,53 @@ class BindSetComparison:
         }
 
 
+def _bind_matches_expected(actual: BindRecord, expected: BindRecord) -> bool:
+    """Check if an actual parsed bind matches the expected new bind properties."""
+    if actual.modmask != expected.modmask:
+        return False
+    if actual.key.lower() != expected.key.lower():
+        return False
+    if (actual.submap or "") != (expected.submap or ""):
+        return False
+
+    # Check dispatcher path (allow 'exec_cmd' vs 'hl.dsp.exec_cmd')
+    act_dsp = actual.dispatcher.path.split(".")[-1]
+    exp_dsp = expected.dispatcher.path.split(".")[-1]
+    if act_dsp != exp_dsp:
+        return False
+
+    # Check args if expected provides non-empty args
+    exp_arg = (expected.dispatcher.arg_summary or expected.args_raw or "").strip().strip("\"'")
+    act_arg = (actual.dispatcher.arg_summary or actual.args_raw or "").strip().strip("\"'")
+    if exp_arg and act_arg != exp_arg:
+        return False
+
+    if expected.flags:
+        for k, v in expected.flags.items():
+            if v and not actual.flags.get(k, False):
+                return False
+
+    return True
+
+
 def compare_bind_sets(
     before_binds: list[BindRecord],
     after_binds: list[BindRecord],
     ops: list[EditOp],
     before_dir: str,
     after_dir: str,
+    *,
+    op_kind: str | None = None,
+    expected_new_bind: BindRecord | None = None,
 ) -> BindSetComparison:
-    """Verify that the difference between before_binds and after_binds matches `ops`."""
+    """Verify that the difference between before_binds and after_binds matches `ops`.
+
+    Asserts per-operation invariants:
+    - DISABLE/DELETE: exactly -1 bind (the targeted one), nothing else changed.
+    - ENABLE/RESTORE: exactly +1 bind restored, nothing else changed.
+    - REPLACE: exactly 1 removed and 1 added (the added matching expected_new_bind if provided).
+    - INSERT: exactly +1 bind added (matching expected_new_bind if provided).
+    """
     # Ensure no newly produced bind has a broken parse_status
     before_bad = sum(1 for b in before_binds if b.parse_status != "ok")
     after_bad = sum(1 for b in after_binds if b.parse_status != "ok")
@@ -404,8 +443,23 @@ def compare_bind_sets(
         bind_semantic_signature(b, before_dir) for b in expected_replaced_binds
     )
 
-    # If all ops are purely comment_out / delete_line:
-    if not replace_lines and uncomment_count == 0 and insert_count == 0:
+    # Determine primary operation kind if not explicitly passed
+    effective_kind = op_kind
+    if effective_kind is None:
+        if replace_lines and not removal_lines and uncomment_count == 0 and insert_count == 0:
+            effective_kind = "replace"
+        elif insert_count > 0 and not replace_lines and not removal_lines and uncomment_count == 0:
+            effective_kind = "insert"
+        elif uncomment_count > 0 and not replace_lines and not removal_lines and insert_count == 0:
+            effective_kind = "uncomment"
+        elif removal_lines and not replace_lines and uncomment_count == 0 and insert_count == 0:
+            effective_kind = "disable_or_delete"
+
+    # --- 1. Pure DISABLE / DELETE ---
+    if effective_kind == "disable_or_delete" or (
+        not replace_lines and uncomment_count == 0 and insert_count == 0
+    ):
+        expected_count = len(removal_lines) if removal_lines else sum(expected_removed_counter.values())
         if added_total != 0:
             return BindSetComparison(
                 ok=False,
@@ -413,9 +467,9 @@ def compare_bind_sets(
                 after_count=len(after_binds),
                 removed_count=removed_total,
                 added_count=added_total,
-                message=f"Unexpected added binds ({added_total}) during comment_out/delete_line.",
+                message=f"Validation failed: DISABLE/DELETE added {added_total} unexpected bind(s) (expected 0).",
             )
-        if removed_counter != expected_removed_counter:
+        if removed_total != expected_count or removed_counter != expected_removed_counter:
             return BindSetComparison(
                 ok=False,
                 before_count=len(before_binds),
@@ -423,8 +477,8 @@ def compare_bind_sets(
                 removed_count=removed_total,
                 added_count=added_total,
                 message=(
-                    f"Removed binds ({removed_total}) do not match targeted bind lines "
-                    f"(expected {sum(expected_removed_counter.values())})."
+                    f"Validation failed: DISABLE/DELETE removed {removed_total} bind(s) "
+                    f"(expected exactly {expected_count} targeted bind(s))."
                 ),
             )
         return BindSetComparison(
@@ -433,10 +487,145 @@ def compare_bind_sets(
             after_count=len(after_binds),
             removed_count=removed_total,
             added_count=added_total,
-            message=f"Bind set verified: -{removed_total} bind(s), +0 bind(s).",
+            message=f"Bind set verified: exactly -{removed_total} bind(s) removed, nothing else changed.",
         )
 
-    # For uncomment / insert_after / replace_line combinations:
+    # --- 2. Pure REPLACE ---
+    if effective_kind == "replace" or (
+        replace_lines and not removal_lines and uncomment_count == 0 and insert_count == 0
+    ):
+        target_count = len(replace_lines)
+        if removed_total != target_count or added_total != target_count:
+            return BindSetComparison(
+                ok=False,
+                before_count=len(before_binds),
+                after_count=len(after_binds),
+                removed_count=removed_total,
+                added_count=added_total,
+                message=(
+                    f"Validation failed: REPLACE expected exactly {target_count} removed and "
+                    f"{target_count} added (got -{removed_total}, +{added_total})."
+                ),
+            )
+        if removed_counter != expected_replaced_counter:
+            return BindSetComparison(
+                ok=False,
+                before_count=len(before_binds),
+                after_count=len(after_binds),
+                removed_count=removed_total,
+                added_count=added_total,
+                message="Validation failed: REPLACE removed bind did not match targeted line.",
+            )
+        # Check added bind matches expected_new_bind if provided
+        if expected_new_bind is not None:
+            # Find the actual newly added bind object from after_binds
+            added_sigs = set(added_counter.keys())
+            matched_added = False
+            for b in after_binds:
+                if bind_semantic_signature(b, after_dir) in added_sigs:
+                    if _bind_matches_expected(b, expected_new_bind):
+                        matched_added = True
+                        break
+            if not matched_added:
+                return BindSetComparison(
+                    ok=False,
+                    before_count=len(before_binds),
+                    after_count=len(after_binds),
+                    removed_count=removed_total,
+                    added_count=added_total,
+                    message=f"Validation failed: REPLACE added bind did not match expected new bind ({expected_new_bind.keys_raw}).",
+                )
+
+        return BindSetComparison(
+            ok=True,
+            before_count=len(before_binds),
+            after_count=len(after_binds),
+            removed_count=removed_total,
+            added_count=added_total,
+            message="Bind set verified: exactly 1 bind replaced (1 removed, 1 added matching expected new bind).",
+        )
+
+    # --- 3. Pure INSERT ---
+    if effective_kind == "insert" or (
+        insert_count > 0 and not replace_lines and not removal_lines and uncomment_count == 0
+    ):
+        if removed_total != 0:
+            return BindSetComparison(
+                ok=False,
+                before_count=len(before_binds),
+                after_count=len(after_binds),
+                removed_count=removed_total,
+                added_count=added_total,
+                message=f"Validation failed: INSERT unexpectedly removed {removed_total} bind(s) (expected 0).",
+            )
+        if added_total != insert_count:
+            return BindSetComparison(
+                ok=False,
+                before_count=len(before_binds),
+                after_count=len(after_binds),
+                removed_count=removed_total,
+                added_count=added_total,
+                message=f"Validation failed: INSERT added {added_total} bind(s) (expected exactly {insert_count}).",
+            )
+        if expected_new_bind is not None:
+            added_sigs = set(added_counter.keys())
+            matched_added = False
+            for b in after_binds:
+                if bind_semantic_signature(b, after_dir) in added_sigs:
+                    if _bind_matches_expected(b, expected_new_bind):
+                        matched_added = True
+                        break
+            if not matched_added:
+                return BindSetComparison(
+                    ok=False,
+                    before_count=len(before_binds),
+                    after_count=len(after_binds),
+                    removed_count=removed_total,
+                    added_count=added_total,
+                    message=f"Validation failed: INSERT added bind did not match expected bind ({expected_new_bind.keys_raw}).",
+                )
+
+        return BindSetComparison(
+            ok=True,
+            before_count=len(before_binds),
+            after_count=len(after_binds),
+            removed_count=0,
+            added_count=added_total,
+            message=f"Bind set verified: exactly +{added_total} bind(s) inserted, nothing else changed.",
+        )
+
+    # --- 4. Pure UNCOMMENT / RESTORE ---
+    if effective_kind == "uncomment" or (
+        uncomment_count > 0 and not replace_lines and not removal_lines and insert_count == 0
+    ):
+        if removed_total != 0:
+            return BindSetComparison(
+                ok=False,
+                before_count=len(before_binds),
+                after_count=len(after_binds),
+                removed_count=removed_total,
+                added_count=added_total,
+                message=f"Validation failed: UNCOMMENT unexpectedly removed {removed_total} bind(s) (expected 0).",
+            )
+        if added_total != uncomment_count:
+            return BindSetComparison(
+                ok=False,
+                before_count=len(before_binds),
+                after_count=len(after_binds),
+                removed_count=removed_total,
+                added_count=added_total,
+                message=f"Validation failed: UNCOMMENT added {added_total} bind(s) (expected exactly {uncomment_count}).",
+            )
+        return BindSetComparison(
+            ok=True,
+            before_count=len(before_binds),
+            after_count=len(after_binds),
+            removed_count=0,
+            added_count=added_total,
+            message=f"Bind set verified: exactly +{added_total} bind(s) restored, nothing else changed.",
+        )
+
+    # Mixed / fallback case (e.g. multi-op restore from backup)
     max_allowed_removed = expected_removed_counter + expected_replaced_counter
     unexpected_removals = removed_counter - max_allowed_removed
     if sum(unexpected_removals.values()) > 0:
@@ -446,22 +635,7 @@ def compare_bind_sets(
             after_count=len(after_binds),
             removed_count=removed_total,
             added_count=added_total,
-            message=(
-                f"Edit unexpectedly removed {sum(unexpected_removals.values())} untargeted bind(s)."
-            ),
-        )
-
-    if uncomment_count > 0 and added_total < uncomment_count and not replace_lines and not removal_lines:
-        return BindSetComparison(
-            ok=False,
-            before_count=len(before_binds),
-            after_count=len(after_binds),
-            removed_count=removed_total,
-            added_count=added_total,
-            message=(
-                f"Uncomment expected to restore at least {uncomment_count} bind(s), "
-                f"but only {added_total} bind(s) were added."
-            ),
+            message=f"Edit unexpectedly removed {sum(unexpected_removals.values())} untargeted bind(s).",
         )
 
     return BindSetComparison(

@@ -27,15 +27,22 @@ class BackupRecord:
     backup_path: str
     sha256: str
     created_at: str
+    sidecar_backup_path: str | None = None
+    sidecar_original_path: str | None = None
 
-    def to_dict(self) -> dict[str, str]:
-        return {
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {
             "backup_path": self.backup_path,
             "created_at": self.created_at,
             "id": self.id,
             "original_path": self.original_path,
             "sha256": self.sha256,
         }
+        if self.sidecar_backup_path is not None:
+            d["sidecar_backup_path"] = self.sidecar_backup_path
+        if self.sidecar_original_path is not None:
+            d["sidecar_original_path"] = self.sidecar_original_path
+        return d
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> BackupRecord:
@@ -45,6 +52,8 @@ class BackupRecord:
             backup_path=str(data["backup_path"]),
             sha256=str(data["sha256"]),
             created_at=str(data["created_at"]),
+            sidecar_backup_path=data.get("sidecar_backup_path"),
+            sidecar_original_path=data.get("sidecar_original_path"),
         )
 
 
@@ -150,6 +159,7 @@ def create_backup(
     backup_dir: str | None = None,
     config_dir: str | None = None,
     env: dict[str, str] | None = None,
+    sidecar_path: str | None = None,
 ) -> BackupRecord:
     """Create a timestamped, hash-tagged backup of `path` and append to backups.json."""
     abs_path = os.path.abspath(os.path.expanduser(path))
@@ -157,9 +167,8 @@ def create_backup(
         raise BackupError(f"Cannot back up non-existent file: {abs_path}")
 
     resolved_bdir = resolve_backup_dir(backup_dir=backup_dir, env=env)
-    _ensure_not_inside_config_dir(resolved_bdir, os.path.dirname(abs_path))
-    if config_dir:
-        _ensure_not_inside_config_dir(resolved_bdir, config_dir)
+    cfg_to_check = config_dir if config_dir else os.path.dirname(abs_path)
+    _ensure_not_inside_config_dir(resolved_bdir, cfg_to_check)
 
     os.makedirs(resolved_bdir, exist_ok=True)
 
@@ -180,12 +189,25 @@ def create_backup(
 
     shutil.copy2(abs_path, candidate_path)
 
+    s_backup_path: str | None = None
+    s_orig_path: str | None = None
+    if sidecar_path is not None:
+        abs_sidecar = os.path.abspath(os.path.expanduser(sidecar_path))
+        s_orig_path = abs_sidecar
+        if os.path.isfile(abs_sidecar):
+            from backend.describe.sidecar_store import backup_sidecar_file
+            s_backup_path = backup_sidecar_file(abs_sidecar, backup_dir=resolved_bdir, env=env)
+        else:
+            s_backup_path = "none"
+
     record = BackupRecord(
         id=candidate_id,
         original_path=abs_path,
         backup_path=candidate_path,
         sha256=sha256,
         created_at=created_at,
+        sidecar_backup_path=s_backup_path,
+        sidecar_original_path=s_orig_path,
     )
 
     index_path = os.path.join(resolved_bdir, "backups.json")
@@ -271,4 +293,21 @@ def restore_backup(
         backup_bytes,
         mode_source=target_record.backup_path,
     )
+
+    if target_record.sidecar_backup_path and target_record.sidecar_original_path:
+        if target_record.sidecar_backup_path == "none":
+            if os.path.isfile(target_record.sidecar_original_path):
+                try:
+                    os.unlink(target_record.sidecar_original_path)
+                except OSError:
+                    pass
+        elif os.path.isfile(target_record.sidecar_backup_path):
+            with open(target_record.sidecar_backup_path, "rb") as sf:
+                s_bytes = sf.read()
+            atomic_write_bytes(
+                target_record.sidecar_original_path,
+                s_bytes,
+                mode_source=target_record.sidecar_backup_path,
+            )
+
     return target_record

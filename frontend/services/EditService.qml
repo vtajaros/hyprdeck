@@ -12,6 +12,13 @@ Singleton {
     property var previewData: null
     property bool dialogOpen: false
 
+    property var targetEditBind: null
+    property bool editDialogOpen: false
+    property string dialogMode: "edit"
+    property string lastEditedBindId: ""
+    property string lastAddedShortcut: ""
+    signal bindAdded(string shortcut, string key, var mods, string submap)
+
     property string toastMessage: ""
     property bool toastVisible: false
     property bool canUndo: false
@@ -130,6 +137,189 @@ Singleton {
         });
     }
 
+    function requestAdd() {
+        if (root.busy) return;
+        root.dialogMode = "add";
+        root.targetEditBind = null;
+        root.editDialogOpen = true;
+    }
+
+    function requestEdit(bind) {
+        if (!bind || !bind.id) return;
+        root.dialogMode = "edit";
+        root.targetEditBind = bind;
+        root.editDialogOpen = true;
+    }
+
+    function closeEditDialog() {
+        root.editDialogOpen = false;
+        root.targetEditBind = null;
+        ConflictCheckService.reset();
+        if (RecorderService.active) {
+            RecorderService.leave();
+        }
+    }
+
+    function previewAdd(mods, key, dispatcher, args, flags, submap, conflicts, description, category) {
+        if (root.busy || !key) return;
+
+        var cmd = [
+            "python3", "-m", "backend.cli", "edit", "add",
+            "--mods", mods || "",
+            "--key", key,
+            "--dry-run",
+            "--json"
+        ];
+        if (dispatcher) {
+            cmd.push("--dispatcher", dispatcher);
+        }
+        if (args) {
+            cmd.push("--args", args);
+        }
+        if (flags) {
+            cmd.push("--flags", flags);
+        }
+        if (submap) {
+            cmd.push("--submap", submap);
+        }
+        if (description) {
+            cmd.push("--desc", description);
+        }
+        if (category) {
+            cmd.push("--cat", category);
+        }
+
+        var applyCmd = [
+            "python3", "-m", "backend.cli", "edit", "add",
+            "--mods", mods || "",
+            "--key", key,
+            "--apply",
+            "--reload",
+            "--json"
+        ];
+        if (dispatcher) {
+            applyCmd.push("--dispatcher", dispatcher);
+        }
+        if (args) {
+            applyCmd.push("--args", args);
+        }
+        if (flags) {
+            applyCmd.push("--flags", flags);
+        }
+        if (submap) {
+            applyCmd.push("--submap", submap);
+        }
+        if (description) {
+            applyCmd.push("--desc", description);
+        }
+        if (category) {
+            applyCmd.push("--cat", category);
+        }
+
+        var newLabel = (mods ? (mods + " + ") : "") + key;
+        var parts = [];
+        if (mods) {
+            var mparts = mods.split("+");
+            for (var i = 0; i < mparts.length; i++) {
+                var mp = mparts[i].trim();
+                if (mp) parts.push(mp);
+            }
+        }
+        if (key) parts.push(key);
+
+        root.activeOp = {
+            action: "add",
+            bindId: "",
+            label: newLabel,
+            newLabel: newLabel,
+            parts: parts,
+            description: (args ? (dispatcher + " " + args) : dispatcher),
+            isDestructive: false,
+            title: "Add Keybinding",
+            conflicts: conflicts || [],
+            applyCmd: applyCmd,
+            addedShortcut: newLabel,
+            addedKey: key,
+            addedMods: mods,
+            addedSubmap: submap || ""
+        };
+
+        _runPreview(cmd);
+    }
+
+    function previewReplace(bind, newMods, newKey, newDispatcher, newArgs, preserveDispatcher, conflicts, description, category) {
+        if (root.busy || !bind || !bind.id) return;
+
+        var cmd = [
+            "python3", "-m", "backend.cli", "edit", "replace",
+            "--id", bind.id,
+            "--mods", newMods || "",
+            "--key", newKey,
+            "--dry-run",
+            "--json"
+        ];
+        if (preserveDispatcher) {
+            cmd.push("--preserve-dispatcher");
+        } else {
+            if (newDispatcher) {
+                cmd.push("--dispatcher", newDispatcher);
+            }
+            if (newArgs) {
+                cmd.push("--args", newArgs);
+            }
+        }
+        if (description) {
+            cmd.push("--desc", description);
+        }
+        if (category) {
+            cmd.push("--cat", category);
+        }
+
+        var applyCmd = [
+            "python3", "-m", "backend.cli", "edit", "replace",
+            "--id", bind.id,
+            "--mods", newMods || "",
+            "--key", newKey,
+            "--apply",
+            "--reload",
+            "--json"
+        ];
+        if (preserveDispatcher) {
+            applyCmd.push("--preserve-dispatcher");
+        } else {
+            if (newDispatcher) {
+                applyCmd.push("--dispatcher", newDispatcher);
+            }
+            if (newArgs) {
+                applyCmd.push("--args", newArgs);
+            }
+        }
+        if (description) {
+            applyCmd.push("--desc", description);
+        }
+        if (category) {
+            applyCmd.push("--cat", category);
+        }
+
+        var oldLabel = bind.keys_raw || bind.key || "bind";
+        var newLabel = (newMods ? (newMods + " + ") : "") + newKey;
+
+        root.activeOp = {
+            action: "replace",
+            bindId: bind.id,
+            label: oldLabel,
+            newLabel: newLabel,
+            parts: KeybindData.shortcutParts(bind),
+            description: (bind.description_effective ? bind.description_effective.text : ""),
+            isDestructive: false,
+            title: "Replace Keybinding",
+            conflicts: conflicts || [],
+            applyCmd: applyCmd
+        };
+
+        _runPreview(cmd);
+    }
+
     function requestCommentOut(bind) {
         if (root.busy || !bind || !bind.id) return;
         root.activeOp = {
@@ -219,7 +409,9 @@ Singleton {
         if (root.busy || !root.activeOp || root.dryRunOnly) return;
         var op = root.activeOp;
         var cmd = [];
-        if (op.action === "comment-out") {
+        if (op.action === "replace" || op.action === "add") {
+            cmd = op.applyCmd;
+        } else if (op.action === "comment-out") {
             cmd = ["python3", "-m", "backend.cli", "edit", "--json", "--apply", "--reload", "--comment-out", op.bindId];
         } else if (op.action === "uncomment") {
             cmd = ["python3", "-m", "backend.cli", "edit", "--json", "--apply", "--reload", "--uncomment", op.bindId];
@@ -248,7 +440,19 @@ Singleton {
                     }
                 }
             }
-            if (op.action === "comment-out") {
+            if (data.sidecar_warning && data.sidecar_warning.message) {
+                root.showToast(data.sidecar_warning.message, false);
+            } else if (op.action === "add") {
+                root.lastAddedShortcut = op.newLabel || op.label;
+                root.lastEditedBindId = (data && data.expected_new_bind && data.expected_new_bind.id) ? data.expected_new_bind.id : "";
+                root.closeEditDialog();
+                root.bindAdded(op.newLabel || op.label, op.addedKey, op.addedMods, op.addedSubmap);
+                showToast("Added " + (op.newLabel || op.label) + ". Undo", true);
+            } else if (op.action === "replace") {
+                root.lastEditedBindId = op.bindId;
+                showToast("Updated " + (op.newLabel || op.label) + ". Undo", true);
+                root.closeEditDialog();
+            } else if (op.action === "comment-out") {
                 showToast("Disabled " + op.label + ". Undo", true);
             } else if (op.action === "uncomment") {
                 showToast("Enabled " + op.label + ". Undo", true);
@@ -259,6 +463,8 @@ Singleton {
             }
             loadBackups();
             KeybindData.reload();
+            SidecarService.loadAllOverrides();
+            SidecarService.loadOrphans();
         });
     }
 

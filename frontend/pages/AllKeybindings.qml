@@ -25,6 +25,20 @@ Item {
 
     readonly property var filteredBinds: KeybindData.filter(searchText, selectedCategory, selectedSubmap)
 
+    Connections {
+        target: EditService
+        function onBindAdded(shortcut, key, mods, submap) {
+            var filterActive = (root.searchText.length > 0) || (root.selectedCategory !== "All") || (root.selectedSubmap !== "All");
+            if (filterActive) {
+                root.searchText = "";
+                root.selectedCategory = "All";
+                root.selectedSubmap = "All";
+                searchField.text = "";
+                EditService.showToast("Added " + shortcut + " (filter cleared to show new bind)", true);
+            }
+        }
+    }
+
     onFilteredBindsChanged: {
         if (selectedIndex >= filteredBinds.length) {
             selectedIndex = Math.max(0, filteredBinds.length - 1);
@@ -84,16 +98,24 @@ Item {
         anchors.margins: HKS.space16
         spacing: HKS.space12
 
-        // Top control bar: Search + Keyboard View Toggle
+        // Top control bar: Search + Add Keybind + Keyboard View Toggle
         Row {
             width: parent.width
             spacing: HKS.space12
 
             SearchField {
                 id: searchField
-                width: parent.width - kbToggle.width - 12
+                width: parent.width - kbToggle.width - addKeybindBtn.width - 24
                 onTextChanged: root.searchText = text
                 onCleared: root.searchText = ""
+            }
+
+            ActionButton {
+                id: addKeybindBtn
+                variant: "accent"
+                iconText: ""
+                text: "Add Keybind"
+                onClicked: EditService.requestAdd()
             }
 
             // Keyboard View Toggle (disabled: "soon" until Phase 2b-2)

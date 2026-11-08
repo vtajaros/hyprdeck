@@ -1,2 +1,6 @@
 singleton KeybindData 1.0 KeybindData.qml
 singleton EditService 1.0 EditService.qml
+singleton RecorderService 1.0 RecorderService.qml
+singleton ConflictCheckService 1.0 ConflictCheckService.qml
+singleton DispatcherCatalog 1.0 DispatcherCatalog.qml
+singleton SidecarService 1.0 SidecarService.qml

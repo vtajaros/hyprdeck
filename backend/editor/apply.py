@@ -17,6 +17,11 @@ from backend.editor.backups import (
     create_backup,
     restore_backup,
 )
+from backend.editor.codegen import (
+    _normalize_mods,
+    generate_hyprlang_bind,
+    generate_lua_bind,
+)
 from backend.editor.edit_plan import (
     HYPRLANG_DISABLED_PREFIX,
     LUA_DISABLED_PREFIX,
@@ -25,6 +30,7 @@ from backend.editor.edit_plan import (
     apply_ops_to_text,
     generate_unified_diff,
 )
+from backend.editor.insert_policy import InsertPlan, plan_insert_bind
 from backend.editor.validator import (
     BindSetComparison,
     RecorderVerificationError,
@@ -34,8 +40,9 @@ from backend.editor.validator import (
     verify_with_hyprland,
     verify_with_recorder,
 )
-from backend.models.types import BindRecord
+from backend.models.types import BindRecord, DispatcherInfo
 from backend.parser import compute_bind_id, parse_hyprlang_config, parse_lua_config
+from backend.parser.modifiers import MODIFIER_BITS
 from backend.validation.oracle import bind_record_to_tuple
 
 
@@ -49,14 +56,20 @@ class ApplyResult:
     errors: list[str] = field(default_factory=list)
     bind_comparison: BindSetComparison | None = None
     companion_warning: str | None = None
+    anchor_created: bool = False
+    dispatcher_unchanged: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "anchor_created": self.anchor_created,
             "applied": self.applied,
             "backup": self.backup.to_dict() if self.backup else None,
-            "bind_comparison": self.bind_comparison.to_dict() if self.bind_comparison else None,
+            "bind_comparison": (
+                self.bind_comparison.to_dict() if self.bind_comparison else None
+            ),
             "companion_warning": self.companion_warning,
             "diff": self.diff,
+            "dispatcher_unchanged": self.dispatcher_unchanged,
             "errors": list(self.errors),
             "rolled_back": self.rolled_back,
             "verify": self.verify.to_dict() if self.verify else None,
@@ -192,6 +205,10 @@ def apply_edit(
     sleep_fn: Callable[[float], None] = time.sleep,
     backup_dir: str | None = None,
     env: dict[str, str] | None = None,
+    op_kind: str | None = None,
+    expected_new_bind: BindRecord | None = None,
+    anchor_created: bool = False,
+    sidecar_path: str | None = None,
 ) -> ApplyResult:
     """Execute the full Phase 4a edit verification, backup, atomic apply, and rollback pipeline."""
     if not ops:
@@ -304,6 +321,8 @@ def apply_edit(
             ops=ops,
             before_dir=abs_config_dir,
             after_dir=staged_dir,
+            op_kind=op_kind,
+            expected_new_bind=expected_new_bind,
         )
         if not bind_cmp.ok:
             return ApplyResult(
@@ -323,6 +342,8 @@ def apply_edit(
         env=env,
     )
 
+    dispatcher_unchanged = any(getattr(op, "dispatcher_unchanged", False) for op in ops)
+
     if dry_run:
         return ApplyResult(
             applied=False,
@@ -333,6 +354,8 @@ def apply_edit(
             errors=[],
             bind_comparison=bind_cmp,
             companion_warning=companion_warning,
+            anchor_created=anchor_created,
+            dispatcher_unchanged=dispatcher_unchanged,
         )
 
     # Re-verify target file hash right before backup + write to prevent TOCTOU race
@@ -353,6 +376,7 @@ def apply_edit(
         backup_dir=backup_dir,
         config_dir=abs_config_dir,
         env=env,
+        sidecar_path=sidecar_path,
     )
 
     atomic_write_bytes(target_file, new_bytes, mode_source=backup_rec.backup_path)
@@ -401,6 +425,8 @@ def apply_edit(
         errors=[],
         bind_comparison=bind_cmp,
         companion_warning=companion_warning,
+        anchor_created=anchor_created,
+        dispatcher_unchanged=dispatcher_unchanged,
     )
 
 
@@ -492,4 +518,209 @@ def resolve_uncomment_op(
     raise KeyError(
         f"Disabled bind '{bind_id}' not found in configuration (no matching HKS-disabled line)."
     )
+
+
+def make_expected_bind(
+    language: str,
+    mods: list[str] | str | None,
+    key: str,
+    dispatcher: str,
+    args: str | None = None,
+    source_file: str = "",
+    submap: str = "",
+    flags: dict[str, bool] | None = None,
+) -> BindRecord:
+    """Construct a lightweight BindRecord matching expected user-specified bind attributes."""
+    canonical_mods = _normalize_mods(mods)
+    modmask = sum(MODIFIER_BITS[m] for m in canonical_mods if m in MODIFIER_BITS)
+    dsp_clean = dispatcher.strip()
+    args_clean = args.strip() if args else ""
+
+    from backend.models.types import default_flags
+    final_flags = default_flags()
+    if flags:
+        final_flags.update(flags)
+
+    if language == "hyprlang" and flags:
+        from backend.parser.modifiers import derive_bind_type_from_flags
+        bind_type = derive_bind_type_from_flags(final_flags)
+    else:
+        bind_type = "bind"
+
+    return BindRecord(
+        id="expected_preview",
+        language=language,
+        bind_type=bind_type,
+        declared_via=bind_type,
+        modifiers=canonical_mods,
+        modifiers_raw=" + ".join(canonical_mods),
+        modmask=modmask,
+        key=key.strip(),
+        key_kind="keysym",
+        keys_raw=" + ".join(canonical_mods + [key.strip()]) if canonical_mods else key.strip(),
+        flags=final_flags,
+        flags_extra={},
+        description=None,
+        dispatcher=DispatcherInfo(
+            path=dsp_clean,
+            args=[args_clean] if args_clean else [],
+            arg_summary=args_clean,
+        ),
+        submap=submap,
+        source_file=source_file,
+        source_line=1,
+        original_line="",
+        original_line_number=1,
+        generated=False,
+        occurrence=0,
+        occurrences_at_site=1,
+        trace=[],
+        parse_status="ok",
+        args_raw=args_clean,
+    )
+
+
+def resolve_replace_op(
+    bind_id: str,
+    new_mods: list[str] | str | None,
+    new_key: str,
+    new_dispatcher: str | None = None,
+    new_args: str | None = None,
+    binds: list[BindRecord] | None = None,
+    preserve_dispatcher: bool = False,
+) -> tuple[EditOp, BindRecord, BindRecord]:
+    """Construct an EditOp for replacing an existing keybind line.
+
+    Returns (EditOp, target_bind, expected_new_bind).
+    """
+    if not binds:
+        raise KeyError(f"No active binds available to resolve replace op for '{bind_id}'.")
+
+    target_bind = next((b for b in binds if b.id == bind_id), None)
+    if target_bind is None:
+        raise KeyError(f"Bind '{bind_id}' not found in active configuration.")
+
+    if target_bind.generated:
+        raise NotEditableError(
+            f"Bind '{bind_id}' ({target_bind.keys_raw}) is generated by a loop "
+            f"({target_bind.occurrences_at_site} binds at {target_bind.source_file}:{target_bind.source_line}) "
+            f"and cannot be replaced individually. Edit the generating loop instead.",
+            file=target_bind.source_file,
+            line=target_bind.source_line,
+        )
+
+    cur_dsp = target_bind.dispatcher.path if target_bind.dispatcher else ""
+    cur_arg = target_bind.dispatcher.arg_summary if (target_bind.dispatcher and target_bind.dispatcher.arg_summary) else None
+    cur_raw = target_bind.args_raw or None
+
+    if preserve_dispatcher or (new_dispatcher is None and new_args is None):
+        dispatcher_unchanged = True
+    elif (new_dispatcher is not None and new_dispatcher.strip().lower() == cur_dsp.strip().lower()) and (
+        (new_args == cur_arg) or (new_args == cur_raw) or (new_args is None and cur_arg is None)
+    ):
+        dispatcher_unchanged = True
+    else:
+        dispatcher_unchanged = False
+
+    final_dispatcher = cur_dsp if dispatcher_unchanged else (new_dispatcher or cur_dsp)
+    final_args = cur_arg if dispatcher_unchanged else new_args
+
+    if target_bind.language == "lua":
+        new_line = generate_lua_bind(
+            mods=new_mods,
+            key=new_key,
+            dispatcher=final_dispatcher,
+            args=final_args,
+            original_line=target_bind.original_line,
+            preserve_dispatcher=dispatcher_unchanged,
+        )
+    else:
+        new_line = generate_hyprlang_bind(
+            mods=new_mods,
+            key=new_key,
+            dispatcher=final_dispatcher,
+            args=final_args,
+            original_line=target_bind.original_line,
+            preserve_dispatcher=dispatcher_unchanged,
+        )
+
+    expected_new = make_expected_bind(
+        language=target_bind.language,
+        mods=new_mods,
+        key=new_key,
+        dispatcher=final_dispatcher,
+        args=final_args,
+        source_file=target_bind.source_file,
+        submap=target_bind.submap,
+    )
+
+    op = EditOp(
+        kind="replace_line",
+        file=target_bind.source_file,
+        line_number=target_bind.source_line,
+        expected_text=target_bind.original_line,
+        new_text=new_line,
+        language=target_bind.language,
+        dispatcher_unchanged=dispatcher_unchanged,
+    )
+
+    return op, target_bind, expected_new
+
+
+def resolve_insert_op(
+    file_path: str,
+    language: str,
+    mods: list[str] | str | None,
+    key: str,
+    dispatcher: str,
+    args: str | None = None,
+    *,
+    flags: dict[str, bool] | None = None,
+    submap: str | None = None,
+    all_files: list[str] | None = None,
+    prefer_mainmod: bool = False,
+) -> tuple[EditOp, InsertPlan, BindRecord]:
+    """Construct an EditOp for inserting a new keybinding per HKS insertion policy.
+
+    Returns (EditOp, InsertPlan, expected_new_bind).
+    """
+    from backend.editor.insert_policy import HYPRLANG_ANCHOR, LUA_ANCHOR
+    target_file = file_path
+    anchor = LUA_ANCHOR if language == "lua" else HYPRLANG_ANCHOR
+
+    # If anchor exists in one of the known files, insert there; otherwise use entrypoint file
+    if all_files:
+        for cand in all_files:
+            if os.path.isfile(cand):
+                try:
+                    with open(cand, "r", encoding="utf-8", errors="ignore") as f:
+                        cand_content = f.read()
+                    if anchor in cand_content:
+                        target_file = cand
+                        break
+                except OSError:
+                    pass
+
+    op, plan = plan_insert_bind(
+        file_path=target_file,
+        language=language,
+        mods=mods,
+        key=key,
+        dispatcher=dispatcher,
+        args=args,
+        flags=flags,
+        submap=submap,
+        prefer_mainmod=prefer_mainmod,
+    )
+    expected_new = make_expected_bind(
+        language=language,
+        mods=mods,
+        key=key,
+        dispatcher=dispatcher,
+        args=args,
+        source_file=target_file,
+        submap=submap or "",
+        flags=flags,
+    )
+    return op, plan, expected_new
 

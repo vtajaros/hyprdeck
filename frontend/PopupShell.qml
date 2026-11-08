@@ -28,6 +28,7 @@ Item {
 
     Component.onCompleted: {
         appeared = true;
+        RecorderService.heal();
     }
 
     function dismiss(reason) {

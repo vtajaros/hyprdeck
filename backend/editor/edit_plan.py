@@ -70,6 +70,7 @@ class EditOp:
     new_text: str | None = None
     language: str | None = None
     generated: bool = False
+    dispatcher_unchanged: bool = False
 
     def resolved_language(self) -> str:
         if self.language in ("lua", "hyprlang"):
@@ -174,7 +175,9 @@ def apply_ops_to_text(text: str, ops: list[EditOp]) -> str:
     seen_lines: set[int] = set()
     for _, op in indexed_ops:
         idx = op.line_number - 1
-        if idx < 0 or idx >= len(raw_lines):
+        expected_lines = op.expected_text.splitlines() or [""]
+        span = len(expected_lines)
+        if idx < 0 or idx + span > len(raw_lines):
             mismatches.append(
                 LineMismatch(
                     file=op.file,
@@ -186,7 +189,8 @@ def apply_ops_to_text(text: str, ops: list[EditOp]) -> str:
             )
             continue
 
-        if op.line_number in seen_lines:
+        target_line_numbers = set(range(op.line_number, op.line_number + span))
+        if target_line_numbers & seen_lines:
             mismatches.append(
                 LineMismatch(
                     file=op.file,
@@ -197,16 +201,16 @@ def apply_ops_to_text(text: str, ops: list[EditOp]) -> str:
                 )
             )
             continue
-        seen_lines.add(op.line_number)
+        seen_lines.update(target_line_numbers)
 
-        current_content, _ = _split_line_and_eol(raw_lines[idx])
-        if current_content != op.expected_text:
+        actual_lines = [_split_line_and_eol(raw_lines[i])[0] for i in range(idx, idx + span)]
+        if actual_lines != expected_lines:
             mismatches.append(
                 LineMismatch(
                     file=op.file,
                     line_number=op.line_number,
                     expected_text=op.expected_text,
-                    actual_text=current_content,
+                    actual_text="\n".join(actual_lines),
                     reason="line content does not match expected_text",
                 )
             )
@@ -214,17 +218,18 @@ def apply_ops_to_text(text: str, ops: list[EditOp]) -> str:
 
         if op.kind == "uncomment":
             prefix = op.disabled_prefix()
-            stripped = current_content.lstrip(" \t")
-            if not current_content.startswith(prefix) and not stripped.startswith(prefix):
-                mismatches.append(
-                    LineMismatch(
-                        file=op.file,
-                        line_number=op.line_number,
-                        expected_text=op.expected_text,
-                        actual_text=current_content,
-                        reason=f"line does not start with expected disabled prefix {prefix!r}",
+            for current_content in actual_lines:
+                stripped = current_content.lstrip(" \t")
+                if not current_content.startswith(prefix) and not stripped.startswith(prefix):
+                    mismatches.append(
+                        LineMismatch(
+                            file=op.file,
+                            line_number=op.line_number,
+                            expected_text=op.expected_text,
+                            actual_text=current_content,
+                            reason=f"line does not start with expected disabled prefix {prefix!r}",
+                        )
                     )
-                )
 
     if mismatches:
         details = "; ".join(m.format() for m in mismatches)
@@ -233,49 +238,60 @@ def apply_ops_to_text(text: str, ops: list[EditOp]) -> str:
     # Second pass: apply each operation in reverse line order
     for _, op in indexed_ops:
         idx = op.line_number - 1
-        current_content, eol = _split_line_and_eol(raw_lines[idx])
+        expected_lines = op.expected_text.splitlines() or [""]
+        span = len(expected_lines)
+        actual_lines = [_split_line_and_eol(raw_lines[i])[0] for i in range(idx, idx + span)]
+        _, eol = _split_line_and_eol(raw_lines[idx + span - 1])
+        if not eol:
+            eol = default_eol
 
         # Re-verify against current line state
-        if current_content != op.expected_text:
+        if actual_lines != expected_lines:
             mm = LineMismatch(
                 file=op.file,
                 line_number=op.line_number,
                 expected_text=op.expected_text,
-                actual_text=current_content,
+                actual_text="\n".join(actual_lines),
                 reason="line content changed during multi-op application",
             )
             raise EditConflict(f"Edit conflict detected: {mm.format()}", [mm])
 
         if op.kind == "comment_out":
             prefix = op.disabled_prefix()
-            raw_lines[idx] = f"{prefix}{current_content}{eol}"
+            for i, line_c in enumerate(actual_lines):
+                line_eol = _split_line_and_eol(raw_lines[idx + i])[1]
+                raw_lines[idx + i] = f"{prefix}{line_c}{line_eol}"
 
         elif op.kind == "uncomment":
             prefix = op.disabled_prefix()
-            if current_content.startswith(prefix):
-                restored = current_content[len(prefix):]
-            else:
-                leading_len = len(current_content) - len(current_content.lstrip(" \t"))
-                leading = current_content[:leading_len]
-                after = current_content[leading_len:]
-                restored = leading + after[len(prefix):]
-            raw_lines[idx] = f"{restored}{eol}"
+            for i, line_c in enumerate(actual_lines):
+                line_eol = _split_line_and_eol(raw_lines[idx + i])[1]
+                if line_c.startswith(prefix):
+                    restored = line_c[len(prefix):]
+                else:
+                    leading_len = len(line_c) - len(line_c.lstrip(" \t"))
+                    leading = line_c[:leading_len]
+                    after = line_c[leading_len:]
+                    restored = leading + after[len(prefix):]
+                raw_lines[idx + i] = f"{restored}{line_eol}"
 
         elif op.kind == "replace_line":
             assert op.new_text is not None
-            raw_lines[idx] = f"{op.new_text}{eol}"
+            raw_lines[idx:idx + span] = [f"{op.new_text}{eol}"]
 
         elif op.kind == "delete_line":
-            del raw_lines[idx]
+            del raw_lines[idx:idx + span]
 
         elif op.kind == "insert_after":
             assert op.new_text is not None
-            if eol:
-                raw_lines.insert(idx + 1, f"{op.new_text}{eol}")
+            target_idx = idx + span - 1
+            last_content, last_eol = _split_line_and_eol(raw_lines[target_idx])
+            if last_eol:
+                raw_lines.insert(target_idx + 1, f"{op.new_text}{last_eol}")
             else:
                 # Target line was the final line of a file with no trailing newline.
-                raw_lines[idx] = f"{current_content}{default_eol}"
-                raw_lines.insert(idx + 1, op.new_text)
+                raw_lines[target_idx] = f"{last_content}{default_eol}"
+                raw_lines.insert(target_idx + 1, op.new_text)
 
     return "".join(raw_lines)
 

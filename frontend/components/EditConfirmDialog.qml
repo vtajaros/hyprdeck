@@ -241,6 +241,200 @@ Item {
                         color: HKS.fg
                     }
                 }
+
+                // 3. Dispatcher Preserved Badge
+                Rectangle {
+                    visible: !!(EditService.previewData && EditService.previewData.dispatcher_unchanged)
+                    height: 22
+                    width: dspPreservedTxt.implicitWidth + 14
+                    radius: 4
+                    color: HKS.alpha(HKS.accent, 0.15)
+                    border.width: 1
+                    border.color: HKS.alpha(HKS.accent, 0.4)
+
+                    Row {
+                        id: dspPreservedTxt
+                        anchors.centerIn: parent
+                        spacing: 4
+                        Text {
+                            text: ""
+                            font.family: HKS.fontFamily
+                            font.pixelSize: 10
+                            color: HKS.accent
+                        }
+                        Text {
+                            text: "Dispatcher preserved as written"
+                            font.family: HKS.fontFamily
+                            font.pixelSize: 10
+                            font.weight: Font.DemiBold
+                            color: HKS.accent
+                        }
+                    }
+                }
+
+                // 4. Target File and Line Badge (when adding)
+                Rectangle {
+                    visible: !!(EditService.activeOp && EditService.activeOp.action === "add" && EditService.previewData && EditService.previewData.file_to_modify)
+                    height: 22
+                    width: fileLineTxt.implicitWidth + 14
+                    radius: 4
+                    color: HKS.alpha(HKS.surface, 0.8)
+                    border.width: 1
+                    border.color: HKS.alpha(HKS.muted, 0.3)
+
+                    Row {
+                        id: fileLineTxt
+                        anchors.centerIn: parent
+                        spacing: 4
+                        Text {
+                            text: ""
+                            font.family: HKS.fontFamily
+                            font.pixelSize: 10
+                            color: HKS.muted
+                        }
+                        Text {
+                            text: {
+                                if (!EditService.previewData || !EditService.previewData.file_to_modify) return "";
+                                var f = EditService.previewData.file_to_modify.split("/").pop();
+                                var l = EditService.previewData.insert_line;
+                                return f + (l ? (":" + l) : "");
+                            }
+                            font.family: HKS.fontFamily
+                            font.pixelSize: 10
+                            color: HKS.fg
+                        }
+                    }
+                }
+            }
+
+            // Anchor Created Notice Banner
+            Rectangle {
+                width: parent.width
+                height: 28
+                radius: 6
+                color: HKS.alpha(HKS.accent, 0.12)
+                border.width: 1
+                border.color: HKS.alpha(HKS.accent, 0.4)
+                visible: !!(EditService.activeOp && EditService.activeOp.action === "add" && EditService.previewData && EditService.previewData.anchor_created)
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 8
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: ""
+                        font.family: HKS.fontFamily
+                        font.pixelSize: 11
+                        color: HKS.accent
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Notice: HKS anchor block ('# HKS: custom binds') will be created in this file."
+                        font.family: HKS.fontFamily
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        color: HKS.accent
+                    }
+                }
+            }
+
+            // Sidecar Migration Notice Banner
+            Rectangle {
+                property var mig: EditService.previewData ? EditService.previewData.sidecar_migration : null
+                property var scWarn: EditService.previewData ? EditService.previewData.sidecar_warning : null
+                width: parent.width
+                height: Math.max(28, scRow.implicitHeight + 10)
+                radius: 6
+                visible: !!(mig && mig.has_override) || !!scWarn
+                color: (scWarn || (mig && mig.collision)) ? HKS.alpha(HKS.warning, 0.15) : HKS.alpha(HKS.accent, 0.12)
+                border.width: 1
+                border.color: (scWarn || (mig && mig.collision)) ? HKS.alpha(HKS.warning, 0.4) : HKS.alpha(HKS.accent, 0.4)
+
+                Row {
+                    id: scRow
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    anchors.right: parent.right
+                    anchors.rightMargin: 10
+                    spacing: 8
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: (parent.parent.scWarn || (parent.parent.mig && parent.parent.mig.collision)) ? "" : ""
+                        font.family: HKS.fontFamily
+                        font.pixelSize: 11
+                        color: (parent.parent.scWarn || (parent.parent.mig && parent.parent.mig.collision)) ? HKS.warning : HKS.accent
+                    }
+                    Text {
+                        width: parent.width - 24
+                        text: {
+                            if (parent.parent.scWarn && parent.parent.scWarn.message) {
+                                return parent.parent.scWarn.message;
+                            }
+                            if (parent.parent.mig && parent.parent.mig.collision) {
+                                return "Custom description collision: destination shortcut already has a custom override. The previous description will be preserved on the old shortcut.";
+                            }
+                            return "Custom description will follow this bind to new shortcut";
+                        }
+                        font.family: HKS.fontFamily
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        color: (parent.parent.scWarn || (parent.parent.mig && parent.parent.mig.collision)) ? HKS.warning : HKS.accent
+                        wrapMode: Text.Wrap
+                    }
+                }
+            }
+
+            // Conflicts Warning Banner (if candidate conflicts with existing active binds)
+            Rectangle {
+                id: conflictBox
+                width: parent.width
+                height: confCol.implicitHeight + 14
+                radius: 6
+                color: HKS.alpha(HKS.warning, 0.12)
+                border.width: 1
+                border.color: HKS.alpha(HKS.warning, 0.5)
+                visible: !!(EditService.activeOp && EditService.activeOp.conflicts && EditService.activeOp.conflicts.length > 0)
+
+                Row {
+                    id: confCol
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    anchors.right: parent.right
+                    anchors.rightMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
+
+                    Text {
+                        text: ""
+                        font.family: HKS.fontFamily
+                        font.pixelSize: 13
+                        color: HKS.warning
+                    }
+
+                    Column {
+                        width: parent.width - 24
+                        spacing: 2
+                        Text {
+                            text: "Conflict Notice: New shortcut conflicts with existing bind(s):"
+                            font.family: HKS.fontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
+                            color: HKS.warning
+                        }
+                        Repeater {
+                            model: (EditService.activeOp && EditService.activeOp.conflicts) ? EditService.activeOp.conflicts : []
+                            Text {
+                                width: parent.width
+                                text: "• " + modelData.shortcut + " — " + modelData.description + " (" + modelData.file + ":" + modelData.line + ")"
+                                font.family: HKS.fontFamily
+                                font.pixelSize: 10
+                                color: HKS.fg
+                                elide: Text.ElideRight
+                            }
+                        }
+                    }
+                }
             }
 
             // Warnings Box (if companion warning or other warning exists)
@@ -435,6 +629,7 @@ Item {
                             text: {
                                 if (EditService.dryRunOnly) return "Apply (disabled in test mode)";
                                 if (EditService.busy) return "Applying...";
+                                if (EditService.activeOp && EditService.activeOp.action === "add") return "Add & Reload";
                                 return "Apply & Reload";
                             }
                             onClicked: EditService.confirmApply()

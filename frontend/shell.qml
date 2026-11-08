@@ -17,10 +17,18 @@ ShellRoot {
         function reload() {
             KeybindData.reload();
         }
+        function openAdd() {
+            EditService.requestAdd();
+        }
+        function openEditFirst() {
+            if (KeybindData.binds && KeybindData.binds.length > 0) {
+                EditService.requestEdit(KeybindData.binds[0]);
+            }
+        }
     }
 
     Loader {
         id: shellLoader
-        source: root.mode === "popup" ? "PopupShell.qml" : "WindowShell.qml"
+        source: root.mode === "popup" ? "PopupShell.qml" : (root.mode === "recorder-test" ? "dev/RecorderHarness.qml" : "WindowShell.qml")
     }
 }
