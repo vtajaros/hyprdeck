@@ -3,6 +3,7 @@ import QtTest
 import "../theme"
 import "../services"
 import "../components"
+import "../pages"
 import "../components/keymap.js" as KeyMap
 
 Item {
@@ -24,6 +25,11 @@ Item {
     Component {
         id: recorderComp
         KeybindRecorder {}
+    }
+
+    Component {
+        id: allKeybindingsComp
+        AllKeybindings {}
     }
 
     TestCase {
@@ -289,6 +295,62 @@ Item {
             var confirm = confirmDialogComp.createObject(testRoot);
             verify(confirm !== null);
             confirm.destroy();
+        }
+
+        // 7. Delete keybind preserves position and clamped index
+        function test_delete_keybind_preserves_position() {
+            var mockBinds = [];
+            for (var i = 0; i < 40; i++) {
+                mockBinds.push({
+                    id: "b_" + i,
+                    modifiers: ["SUPER"],
+                    key: "Key" + i,
+                    submap: "",
+                    category: "Apps",
+                    original_line: "bind=SUPER,Key" + i + ",exec,app" + i
+                });
+            }
+            KeybindData.binds = mockBinds;
+
+            var page = allKeybindingsComp.createObject(testRoot, {
+                width: 700,
+                height: 500
+            });
+            verify(page !== null);
+            tryCompare(page, "initialLoadDone", true);
+
+            var lv = findChild(page, "listView");
+            verify(lv !== null, "listView found");
+
+            // Scroll down to index 25
+            lv.positionViewAtIndex(25, 0); // ListView.Beginning
+            page.selectedIndex = 25;
+            page.expandedIndex = 25;
+
+            var beforeY = lv.contentY;
+            verify(beforeY > 0, "contentY should be scrolled down");
+
+            // User triggers delete on b_25
+            var op = { action: "delete", bindId: "b_25" };
+            page.saveScrollPositionForOp(op);
+            compare(page.shouldRestorePosition, true);
+            compare(page.savedSelectedIndex, 25);
+            compare(page.savedScrollY, beforeY);
+
+            // Backend completes delete: remove b_25 from KeybindData.binds
+            var updated = mockBinds.slice();
+            updated.splice(25, 1);
+            KeybindData.binds = updated;
+
+            // Wait for position to restore
+            tryCompare(lv, "contentY", beforeY);
+            compare(page.shouldRestorePosition, false);
+            compare(page.selectedIndex, 25, "selectedIndex remains at 25");
+            compare(page.expandedIndex, -1, "expanded row collapsed");
+            compare(page.filteredBinds[25].id, "b_26", "item at index 25 is now the successor b_26");
+
+            page.destroy();
+            KeybindData.binds = [];
         }
     }
 }

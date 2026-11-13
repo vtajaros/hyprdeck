@@ -18,6 +18,7 @@ Singleton {
     property string lastEditedBindId: ""
     property string lastAddedShortcut: ""
     signal bindAdded(string shortcut, string key, var mods, string submap)
+    signal bindDeleted(string bindId, string label)
 
     property string toastMessage: ""
     property bool toastVisible: false
@@ -457,6 +458,7 @@ Singleton {
             } else if (op.action === "uncomment") {
                 showToast("Enabled " + op.label + ". Undo", true);
             } else if (op.action === "delete") {
+                root.bindDeleted(op.bindId, op.label);
                 showToast("Deleted " + op.label + ". Undo", true);
             } else {
                 showToast("Restored configuration.", false);

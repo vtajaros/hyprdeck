@@ -14,8 +14,39 @@ Item {
     property int selectedIndex: 0
     signal requestClose()
 
+    property real savedScrollY: 0
+    property int savedSelectedIndex: 0
+    property bool shouldRestorePosition: false
+    property bool initialLoadDone: false
+
+    function findBindIndex(bindId) {
+        if (!bindId || !root.filteredBinds) return -1;
+        for (var i = 0; i < root.filteredBinds.length; i++) {
+            if (root.filteredBinds[i] && root.filteredBinds[i].id === bindId) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function saveScrollPositionForOp(op) {
+        if (!initialLoadDone) return;
+        savedScrollY = listView.contentY;
+        var idx = -1;
+        if (op && op.bindId) {
+            idx = findBindIndex(op.bindId);
+        }
+        if (idx >= 0) {
+            savedSelectedIndex = idx;
+        } else {
+            savedSelectedIndex = root.selectedIndex;
+        }
+        shouldRestorePosition = true;
+    }
+
     function showSearch(text) {
         var q = text || "";
+        root.shouldRestorePosition = false;
         searchField.text = q;
         root.searchText = q;
         root.selectedCategory = "All";
@@ -30,6 +61,7 @@ Item {
         function onBindAdded(shortcut, key, mods, submap) {
             var filterActive = (root.searchText.length > 0) || (root.selectedCategory !== "All") || (root.selectedSubmap !== "All");
             if (filterActive) {
+                root.shouldRestorePosition = false;
                 root.searchText = "";
                 root.selectedCategory = "All";
                 root.selectedSubmap = "All";
@@ -37,13 +69,69 @@ Item {
                 EditService.showToast("Added " + shortcut + " (filter cleared to show new bind)", true);
             }
         }
+        function onDialogOpenChanged() {
+            if (EditService.dialogOpen && EditService.activeOp) {
+                root.saveScrollPositionForOp(EditService.activeOp);
+            }
+        }
+        function onBindDeleted(bindId, label) {
+            if (!root.shouldRestorePosition) {
+                root.savedScrollY = listView.contentY;
+                var idx = root.findBindIndex(bindId);
+                root.savedSelectedIndex = (idx >= 0) ? idx : root.selectedIndex;
+                root.shouldRestorePosition = true;
+            }
+        }
+    }
+
+    Connections {
+        target: KeybindData
+        function onLoadingChanged() {
+            if (KeybindData.loading && KeybindData.binds && KeybindData.binds.length > 0) {
+                if (!root.shouldRestorePosition) {
+                    root.savedScrollY = listView.contentY;
+                    root.savedSelectedIndex = root.selectedIndex;
+                    root.shouldRestorePosition = true;
+                }
+            }
+        }
+    }
+
+    onSearchTextChanged: {
+        shouldRestorePosition = false;
+    }
+    onSelectedCategoryChanged: {
+        shouldRestorePosition = false;
+    }
+    onSelectedSubmapChanged: {
+        shouldRestorePosition = false;
     }
 
     onFilteredBindsChanged: {
-        if (selectedIndex >= filteredBinds.length) {
-            selectedIndex = Math.max(0, filteredBinds.length - 1);
+        if (!initialLoadDone) {
+            initialLoadDone = (filteredBinds && filteredBinds.length > 0);
+            selectedIndex = (filteredBinds && filteredBinds.length > 0) ? 0 : -1;
+            expandedIndex = -1;
+            return;
         }
-        expandedIndex = -1;
+
+        if (shouldRestorePosition) {
+            shouldRestorePosition = false;
+            var targetIndex = Math.min(savedSelectedIndex, Math.max(0, filteredBinds.length - 1));
+            selectedIndex = targetIndex;
+            expandedIndex = -1;
+            var targetY = savedScrollY;
+            Qt.callLater(function() {
+                var maxY = Math.max(0, listView.contentHeight - listView.height);
+                listView.contentY = Math.min(targetY, maxY);
+                listView.positionViewAtIndex(targetIndex, ListView.Contain);
+            });
+        } else {
+            if (selectedIndex >= filteredBinds.length) {
+                selectedIndex = Math.max(0, filteredBinds.length - 1);
+            }
+            expandedIndex = -1;
+        }
     }
 
     focus: true
@@ -106,8 +194,14 @@ Item {
             SearchField {
                 id: searchField
                 width: parent.width - kbToggle.width - addKeybindBtn.width - 24
-                onTextChanged: root.searchText = text
-                onCleared: root.searchText = ""
+                onTextChanged: {
+                    root.shouldRestorePosition = false;
+                    root.searchText = text;
+                }
+                onCleared: {
+                    root.shouldRestorePosition = false;
+                    root.searchText = "";
+                }
             }
 
             ActionButton {
@@ -177,6 +271,7 @@ Item {
             totalCount: KeybindData.binds.length
             selectedCategory: root.selectedCategory
             onCategorySelected: function(cat) {
+                root.shouldRestorePosition = false;
                 root.selectedCategory = cat;
             }
         }
@@ -223,7 +318,10 @@ Item {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.selectedSubmap = modelData
+                            onClicked: {
+                                root.shouldRestorePosition = false;
+                                root.selectedSubmap = modelData;
+                            }
                         }
                     }
                 }
@@ -245,10 +343,10 @@ Item {
             width: parent.width
             height: parent.height - y - (companionBanner.visible ? (companionBanner.height + parent.spacing) : 0)
 
-            // Loading state
+            // Loading state (initial scan only)
             Item {
                 anchors.fill: parent
-                visible: KeybindData.loading
+                visible: KeybindData.loading && (!KeybindData.binds || KeybindData.binds.length === 0)
 
                 Column {
                     anchors.centerIn: parent
@@ -284,12 +382,13 @@ Item {
             // No results search state
             EmptyState {
                 anchors.fill: parent
-                visible: !KeybindData.loading && !KeybindData.error && root.filteredBinds.length === 0
+                visible: (!KeybindData.loading || (KeybindData.binds && KeybindData.binds.length > 0)) && !KeybindData.error && root.filteredBinds.length === 0
                 icon: ""
                 title: "No keybindings match your search"
                 message: "Try searching for another key, description, or action."
                 buttonText: root.searchText ? "Clear Search" : ""
                 onButtonClicked: {
+                    root.shouldRestorePosition = false;
                     searchField.text = "";
                     root.searchText = "";
                     root.selectedCategory = "All";
@@ -299,9 +398,10 @@ Item {
             // Virtualized ListView
             ListView {
                 id: listView
+                objectName: "listView"
                 anchors.fill: parent
                 anchors.topMargin: 8
-                visible: !KeybindData.loading && !KeybindData.error && root.filteredBinds.length > 0
+                visible: (!KeybindData.loading || (KeybindData.binds && KeybindData.binds.length > 0)) && !KeybindData.error && root.filteredBinds.length > 0
                 model: root.filteredBinds
                 clip: true
                 spacing: 6
