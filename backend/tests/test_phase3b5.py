@@ -267,13 +267,13 @@ class TestHyprlangDispatcherMapping(IsolatedTestCase):
             generate_hyprlang_bind(["SUPER"], "F", "window.fullscreen", '{ mode = "bogus" }')
 
     def test_focus_conditional(self) -> None:
-        self.assertEqual(generate_hyprlang_bind(["SUPER"], "H", "focus", '{ direction = "left" }'), "bind = SUPER, H, movefocus, left")
+        self.assertEqual(generate_hyprlang_bind(["SUPER"], "H", "focus", '{ direction = "left" }'), "bind = SUPER, H, movefocus, l")
         self.assertEqual(generate_hyprlang_bind(["SUPER"], "2", "focus", '{ workspace = 2 }'), "bind = SUPER, 2, workspace, 2")
         with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
             generate_hyprlang_bind(["SUPER"], "H", "focus", '{ monitor = "DP-1" }')
 
     def test_window_move_conditional(self) -> None:
-        self.assertEqual(generate_hyprlang_bind(["SUPER"], "H", "window.move", '{ direction = "right" }'), "bind = SUPER, H, movewindow, right")
+        self.assertEqual(generate_hyprlang_bind(["SUPER"], "H", "window.move", '{ direction = "right" }'), "bind = SUPER, H, movewindow, r")
         self.assertEqual(generate_hyprlang_bind(["SUPER"], "2", "window.move", '{ workspace = 2 }'), "bind = SUPER, 2, movetoworkspace, 2")
         self.assertEqual(generate_hyprlang_bind(["SUPER"], "2", "window.move", '{ workspace = 2, silent = true }'), "bind = SUPER, 2, movetoworkspacesilent, 2")
         with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
@@ -292,7 +292,7 @@ class TestHyprlangDispatcherMapping(IsolatedTestCase):
         self.assertEqual(generate_hyprlang_bind(["SUPER"], "P", "window.pin", None), "bind = SUPER, P, pin")
 
     def test_layout_conditional(self) -> None:
-        self.assertEqual(generate_hyprlang_bind(["SUPER"], "J", "layout", "togglesplit"), "bind = SUPER, J, togglesplit")
+        self.assertEqual(generate_hyprlang_bind(["SUPER"], "J", "layout", "togglesplit"), "bind = SUPER, J, layoutmsg, togglesplit")
         with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
             generate_hyprlang_bind(["SUPER"], "J", "layout", "swapsplit")
 
@@ -467,3 +467,329 @@ class TestHyprlangEndToEnd(IsolatedTestCase):
         with open(self.sidecar_path, "r", encoding="utf-8") as f:
             sc_data = json.load(f)
         self.assertEqual(sc_data["overrides"][0]["match"]["modifiers"], ["SUPER", "ALT"])
+
+
+class TestPhase3b7StrictLosslessMapping(IsolatedTestCase):
+    """Milestone 3b-7: strictly lossless-or-refuse Hyprlang dispatcher mapping."""
+
+    def test_1_no_native_passthrough_unvalidated_refused(self) -> None:
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+
+        for dsp, arg in [("exec", ""), ("exec", "   "), ("movewindow", "x"), ("resizewindow", "10 10")]:
+            with self.subTest(dsp=dsp, arg=arg):
+                with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
+                    map_lua_dispatcher_to_hyprlang(dsp, arg)
+
+    def test_2_lua_string_literal_decoding_and_refusal(self) -> None:
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("workspace", '"3"'), ("workspace", "3"))
+        self.assertEqual(
+            map_lua_dispatcher_to_hyprlang("exec", r'"kitty --class \"x\""'),
+            ("exec", 'kitty --class "x"'),
+        )
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("submap", "'resize'"), ("submap", "resize"))
+        for bad_dsp, bad_arg in [
+            ("exec", '"unclosed'),
+            ("exec", r'"bad\x1b"'),
+            ("exec", "[[long string]]"),
+            ("workspace", '"e+1" .. "x"'),
+        ]:
+            with self.subTest(bad_dsp=bad_dsp, bad_arg=bad_arg):
+                with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
+                    map_lua_dispatcher_to_hyprlang(bad_dsp, bad_arg)
+
+    def test_3_workspace_selector_validation(self) -> None:
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+
+        valid = ["3", "+1", "-1", "e+1", "e-1", "r+2", "r-2", "m+1", "m-1", "name:web", "special", "special:term", "previous", "empty"]
+        for sel in valid:
+            with self.subTest(valid=sel):
+                self.assertEqual(map_lua_dispatcher_to_hyprlang("workspace", sel), ("workspace", sel))
+        for invalid in ["e+-5", "foo", "name:", "special:", "+-1", "e1"]:
+            with self.subTest(invalid=invalid):
+                with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
+                    map_lua_dispatcher_to_hyprlang("workspace", invalid)
+
+    def test_4_submap_name_validation(self) -> None:
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+
+        for ok_name in ["resize", "reset", "my_submap-1"]:
+            self.assertEqual(map_lua_dispatcher_to_hyprlang("submap", ok_name), ("submap", ok_name))
+        for bad_name in ["bad submap", "a/b", "", "   "]:
+            with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
+                map_lua_dispatcher_to_hyprlang("submap", bad_name)
+
+    def test_5_direction_canonicalization(self) -> None:
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+
+        for raw_dir, expected in [("left", "l"), ("right", "r"), ("up", "u"), ("down", "d"), ("l", "l"), ("r", "r"), ("u", "u"), ("d", "d")]:
+            self.assertEqual(map_lua_dispatcher_to_hyprlang("focus", f'{{ direction = "{raw_dir}" }}'), ("movefocus", expected))
+            self.assertEqual(map_lua_dispatcher_to_hyprlang("window.move", raw_dir), ("movewindow", expected))
+
+    def test_6_resizeactive_requires_both_dx_and_dy(self) -> None:
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("window.resize", "{ dx = 20, dy = 0 }"), ("resizeactive", "20 0"))
+        for bad in ["{ dx = 20 }", "{ dy = 10 }", "{}"]:
+            with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
+                map_lua_dispatcher_to_hyprlang("window.resize", bad)
+
+    def test_7_layout_togglesplit_emits_layoutmsg(self) -> None:
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("layout", "togglesplit"), ("layoutmsg", "togglesplit"))
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("hl.dsp.layout", '{ action = "togglesplit" }'), ("layoutmsg", "togglesplit"))
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("togglesplit", None), ("layoutmsg", "togglesplit"))
+
+    def test_8_catalog_lua_templates_compatible_with_mapper(self) -> None:
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("exec_cmd", '{ cmd = "kitty" }'), ("exec", "kitty"))
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("window.fullscreen", '{ mode = "fullscreen" }'), ("fullscreen", "0"))
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("window.fullscreen", '{ mode = "maximized" }'), ("fullscreen", "1"))
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("window.resize", "{ dx = 20, dy = 0 }"), ("resizeactive", "20 0"))
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("movefocus", '{ direction = "left" }'), ("movefocus", "l"))
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("togglesplit", None), ("layoutmsg", "togglesplit"))
+
+    def test_9_cli_add_and_replace_refusal_returns_json_error_without_write(self) -> None:
+        cfg_dir = os.path.join(self._isolated_root, "cfg_cli")
+        os.makedirs(cfg_dir, exist_ok=True)
+        ep = os.path.join(cfg_dir, "hyprland.conf")
+        with open(ep, "w", encoding="utf-8") as f:
+            f.write("bind = SUPER, Q, killactive\n")
+        orig_sha = _sha256(ep)
+        env = os.environ.copy()
+        env["HKS_BACKUP_DIR"] = self.backup_dir
+        env["HKS_SIDECAR_PATH"] = self.sidecar_path
+
+        proc_add = subprocess.run(
+            [sys.executable, "-m", "backend.cli", "edit", "add", "--config-dir", cfg_dir, "--mods", "SUPER", "--key", "X", "--dispatcher", "movewindow", "--args", "x", "--no-live", "--json"],
+            cwd=REPO_ROOT, env=env, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(proc_add.returncode, 1)
+        data_add = json.loads(proc_add.stdout)
+        self.assertFalse(data_add["applied"])
+        self.assertTrue(any("not supported for Hyprlang" in e for e in data_add["errors"]), data_add)
+        self.assertEqual(_sha256(ep), orig_sha)
+
+        binds, *_ = parse_hyprlang_config(ep)
+        proc_rep = subprocess.run(
+            [sys.executable, "-m", "backend.cli", "edit", "replace", "--config-dir", cfg_dir, "--id", binds[0].id, "--mods", "SUPER", "--key", "Q", "--dispatcher", "exec", "--args", "   ", "--no-live", "--json"],
+            cwd=REPO_ROOT, env=env, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(proc_rep.returncode, 1)
+        data_rep = json.loads(proc_rep.stdout)
+        self.assertFalse(data_rep["applied"])
+        self.assertTrue(data_rep["errors"], data_rep)
+        self.assertEqual(_sha256(ep), orig_sha)
+
+
+class TestPhase3b8RecorderWatchdog(IsolatedTestCase):
+    """Milestone 3b-8: detached setsid watchdog, retries, and startup heal."""
+
+    def _make_mock_hyprctl_env(self, initial_submap: str = "default") -> tuple[dict[str, str], str, str]:
+        bin_dir = os.path.join(self._isolated_root, "mock_bin")
+        os.makedirs(bin_dir, exist_ok=True)
+        state_path = os.path.join(self._isolated_root, "hypr_state.json")
+        log_path = os.path.join(self._isolated_root, "hypr_calls.log")
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump({"submap": initial_submap, "binds": []}, f)
+        shim_path = os.path.join(bin_dir, "hyprctl")
+        shim_code = f"""#!{sys.executable}
+import json, sys
+state_file = {state_path!r}
+log_file = {log_path!r}
+args = sys.argv[1:]
+with open(log_file, "a", encoding="utf-8") as lf:
+    lf.write(" ".join(args) + "\\n")
+with open(state_file, "r", encoding="utf-8") as sf:
+    st = json.load(sf)
+if args == ["submap"]:
+    print(st["submap"])
+elif args == ["binds", "-j"]:
+    print(json.dumps(st["binds"]))
+elif len(args) >= 2 and args[0] == "eval":
+    st["binds"] = [{{"submap": "hks_record", "key": "XF86Tools", "modmask": 0, "dispatcher": "HL.Dispatcher(submap)"}}]
+    with open(state_file, "w", encoding="utf-8") as sf:
+        json.dump(st, sf)
+elif len(args) >= 2 and args[0] == "dispatch":
+    cmd = " ".join(args[1:])
+    if "reset" in cmd:
+        st["submap"] = "default"
+    elif "hks_record" in cmd:
+        st["submap"] = "hks_record"
+    with open(state_file, "w", encoding="utf-8") as sf:
+        json.dump(st, sf)
+elif len(args) >= 2 and args[0] == "repl" and "unbind" in args[1]:
+    st["binds"] = []
+    with open(state_file, "w", encoding="utf-8") as sf:
+        json.dump(st, sf)
+"""
+        with open(shim_path, "w", encoding="utf-8") as f:
+            f.write(shim_code)
+        os.chmod(shim_path, 0o755)
+        env = os.environ.copy()
+        env["PATH"] = f"{bin_dir}:{env.get('PATH', '')}"
+        env["HKS_BACKUP_DIR"] = self.backup_dir
+        env["HKS_SIDECAR_PATH"] = self.sidecar_path
+        return env, state_path, log_path
+
+    def test_watchdog_required_before_entering_submap(self) -> None:
+        from backend.editor.recorder_submap import enter
+
+        calls: list[list[str]] = []
+
+        def fake_runner(cmd, **_kwargs):
+            calls.append(list(cmd))
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        res = enter(
+            language="lua",
+            runner=fake_runner,
+            watchdog_spawner=lambda **_kw: (False, None, "spawn blocked"),
+        )
+        self.assertFalse(res["ok"])
+        self.assertIn("Watchdog failed to start", res["reason"])
+        self.assertEqual(calls, [])
+
+    def test_kill9_parent_triggers_detached_watchdog_reset(self) -> None:
+        import signal
+        import time
+
+        env, state_path, _ = self._make_mock_hyprctl_env("default")
+        child = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                "import os, time; from backend.editor.recorder_submap import enter; "
+                "r = enter(language='lua', watch_pid=os.getpid(), watchdog_timeout=15.0); "
+                "assert r['ok'] and r['submap'] == 'hks_record', r; "
+                "print('ENTERED', flush=True); time.sleep(30)",
+            ],
+            cwd=REPO_ROOT,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        line = child.stdout.readline().strip() if child.stdout else ""
+        self.assertEqual(line, "ENTERED")
+        with open(state_path, "r", encoding="utf-8") as f:
+            self.assertEqual(json.load(f)["submap"], "hks_record")
+
+        os.kill(child.pid, signal.SIGKILL)
+        child.wait(timeout=5)
+        if child.stdout:
+            child.stdout.close()
+        if child.stderr:
+            child.stderr.close()
+
+        deadline = time.monotonic() + 4.0
+        cur_submap = "hks_record"
+        while time.monotonic() < deadline:
+            with open(state_path, "r", encoding="utf-8") as f:
+                st = json.load(f)
+            cur_submap = st["submap"]
+            if cur_submap == "default" and st["binds"] == []:
+                break
+            time.sleep(0.1)
+        self.assertEqual(cur_submap, "default")
+
+    def test_watchdog_fires_once_on_timeout(self) -> None:
+        import time
+
+        env, state_path, log_path = self._make_mock_hyprctl_env("default")
+        proc = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "backend.cli",
+                "recorder",
+                "enter",
+                "--watch-pid",
+                str(os.getpid()),
+                "--watchdog-timeout",
+                "0.3",
+                "--json",
+            ],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        time.sleep(1.0)
+        with open(state_path, "r", encoding="utf-8") as f:
+            self.assertEqual(json.load(f)["submap"], "default")
+        with open(log_path, "r", encoding="utf-8") as f:
+            reset_calls = [ln for ln in f.read().splitlines() if "dispatch" in ln and "reset" in ln]
+        self.assertEqual(len(reset_calls), 1, reset_calls)
+
+    def test_watchdog_idempotent_when_already_default(self) -> None:
+        from backend.editor.recorder_watchdog import run_watchdog
+
+        env, _, log_path = self._make_mock_hyprctl_env("default")
+        old_path = os.environ.get("PATH", "")
+        try:
+            os.environ["PATH"] = env["PATH"]
+            rc = run_watchdog(submap_name="hks_record", language="lua", timeout_seconds=0.05, watch_pid=0, poll_interval=0.02)
+            self.assertEqual(rc, 0)
+        finally:
+            os.environ["PATH"] = old_path
+        with open(log_path, "r", encoding="utf-8") as f:
+            reset_calls = [ln for ln in f.read().splitlines() if "dispatch" in ln and "reset" in ln]
+        self.assertEqual(reset_calls, [])
+
+    def test_leave_failure_retries_three_times(self) -> None:
+        from backend.editor.recorder_submap import leave
+
+        submap_reads = ["hks_record", "hks_record", "hks_record", "default"]
+        reset_attempts = 0
+
+        def flaky_runner(cmd, **_kwargs):
+            nonlocal reset_attempts
+            if cmd == ["hyprctl", "submap"]:
+                return subprocess.CompletedProcess(cmd, 0, submap_reads.pop(0) + "\n", "")
+            if len(cmd) >= 2 and cmd[1] == "dispatch":
+                reset_attempts += 1
+                return subprocess.CompletedProcess(cmd, 0, "", "")
+            return subprocess.CompletedProcess(cmd, 0, "[]", "")
+
+        res = leave(language="lua", runner=flaky_runner)
+        self.assertTrue(res["ok"], res)
+        self.assertEqual(reset_attempts, 3)
+
+        always_stuck = 0
+
+        def stuck_runner(cmd, **_kwargs):
+            nonlocal always_stuck
+            if cmd == ["hyprctl", "submap"]:
+                return subprocess.CompletedProcess(cmd, 0, "hks_record\n", "")
+            if len(cmd) >= 2 and cmd[1] == "dispatch":
+                always_stuck += 1
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        fail_res = leave(language="lua", runner=stuck_runner)
+        self.assertFalse(fail_res["ok"])
+        self.assertEqual(always_stuck, 3)
+        self.assertIn("3 attempts", fail_res["message"])
+
+    def test_startup_heal_on_backend_launch(self) -> None:
+        cfg_dir = os.path.join(self._isolated_root, "cfg_heal")
+        os.makedirs(cfg_dir, exist_ok=True)
+        with open(os.path.join(cfg_dir, "hyprland.conf"), "w", encoding="utf-8") as f:
+            f.write("bind = SUPER, Q, killactive\n")
+        env, state_path, _ = self._make_mock_hyprctl_env("hks_record")
+        proc = subprocess.run(
+            [sys.executable, "-m", "backend.cli", "conflicts", "--config-dir", cfg_dir],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        with open(state_path, "r", encoding="utf-8") as f:
+            self.assertEqual(json.load(f)["submap"], "default")

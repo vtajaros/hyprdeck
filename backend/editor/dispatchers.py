@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 DISPATCHER_CATALOG: list[dict[str, Any]] = [
@@ -216,26 +217,85 @@ LUA_TO_HYPRLANG_DISPATCHER_MAP: dict[str, str] = {
     "window.move": "movewindow",
     "window.resize": "resizeactive",
     "window.pin": "pin",
-    "layout": "togglesplit",
+    "layout": "layoutmsg",
     "submap": "submap",
 }
 
-HYPRLANG_NATIVE_DISPATCHERS: frozenset[str] = frozenset({
-    "exec",
-    "killactive",
-    "togglefloating",
-    "fullscreen",
-    "movefocus",
-    "movewindow",
-    "resizewindow",
-    "resizeactive",
-    "workspace",
-    "movetoworkspace",
-    "movetoworkspacesilent",
-    "pin",
-    "togglesplit",
-    "submap",
-})
+_WORKSPACE_SELECTOR_RE = re.compile(
+    r"^(?:\d+|[+-]\d+|[erm][+-]\d+|name:[^,\n\r]+|special(?::[^,\n\r]+)?|previous|empty)$"
+)
+_SUBMAP_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+_INT_RE = re.compile(r"^[+-]?\d+$")
+_DIRECTION_MAP: dict[str, str] = {
+    "left": "l",
+    "right": "r",
+    "up": "u",
+    "down": "d",
+    "l": "l",
+    "r": "r",
+    "u": "u",
+    "d": "d",
+}
+_LUA_ESCAPES: dict[str, str] = {
+    "\\": "\\",
+    '"': '"',
+    "'": "'",
+    "n": "\n",
+    "t": "\t",
+    "r": "\r",
+}
+
+
+def _decode_lua_string(raw: str) -> str:
+    """Decode a single quoted Lua string literal, or raise ValueError."""
+    s = raw.strip()
+    if len(s) < 2 or s[0] not in ('"', "'") or s[-1] != s[0]:
+        raise ValueError(f"Lua string {raw!r} is not supported for Hyprlang")
+    quote = s[0]
+    out: list[str] = []
+    i = 1
+    end = len(s) - 1
+    while i < end:
+        ch = s[i]
+        if ch == "\\":
+            if i + 1 >= end:
+                raise ValueError(f"Unterminated escape in Lua string {raw!r} is not supported for Hyprlang")
+            esc = s[i + 1]
+            if esc not in _LUA_ESCAPES:
+                raise ValueError(f"Unsupported escape '\\{esc}' in Lua string {raw!r} is not supported for Hyprlang")
+            out.append(_LUA_ESCAPES[esc])
+            i += 2
+            continue
+        if ch == quote:
+            raise ValueError(f"Malformed Lua string {raw!r} is not supported for Hyprlang")
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def _maybe_decode_lua_string(raw: str) -> str:
+    """If raw looks like a Lua quoted/long string, decode it or raise ValueError; otherwise return raw."""
+    s = raw.strip()
+    if not s:
+        return s
+    if s.startswith("[[") or s.startswith("[="):
+        raise ValueError(f"Lua long string {raw!r} is not supported for Hyprlang")
+    if s[0] in ('"', "'"):
+        return _decode_lua_string(s)
+    return s
+
+
+def _is_valid_workspace_selector(val: str) -> bool:
+    """Return True iff val matches a documented Hyprland workspace selector."""
+    if not val or val != val.strip():
+        return False
+    if not _WORKSPACE_SELECTOR_RE.fullmatch(val):
+        return False
+    if val.startswith("name:") and not val[len("name:"):].strip():
+        return False
+    if val.startswith("special:") and not val[len("special:"):].strip():
+        return False
+    return True
 
 
 def _parse_lua_table(raw: str) -> dict[str, Any]:
@@ -291,12 +351,12 @@ def _parse_lua_table(raw: str) -> dict[str, Any]:
         if not k.isidentifier():
             raise ValueError(f"Unsupported Lua table key {k!r} for Hyprlang")
         if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
-            result[k] = v[1:-1]
+            result[k] = _decode_lua_string(v)
         elif v == "true":
             result[k] = True
         elif v == "false":
             result[k] = False
-        elif v.lstrip("+-").isdigit():
+        elif _INT_RE.fullmatch(v):
             result[k] = int(v)
         else:
             raise ValueError(f"Unsupported Lua table value {v!r} for Hyprlang")
@@ -326,22 +386,15 @@ def map_lua_dispatcher_to_hyprlang(
         except ValueError as exc:
             raise ValueError(f"Dispatcher '{clean}' args are not supported for Hyprlang: {exc}") from exc
 
-    # Native Hyprlang dispatchers (not Lua-prefixed)
-    if clean.lower() in HYPRLANG_NATIVE_DISPATCHERS and not clean.lower().startswith("hl.dsp."):
+    if key in ("exec_cmd", "exec"):
         if table is not None:
-            # Allow table translation via the same rules below if applicable
-            pass
-        else:
-            return clean, (clean_args or None)
-
-    if key == "exec_cmd" or key == "exec":
-        if table is not None:
-            if set(table.keys()) != {"cmd"} or not str(table["cmd"]).strip():
+            if set(table.keys()) != {"cmd"} or not isinstance(table["cmd"], str) or not table["cmd"].strip():
                 raise ValueError(f"Dispatcher '{clean}' table args {clean_args!r} are not supported for Hyprlang")
-            return "exec", str(table["cmd"]).strip()
-        if not clean_args:
-            raise ValueError(f"Dispatcher '{clean}' requires non-empty arguments")
-        return "exec", clean_args
+            return "exec", table["cmd"].strip()
+        decoded = _maybe_decode_lua_string(clean_args)
+        if not decoded.strip():
+            raise ValueError(f"Dispatcher '{clean}' with empty args is not supported for Hyprlang")
+        return "exec", decoded.strip()
 
     if key in ("window.close", "killactive"):
         if clean_args and table != {}:
@@ -354,28 +407,33 @@ def map_lua_dispatcher_to_hyprlang(
         return "pin", None
 
     if key in ("window.float", "togglefloating"):
-        if not clean_args:
+        if not clean_args or table == {}:
             return "togglefloating", None
         if table is not None:
-            if set(table.keys()) == {"action"} and str(table["action"]).lower() == "toggle":
+            if set(table.keys()) == {"action"} and isinstance(table["action"], str) and table["action"].strip().lower() == "toggle":
                 return "togglefloating", None
             raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang (only action='toggle' is lossless)")
-        if clean_args.strip("\"'").lower() == "toggle":
+        decoded = _maybe_decode_lua_string(clean_args)
+        if decoded.strip().lower() == "toggle":
             return "togglefloating", None
         raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
 
     if key in ("window.fullscreen", "fullscreen"):
-        if not clean_args:
+        if not clean_args or table == {}:
             return "fullscreen", "0"
         if table is not None:
             if set(table.keys()) == {"mode"}:
-                mode = str(table["mode"]).lower()
-                if mode == "fullscreen":
-                    return "fullscreen", "0"
-                if mode == "maximized":
-                    return "fullscreen", "1"
+                mode_val = table["mode"]
+                if isinstance(mode_val, int) and not isinstance(mode_val, bool) and mode_val in (0, 1):
+                    return "fullscreen", str(mode_val)
+                if isinstance(mode_val, str):
+                    mode = mode_val.strip().lower()
+                    if mode in ("0", "fullscreen"):
+                        return "fullscreen", "0"
+                    if mode in ("1", "maximized"):
+                        return "fullscreen", "1"
             raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
-        val = clean_args.strip("\"'").lower()
+        val = _maybe_decode_lua_string(clean_args).strip().lower()
         if val in ("0", "fullscreen"):
             return "fullscreen", "0"
         if val in ("1", "maximized"):
@@ -384,92 +442,107 @@ def map_lua_dispatcher_to_hyprlang(
 
     if key in ("focus", "movefocus"):
         if table is not None:
-            if set(table.keys()) == {"direction"}:
-                d = str(table["direction"]).lower()
-                if d in ("left", "right", "up", "down", "l", "r", "u", "d"):
+            if set(table.keys()) == {"direction"} and isinstance(table["direction"], str):
+                d = _DIRECTION_MAP.get(table["direction"].strip().lower())
+                if d is not None:
                     return "movefocus", d
-            if set(table.keys()) == {"workspace"} and str(table["workspace"]).strip():
-                return "workspace", str(table["workspace"]).strip()
+            if set(table.keys()) == {"workspace"}:
+                ws = str(table["workspace"]).strip()
+                if _is_valid_workspace_selector(ws):
+                    return "workspace", ws
             raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
-        val = clean_args.strip("\"'")
-        if val.lower() in ("left", "right", "up", "down", "l", "r", "u", "d"):
-            return "movefocus", val.lower()
-        if val and val.lstrip("+-e").isdigit():
+        val = _maybe_decode_lua_string(clean_args).strip()
+        d = _DIRECTION_MAP.get(val.lower())
+        if d is not None:
+            return "movefocus", d
+        if _is_valid_workspace_selector(val):
             return "workspace", val
         raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
 
     if key in ("window.move", "movewindow"):
+        if not clean_args or table == {}:
+            return "movewindow", None
         if table is not None:
-            if set(table.keys()) == {"direction"}:
-                d = str(table["direction"]).lower()
-                if d in ("left", "right", "up", "down", "l", "r", "u", "d"):
+            if set(table.keys()) == {"direction"} and isinstance(table["direction"], str):
+                d = _DIRECTION_MAP.get(table["direction"].strip().lower())
+                if d is not None:
                     return "movewindow", d
             if set(table.keys()) <= {"workspace", "silent"} and "workspace" in table:
+                silent = table.get("silent", False)
                 ws = str(table["workspace"]).strip()
-                if ws:
-                    silent = bool(table.get("silent", False))
+                if isinstance(silent, bool) and _is_valid_workspace_selector(ws):
                     return ("movetoworkspacesilent" if silent else "movetoworkspace"), ws
             raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
-        val = clean_args.strip("\"'")
-        if val.lower() in ("left", "right", "up", "down", "l", "r", "u", "d"):
-            return "movewindow", val.lower()
-        if val and val.lstrip("+-e").isdigit():
+        val = _maybe_decode_lua_string(clean_args).strip()
+        d = _DIRECTION_MAP.get(val.lower())
+        if d is not None:
+            return "movewindow", d
+        if _is_valid_workspace_selector(val):
             return "movetoworkspace", val
         raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
 
     if key == "workspace":
         if table is not None:
-            if set(table.keys()) == {"workspace"} and str(table["workspace"]).strip():
-                return "workspace", str(table["workspace"]).strip()
+            if set(table.keys()) == {"workspace"}:
+                ws = str(table["workspace"]).strip()
+                if _is_valid_workspace_selector(ws):
+                    return "workspace", ws
             raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
-        if not clean_args:
-            raise ValueError(f"Dispatcher '{clean}' requires non-empty arguments")
-        return "workspace", clean_args
+        val = _maybe_decode_lua_string(clean_args).strip()
+        if _is_valid_workspace_selector(val):
+            return "workspace", val
+        raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
 
     if key in ("movetoworkspace", "movetoworkspacesilent"):
         if table is not None:
             if set(table.keys()) <= {"workspace", "silent"} and "workspace" in table:
+                silent = table.get("silent", key == "movetoworkspacesilent")
                 ws = str(table["workspace"]).strip()
-                if ws:
-                    silent = bool(table.get("silent", key == "movetoworkspacesilent"))
+                if isinstance(silent, bool) and _is_valid_workspace_selector(ws):
                     return ("movetoworkspacesilent" if silent else "movetoworkspace"), ws
             raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
-        if not clean_args:
-            raise ValueError(f"Dispatcher '{clean}' requires non-empty arguments")
-        return key, clean_args
+        val = _maybe_decode_lua_string(clean_args).strip()
+        if _is_valid_workspace_selector(val):
+            return key, val
+        raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
 
     if key in ("window.resize", "resizeactive"):
         if table is not None:
-            if set(table.keys()) <= {"dx", "dy"} and table:
-                dx = table.get("dx", 0)
-                dy = table.get("dy", 0)
+            if set(table.keys()) == {"dx", "dy"}:
+                dx = table["dx"]
+                dy = table["dy"]
                 if isinstance(dx, int) and not isinstance(dx, bool) and isinstance(dy, int) and not isinstance(dy, bool):
                     return "resizeactive", f"{dx} {dy}"
             raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
-        parts = clean_args.split()
-        if len(parts) == 2 and all(p.lstrip("+-").isdigit() for p in parts):
-            return "resizeactive", f"{parts[0]} {parts[1]}"
+        decoded = _maybe_decode_lua_string(clean_args).strip()
+        parts = decoded.split()
+        if len(parts) == 2 and all(_INT_RE.fullmatch(p) for p in parts):
+            return "resizeactive", f"{int(parts[0])} {int(parts[1])}"
         raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
 
-    if key in ("layout", "togglesplit"):
+    if key in ("layout", "togglesplit", "layoutmsg"):
         if key == "togglesplit" and (not clean_args or table == {}):
-            return "togglesplit", None
+            return "layoutmsg", "togglesplit"
         if table is not None:
-            if set(table.keys()) == {"action"} and str(table["action"]).lower() == "togglesplit":
-                return "togglesplit", None
+            if key == "layout" and set(table.keys()) == {"action"} and isinstance(table["action"], str) and table["action"].strip().lower() == "togglesplit":
+                return "layoutmsg", "togglesplit"
             raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
-        if clean_args.strip("\"'").lower() == "togglesplit":
-            return "togglesplit", None
+        val = _maybe_decode_lua_string(clean_args).strip().lower()
+        if val == "togglesplit":
+            return "layoutmsg", "togglesplit"
         raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
 
     if key == "submap":
         if table is not None:
-            if set(table.keys()) == {"submap"} and str(table["submap"]).strip():
-                return "submap", str(table["submap"]).strip()
+            if set(table.keys()) == {"submap"} and isinstance(table["submap"], str):
+                sm = table["submap"].strip()
+                if _SUBMAP_RE.fullmatch(sm):
+                    return "submap", sm
             raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
-        if not clean_args:
-            raise ValueError(f"Dispatcher '{clean}' requires non-empty arguments")
-        return "submap", clean_args
+        val = _maybe_decode_lua_string(clean_args).strip()
+        if _SUBMAP_RE.fullmatch(val):
+            return "submap", val
+        raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
 
     raise ValueError(f"Dispatcher '{clean}' is not supported for Hyprlang")
 
