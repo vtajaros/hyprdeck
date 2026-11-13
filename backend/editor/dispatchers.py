@@ -261,6 +261,16 @@ def _decode_lua_string(raw: str) -> str:
             if i + 1 >= end:
                 raise ValueError(f"Unterminated escape in Lua string {raw!r} is not supported for Hyprlang")
             esc = s[i + 1]
+            if esc.isdigit():
+                j = i + 1
+                while j < end and j < i + 4 and s[j].isdigit():
+                    j += 1
+                code = int(s[i + 1 : j])
+                if code > 255:
+                    raise ValueError(f"Out-of-range decimal escape in Lua string {raw!r} is not supported for Hyprlang")
+                out.append(chr(code))
+                i = j
+                continue
             if esc not in _LUA_ESCAPES:
                 raise ValueError(f"Unsupported escape '\\{esc}' in Lua string {raw!r} is not supported for Hyprlang")
             out.append(_LUA_ESCAPES[esc])
@@ -367,6 +377,7 @@ def map_lua_dispatcher_to_hyprlang(
     dispatcher: str,
     args: str | None = None,
     is_mouse: bool = False,
+    decode_lua_literals: bool = True,
 ) -> tuple[str, str | None]:
     """Losslessly map a Lua or catalog dispatcher (+ optional Lua table args) to Hyprlang.
 
@@ -392,7 +403,7 @@ def map_lua_dispatcher_to_hyprlang(
             if set(table.keys()) != {"cmd"} or not isinstance(table["cmd"], str) or not table["cmd"].strip():
                 raise ValueError(f"Dispatcher '{clean}' table args {clean_args!r} are not supported for Hyprlang")
             return "exec", table["cmd"].strip()
-        decoded = _maybe_decode_lua_string(clean_args)
+        decoded = _maybe_decode_lua_string(clean_args) if decode_lua_literals else clean_args
         if not decoded.strip():
             raise ValueError(f"Dispatcher '{clean}' with empty args is not supported for Hyprlang")
         return "exec", decoded.strip()
@@ -627,11 +638,11 @@ def render_from_catalog(
 
     if language == "lua":
         if d_id == "exec_cmd":
-            cmd = str(parsed_args.get("cmd", "")).strip()
-            # If bare variable or expression
-            if cmd.startswith('"') or cmd.startswith("'"):
-                return "exec_cmd", cmd
-            return "exec_cmd", f'"{cmd}"'
+            cmd = str(parsed_args.get("cmd", ""))
+            if not cmd.strip():
+                raise ValueError("Dispatcher 'exec_cmd' requires non-empty arguments")
+            from backend.editor.codegen import encode_lua_string
+            return "exec_cmd", encode_lua_string(cmd)
 
         if d_id == "window.close":
             return "window.close", None
@@ -685,7 +696,12 @@ def render_from_catalog(
     # Hyprlang
     hl_name = entry["hyprlang_name"]
     if d_id == "exec_cmd":
-        return hl_name, str(parsed_args.get("cmd", ""))
+        cmd = str(parsed_args.get("cmd", ""))
+        if not cmd.strip():
+            raise ValueError("Dispatcher 'exec_cmd' requires non-empty arguments")
+        if "\x00" in cmd or "\n" in cmd or "\r" in cmd:
+            raise ValueError("Newlines and NUL bytes are not allowed in exec_cmd arguments")
+        return hl_name, cmd
     if d_id in ("window.close", "togglefloating", "pin", "togglesplit"):
         return hl_name, None
     if d_id == "fullscreen":

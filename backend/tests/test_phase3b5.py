@@ -857,3 +857,242 @@ class TestPhase3b9ResizeAndWatchdogFixes(IsolatedTestCase):
         with mock.patch("backend.editor.recorder_submap.os.getppid", return_value=300):
             with mock.patch("builtins.open", side_effect=fake_open):
                 self.assertEqual(resolve_watch_pid(), 200)
+
+
+class TestPhase3b10ExecQuotingAndResizeDescribe(IsolatedTestCase):
+    def test_1_exec_cmd_quoting_end_to_end_lua_and_roundtrip(self) -> None:
+        import tempfile
+        from backend.editor.codegen import encode_lua_string
+        from backend.editor.dispatchers import _decode_lua_string, render_from_catalog
+
+        cases = [
+            ("plain", "kitty"),
+            ("spaces", "firefox --new-window"),
+            ("double_quotes", 'notify-send "hi"'),
+            ("single_quotes", "sh -c 'echo hi'"),
+            ("both_quotes", 'sh -c \'echo "a b"\''),
+            ("backslash", "printf 'a\\nb'"),
+            ("dollar_backtick", "echo $HOME `date`"),
+            ("unicode", 'notify-send "café"'),
+            ("trailing_space", "kitty "),
+            ("already_wrapped", '"kitty"'),
+        ]
+
+        for label, cmd in cases:
+            with self.subTest(label=label, cmd=cmd):
+                encoded = encode_lua_string(cmd)
+                self.assertEqual(_decode_lua_string(encoded), cmd)
+                dsp, arg = render_from_catalog("exec_cmd", {"cmd": cmd}, language="lua")
+                self.assertEqual(dsp, "exec_cmd")
+                self.assertEqual(arg, encoded)
+
+                with tempfile.TemporaryDirectory() as td:
+                    cfg_dir = os.path.join(td, "hypr")
+                    bak_dir = os.path.join(td, "backups")
+                    sc_path = os.path.join(td, "hks", "descriptions.json")
+                    os.makedirs(cfg_dir, exist_ok=True)
+                    cfg_path = os.path.join(cfg_dir, "hyprland.lua")
+                    with open(cfg_path, "w", encoding="utf-8") as f:
+                        f.write('hl.bind("SUPER + Q", hl.dsp.window.close())\n')
+
+                    payload = json.dumps({"cmd": cmd})
+                    proc = subprocess.run(
+                        [
+                            sys.executable, "-m", "backend.cli",
+                            "edit", "add",
+                            "--config-dir", cfg_dir,
+                            "--entrypoint", cfg_path,
+                            "--mods", "SUPER",
+                            "--key", "F12",
+                            "--dispatcher-id", "exec_cmd",
+                            "--args-json", payload,
+                            "--no-live",
+                            "--apply",
+                        ],
+                        cwd=REPO_ROOT,
+                        env={**os.environ, "HKS_BACKUP_DIR": bak_dir, "HKS_SIDECAR_PATH": sc_path},
+                        capture_output=True,
+                        text=True,
+                    )
+                    self.assertEqual(proc.returncode, 0, f"{label}: {proc.stderr or proc.stdout}")
+                    with open(cfg_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    expected_line = f'hl.bind("SUPER + F12", hl.dsp.exec_cmd({encoded}))'
+                    self.assertIn(expected_line, content)
+
+        for bad in ["", "   ", "echo a\nb", "echo a\rb", "echo a\x00b"]:
+            with self.subTest(bad=bad):
+                if "\n" in bad or "\r" in bad or "\x00" in bad:
+                    with self.assertRaises(ValueError):
+                        encode_lua_string(bad)
+                with self.assertRaises(ValueError):
+                    render_from_catalog("exec_cmd", {"cmd": bad}, language="lua")
+
+                with tempfile.TemporaryDirectory() as td:
+                    cfg_dir = os.path.join(td, "hypr")
+                    bak_dir = os.path.join(td, "backups")
+                    sc_path = os.path.join(td, "hks", "descriptions.json")
+                    os.makedirs(cfg_dir, exist_ok=True)
+                    cfg_path = os.path.join(cfg_dir, "hyprland.lua")
+                    with open(cfg_path, "w", encoding="utf-8") as f:
+                        f.write('hl.bind("SUPER + Q", hl.dsp.window.close())\n')
+
+                    proc = subprocess.run(
+                        [
+                            sys.executable, "-m", "backend.cli",
+                            "edit", "add",
+                            "--config-dir", cfg_dir,
+                            "--entrypoint", cfg_path,
+                            "--mods", "SUPER",
+                            "--key", "F12",
+                            "--dispatcher-id", "exec_cmd",
+                            "--args-json", json.dumps({"cmd": bad}),
+                            "--no-live",
+                        ],
+                        cwd=REPO_ROOT,
+                        env={**os.environ, "HKS_BACKUP_DIR": bak_dir, "HKS_SIDECAR_PATH": sc_path},
+                        capture_output=True,
+                        text=True,
+                    )
+                    self.assertNotEqual(proc.returncode, 0)
+
+    def test_2_exec_cmd_already_quoted_consistent_across_lua_and_hyprlang(self) -> None:
+        import tempfile
+        from backend.editor.dispatchers import _decode_lua_string, render_from_catalog
+
+        lua_dsp, lua_arg = render_from_catalog("exec_cmd", {"cmd": '"kitty"'}, language="lua")
+        self.assertEqual(lua_dsp, "exec_cmd")
+        self.assertEqual(lua_arg, r'"\"kitty\""')
+        self.assertEqual(_decode_lua_string(lua_arg), '"kitty"')
+
+        hl_dsp, hl_arg = render_from_catalog("exec_cmd", {"cmd": '"kitty"'}, language="hyprlang")
+        self.assertEqual(hl_dsp, "exec")
+        self.assertEqual(hl_arg, '"kitty"')
+
+        self.assertEqual(
+            generate_lua_bind(["SUPER"], "F12", "exec_cmd", '"kitty"'),
+            r'hl.bind("SUPER + F12", hl.dsp.exec_cmd("\"kitty\""))',
+        )
+        self.assertEqual(
+            generate_hyprlang_bind(["SUPER"], "F12", "exec_cmd", '"kitty"'),
+            'bind = SUPER, F12, exec, "kitty"',
+        )
+
+        with tempfile.TemporaryDirectory() as td:
+            cfg_dir = os.path.join(td, "hypr")
+            bak_dir = os.path.join(td, "backups")
+            sc_path = os.path.join(td, "hks", "descriptions.json")
+            os.makedirs(cfg_dir, exist_ok=True)
+            hl_cfg = os.path.join(cfg_dir, "hyprland.conf")
+            with open(hl_cfg, "w", encoding="utf-8") as f:
+                f.write("bind = SUPER, Q, killactive\n")
+            proc = subprocess.run(
+                [
+                    sys.executable, "-m", "backend.cli",
+                    "edit", "add",
+                    "--config-dir", cfg_dir,
+                    "--entrypoint", hl_cfg,
+                    "--mods", "SUPER",
+                    "--key", "F12",
+                    "--dispatcher-id", "exec_cmd",
+                    "--args-json", json.dumps({"cmd": '"kitty"'}),
+                    "--no-live",
+                    "--dry-run",
+                    "--json",
+                ],
+                cwd=REPO_ROOT,
+                env={**os.environ, "HKS_BACKUP_DIR": bak_dir, "HKS_SIDECAR_PATH": sc_path},
+                capture_output=True,
+                text=True,
+            )
+            out = json.loads(proc.stdout)
+            self.assertIn('bind = SUPER, F12, exec, "kitty"', out["diff"])
+            self.assertEqual(out["expected_new_bind"]["args_raw"], '"kitty"')
+
+    def test_3_untouched_dispatcher_preserved_byte_for_byte_on_shortcut_replace(self) -> None:
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            cfg_dir = os.path.join(td, "hypr")
+            bak_dir = os.path.join(td, "backups")
+            sc_path = os.path.join(td, "hks", "descriptions.json")
+            os.makedirs(cfg_dir, exist_ok=True)
+            cfg_path = os.path.join(cfg_dir, "hyprland.lua")
+            orig_dsp = "hl.dsp.exec_cmd('sh -c \"echo hi\"')"
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                f.write(f'hl.bind("SUPER + Return", {orig_dsp})\n')
+
+            binds, _, _, _, _ = parse_lua_config(cfg_path, cfg_dir)
+            bind_id = binds[0].id
+
+            rep = subprocess.run(
+                [
+                    sys.executable, "-m", "backend.cli",
+                    "edit", "replace",
+                    "--config-dir", cfg_dir,
+                    "--entrypoint", cfg_path,
+                    "--id", bind_id,
+                    "--mods", "SUPER",
+                    "--key", "T",
+                    "--preserve-dispatcher",
+                    "--no-live",
+                    "--apply",
+                ],
+                cwd=REPO_ROOT,
+                env={**os.environ, "HKS_BACKUP_DIR": bak_dir, "HKS_SIDECAR_PATH": sc_path},
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(rep.returncode, 0, rep.stderr or rep.stdout)
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                self.assertIn(f'hl.bind("SUPER + T", {orig_dsp})', f.read())
+
+    def test_4_derive_description_keyboard_vs_mouse_window_resize(self) -> None:
+        from backend.describe.derive import derive_category, derive_description
+        from backend.models.types import BindRecord, DispatcherInfo, default_flags
+
+        def make_resize_bind(*, args=None, is_mouse: bool = False) -> BindRecord:
+            flags = default_flags()
+            flags["mouse"] = is_mouse
+            return BindRecord(
+                id="b_test",
+                language="lua",
+                bind_type="bindm" if is_mouse else "bind",
+                declared_via="bindm" if is_mouse else "bind",
+                modifiers=["SUPER"],
+                modifiers_raw="SUPER",
+                modmask=64,
+                key="mouse:273" if is_mouse else "R",
+                key_kind="mouse" if is_mouse else "keysym",
+                keys_raw="SUPER + mouse:273" if is_mouse else "SUPER + R",
+                flags=flags,
+                flags_extra={},
+                description=None,
+                dispatcher=DispatcherInfo(
+                    path="window.resize",
+                    args=args or [],
+                    arg_summary="",
+                ),
+                submap="",
+                source_file="hyprland.lua",
+                source_line=1,
+                original_line="",
+                original_line_number=1,
+                generated=False,
+                occurrence=0,
+                occurrences_at_site=1,
+                trace=[],
+                parse_status="ok",
+                args_raw="",
+            )
+
+        kb_num = make_resize_bind(args=[{"x": 20, "y": 0, "relative": True}], is_mouse=False)
+        self.assertEqual(derive_description(kb_num), ("Resize window by 20, 0", False))
+        self.assertEqual(derive_category(kb_num), "Windows")
+
+        kb_plain = make_resize_bind(args=[], is_mouse=False)
+        self.assertEqual(derive_description(kb_plain), ("Resize window", False))
+        self.assertEqual(derive_category(kb_plain), "Windows")
+
+        mouse_b = make_resize_bind(args=[], is_mouse=True)
+        self.assertEqual(derive_description(mouse_b), ("Resize window with mouse", False))
+        self.assertEqual(derive_category(mouse_b), "Mouse")

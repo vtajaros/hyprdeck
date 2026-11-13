@@ -1295,7 +1295,11 @@ def _handle_edit(args: argparse.Namespace) -> int:
                     language=doc.environment.language,
                 )
                 new_dsp = rendered_dsp
-                new_args = rendered_args
+                if args.dispatcher_id == "exec_cmd" and doc.environment.language == "lua" and rendered_args is not None:
+                    from backend.editor.dispatchers import _decode_lua_string
+                    new_args = _decode_lua_string(rendered_args)
+                else:
+                    new_args = rendered_args
 
             preserve_dsp = bool(getattr(args, "preserve_dispatcher", False))
 
@@ -1358,7 +1362,11 @@ def _handle_edit(args: argparse.Namespace) -> int:
                     language=doc.environment.language,
                 )
                 new_dsp = rendered_dsp
-                new_args = rendered_args
+                if args.dispatcher_id == "exec_cmd" and doc.environment.language == "lua" and rendered_args is not None:
+                    from backend.editor.dispatchers import _decode_lua_string
+                    new_args = _decode_lua_string(rendered_args)
+                else:
+                    new_args = rendered_args
             elif not new_dsp:
                 raise ValueError("edit add requires --dispatcher or --dispatcher-id")
 

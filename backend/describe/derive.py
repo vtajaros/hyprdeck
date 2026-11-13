@@ -172,8 +172,18 @@ def derive_description(bind: BindRecord) -> tuple[str, bool]:
     # 1. Mouse drag / resize binds
     if dsp_leaf == "drag" or (dsp_lower == "movewindow" and is_mouse_bind):
         return "Drag window with mouse", False
-    if dsp_leaf == "resizewindow" or (dsp_leaf == "resize" and (is_mouse_bind or dsp_lower == "window.resize")):
+    if dsp_leaf == "resizewindow" or (dsp_leaf == "resize" and is_mouse_bind):
         return "Resize window with mouse", False
+    if dsp_lower in ("window.resize", "resizeactive") or dsp_leaf == "resize":
+        d_arg = _first_dict_arg(args)
+        if d_arg is not None and "x" in d_arg and "y" in d_arg:
+            x_raw, y_raw = d_arg["x"], d_arg["y"]
+            if not isinstance(x_raw, bool) and not isinstance(y_raw, bool):
+                try:
+                    return f"Resize window by {int(x_raw)}, {int(y_raw)}", False
+                except (TypeError, ValueError):
+                    pass
+        return "Resize window", False
 
     # 2. Close window
     if dsp_leaf in ("close", "killactive", "closewindow"):

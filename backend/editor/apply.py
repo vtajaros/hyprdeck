@@ -530,7 +530,10 @@ def make_expected_bind(
     args_clean = args.strip() if args else ""
     if language == "hyprlang":
         from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
-        dsp_clean, mapped_args = map_lua_dispatcher_to_hyprlang(dsp_clean, args)
+        is_exec = dsp_clean.lower() in ("exec_cmd", "hl.dsp.exec_cmd", "exec")
+        dsp_clean, mapped_args = map_lua_dispatcher_to_hyprlang(
+            dsp_clean, args, decode_lua_literals=not is_exec
+        )
         args_clean = mapped_args.strip() if mapped_args else ""
 
     from backend.models.types import default_flags

@@ -15,12 +15,36 @@ from backend.parser.modifiers import (
 CANONICAL_MOD_ORDER = ["SUPER", "CTRL", "ALT", "SHIFT", "MOD2", "MOD3", "MOD5"]
 
 
-def escape_lua_string(s: str) -> str:
-    """Escape backslashes and double quotes for inclusion in a Lua double-quoted string literal."""
-    if "\n" in s or "\r" in s:
+def encode_lua_string(s: str, *, allow_multiline: bool = False) -> str:
+    """Encode a Python string as a valid Lua double-quoted string literal.
+
+    Escapes backslashes, double quotes, and ASCII control characters; refuses
+    NUL bytes and (unless allow_multiline=True) newline/carriage-return bytes.
+    """
+    if "\x00" in s:
+        raise ValueError("NUL bytes are not allowed in string arguments")
+    if not allow_multiline and ("\n" in s or "\r" in s):
         raise ValueError("Newlines are not allowed in string arguments")
-    escaped = s.replace("\\", "\\\\").replace('"', '\\"')
-    return f'"{escaped}"'
+    out: list[str] = []
+    for ch in s:
+        if ch == "\\":
+            out.append("\\\\")
+        elif ch == '"':
+            out.append('\\"')
+        elif ch == "\n":
+            out.append("\\n")
+        elif ch == "\r":
+            out.append("\\r")
+        elif ch == "\t":
+            out.append("\\t")
+        elif ord(ch) < 0x20 or ord(ch) == 0x7F:
+            out.append(f"\\{ord(ch):03d}")
+        else:
+            out.append(ch)
+    return '"' + "".join(out) + '"'
+
+
+escape_lua_string = encode_lua_string
 
 
 REQUIRE_ARGS_DISPATCHERS: frozenset[str] = frozenset({
@@ -270,8 +294,10 @@ def generate_lua_bind(
     d_lower = dispatcher.strip().lower()
     is_exec = d_lower in ("exec_cmd", "hl.dsp.exec_cmd", "exec")
     if is_exec:
-        if "\n" in dispatcher or "\r" in dispatcher:
-            raise ValueError("Newlines are not allowed in dispatcher")
+        if "\n" in dispatcher or "\r" in dispatcher or "\x00" in dispatcher:
+            raise ValueError("Newlines and NUL bytes are not allowed in dispatcher")
+        if args and "\x00" in args:
+            raise ValueError("NUL bytes are not allowed in args")
         if args and ("\n" in args or "\r" in args):
             raise ValueError("Newlines are not allowed in args")
     else:
@@ -311,7 +337,7 @@ def generate_lua_bind(
         if clean_dsp == "custom" or dsp_base == "hl.dsp.custom":
             dsp_call = clean_args
         elif "exec_cmd" in dsp_base or dsp_base.endswith("exec_cmd"):
-            arg_formatted = escape_lua_string(clean_args)
+            arg_formatted = encode_lua_string(args)
             dsp_call = f"{dsp_base}({arg_formatted})"
         elif clean_args.startswith("{") and clean_args.endswith("}"):
             dsp_call = f"{dsp_base}({clean_args})"
@@ -320,7 +346,7 @@ def generate_lua_bind(
         elif re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", clean_args) and original_line and clean_args in original_line:
             dsp_call = f"{dsp_base}({clean_args})"
         else:
-            arg_formatted = escape_lua_string(clean_args)
+            arg_formatted = encode_lua_string(clean_args)
             dsp_call = f"{dsp_base}({arg_formatted})"
     else:
         if "(" in clean_dsp and clean_dsp.endswith(")"):
@@ -413,8 +439,10 @@ def generate_hyprlang_bind(
     d_lower = dispatcher.strip().lower()
     is_exec = d_lower in ("exec_cmd", "hl.dsp.exec_cmd", "exec")
     if is_exec:
-        if "\n" in dispatcher or "\r" in dispatcher:
-            raise ValueError("Newlines are not allowed in dispatcher")
+        if "\n" in dispatcher or "\r" in dispatcher or "\x00" in dispatcher:
+            raise ValueError("Newlines and NUL bytes are not allowed in dispatcher")
+        if args and "\x00" in args:
+            raise ValueError("NUL bytes are not allowed in args")
         if args and ("\n" in args or "\r" in args):
             raise ValueError("Newlines are not allowed in args")
     else:
@@ -430,7 +458,10 @@ def generate_hyprlang_bind(
     mods_str = " ".join(mod_tokens)
     from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
     clean_dsp, mapped_args = map_lua_dispatcher_to_hyprlang(
-        dispatcher, args, is_mouse=bool(flags and flags.get("mouse"))
+        dispatcher,
+        args,
+        is_mouse=bool(flags and flags.get("mouse")),
+        decode_lua_literals=not is_exec,
     )
     clean_args = mapped_args.strip() if mapped_args else ""
     if clean_args and ("\n" in clean_args or "\r" in clean_args):
