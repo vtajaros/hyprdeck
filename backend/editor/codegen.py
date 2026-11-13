@@ -429,7 +429,9 @@ def generate_hyprlang_bind(
 
     mods_str = " ".join(mod_tokens)
     from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
-    clean_dsp, mapped_args = map_lua_dispatcher_to_hyprlang(dispatcher, args)
+    clean_dsp, mapped_args = map_lua_dispatcher_to_hyprlang(
+        dispatcher, args, is_mouse=bool(flags and flags.get("mouse"))
+    )
     clean_args = mapped_args.strip() if mapped_args else ""
     if clean_args and ("\n" in clean_args or "\r" in clean_args):
         raise ValueError("Newlines are not allowed in args")

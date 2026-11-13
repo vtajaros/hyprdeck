@@ -136,7 +136,7 @@ DISPATCHER_CATALOG: list[dict[str, Any]] = [
         "id": "resizeactive",
         "label": "Resize Window",
         "category": "Window",
-        "lua_template": "hl.dsp.window.resize({ dx = {dx}, dy = {dy} })",
+        "lua_template": "hl.dsp.window.resize({ x = {dx}, y = {dy}, relative = true })",
         "hyprlang_name": "resizeactive",
         "args_schema": [
             {
@@ -366,6 +366,7 @@ def _parse_lua_table(raw: str) -> dict[str, Any]:
 def map_lua_dispatcher_to_hyprlang(
     dispatcher: str,
     args: str | None = None,
+    is_mouse: bool = False,
 ) -> tuple[str, str | None]:
     """Losslessly map a Lua or catalog dispatcher (+ optional Lua table args) to Hyprlang.
 
@@ -461,7 +462,9 @@ def map_lua_dispatcher_to_hyprlang(
 
     if key in ("window.move", "movewindow"):
         if not clean_args or table == {}:
-            return "movewindow", None
+            if is_mouse:
+                return "movewindow", None
+            raise ValueError(f"Dispatcher '{clean}' with empty args is only valid for mouse binds and is not supported for Hyprlang")
         if table is not None:
             if set(table.keys()) == {"direction"} and isinstance(table["direction"], str):
                 d = _DIRECTION_MAP.get(table["direction"].strip().lower())
@@ -508,11 +511,15 @@ def map_lua_dispatcher_to_hyprlang(
 
     if key in ("window.resize", "resizeactive"):
         if table is not None:
-            if set(table.keys()) == {"dx", "dy"}:
-                dx = table["dx"]
-                dy = table["dy"]
-                if isinstance(dx, int) and not isinstance(dx, bool) and isinstance(dy, int) and not isinstance(dy, bool):
-                    return "resizeactive", f"{dx} {dy}"
+            if (
+                set(table.keys()) == {"x", "y", "relative"}
+                and table["relative"] is True
+                and isinstance(table["x"], int)
+                and not isinstance(table["x"], bool)
+                and isinstance(table["y"], int)
+                and not isinstance(table["y"], bool)
+            ):
+                return "resizeactive", f"{table['x']} {table['y']}"
             raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
         decoded = _maybe_decode_lua_string(clean_args).strip()
         parts = decoded.split()
@@ -661,7 +668,7 @@ def render_from_catalog(
         if d_id == "resizeactive":
             dx = int(parsed_args.get("dx", 20))
             dy = int(parsed_args.get("dy", 0))
-            return f"window.resize({{ dx = {dx}, dy = {dy} }})", None
+            return f"window.resize({{ x = {dx}, y = {dy}, relative = true }})", None
 
         if d_id == "pin":
             return "window.pin()", None

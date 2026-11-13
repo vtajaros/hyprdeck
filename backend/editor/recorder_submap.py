@@ -112,6 +112,33 @@ def _ensure_lua_submap_registered(
         return False
 
 
+def resolve_watch_pid(explicit_pid: int | None = None) -> int:
+    """Resolve the GUI PID to watch: explicit PID, or nearest ancestor containing 'quickshell', else os.getppid()."""
+    if explicit_pid is not None:
+        return explicit_pid
+    ppid = os.getppid()
+    cur = ppid
+    visited: set[int] = set()
+    while cur > 1 and cur not in visited:
+        visited.add(cur)
+        try:
+            with open(f"/proc/{cur}/cmdline", "rb") as f:
+                cmdline = f.read().replace(b"\x00", b" ").decode("utf-8", errors="ignore").lower()
+            if "quickshell" in cmdline:
+                return cur
+            with open(f"/proc/{cur}/stat", "r", encoding="utf-8", errors="ignore") as f:
+                stat_text = f.read()
+            rparen = stat_text.rfind(")")
+            if rparen == -1:
+                break
+            fields = stat_text[rparen + 2 :].split()
+            next_pid = int(fields[1]) if len(fields) >= 2 else 0
+            cur = next_pid
+        except (OSError, ValueError):
+            break
+    return ppid
+
+
 def spawn_detached_watchdog(
     submap_name: str = HKS_RECORD_SUBMAP,
     language: str = "lua",
@@ -120,7 +147,7 @@ def spawn_detached_watchdog(
 ) -> tuple[bool, int | None, str]:
     """Spawn an independent setsid watchdog and wait for its READY signal."""
     read_fd, write_fd = os.pipe()
-    target_pid = watch_pid if watch_pid is not None else os.getppid()
+    target_pid = resolve_watch_pid(watch_pid)
     cmd = [
         sys.executable,
         "-m",

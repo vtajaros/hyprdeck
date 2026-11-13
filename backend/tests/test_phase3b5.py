@@ -284,7 +284,7 @@ class TestHyprlangDispatcherMapping(IsolatedTestCase):
         self.assertEqual(generate_hyprlang_bind(["SUPER"], "1", "movetoworkspace", '{ workspace = "1", silent = true }'), "bind = SUPER, 1, movetoworkspacesilent, 1")
 
     def test_window_resize_mapped_and_refused(self) -> None:
-        self.assertEqual(generate_hyprlang_bind(["SUPER"], "R", "window.resize", '{ dx = 20, dy = -10 }'), "bind = SUPER, R, resizeactive, 20 -10")
+        self.assertEqual(generate_hyprlang_bind(["SUPER"], "R", "window.resize", '{ x = 20, y = -10, relative = true }'), "bind = SUPER, R, resizeactive, 20 -10")
         with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
             generate_hyprlang_bind(["SUPER"], "R", "window.resize", '{ percent = 10 }')
 
@@ -530,8 +530,8 @@ class TestPhase3b7StrictLosslessMapping(IsolatedTestCase):
     def test_6_resizeactive_requires_both_dx_and_dy(self) -> None:
         from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
 
-        self.assertEqual(map_lua_dispatcher_to_hyprlang("window.resize", "{ dx = 20, dy = 0 }"), ("resizeactive", "20 0"))
-        for bad in ["{ dx = 20 }", "{ dy = 10 }", "{}"]:
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("window.resize", "{ x = 20, y = 0, relative = true }"), ("resizeactive", "20 0"))
+        for bad in ["{ x = 20, relative = true }", "{ y = 10, relative = true }", "{ dx = 20, dy = 0 }", "{}"]:
             with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
                 map_lua_dispatcher_to_hyprlang("window.resize", bad)
 
@@ -548,7 +548,7 @@ class TestPhase3b7StrictLosslessMapping(IsolatedTestCase):
         self.assertEqual(map_lua_dispatcher_to_hyprlang("exec_cmd", '{ cmd = "kitty" }'), ("exec", "kitty"))
         self.assertEqual(map_lua_dispatcher_to_hyprlang("window.fullscreen", '{ mode = "fullscreen" }'), ("fullscreen", "0"))
         self.assertEqual(map_lua_dispatcher_to_hyprlang("window.fullscreen", '{ mode = "maximized" }'), ("fullscreen", "1"))
-        self.assertEqual(map_lua_dispatcher_to_hyprlang("window.resize", "{ dx = 20, dy = 0 }"), ("resizeactive", "20 0"))
+        self.assertEqual(map_lua_dispatcher_to_hyprlang("window.resize", "{ x = 20, y = 0, relative = true }"), ("resizeactive", "20 0"))
         self.assertEqual(map_lua_dispatcher_to_hyprlang("movefocus", '{ direction = "left" }'), ("movefocus", "l"))
         self.assertEqual(map_lua_dispatcher_to_hyprlang("togglesplit", None), ("layoutmsg", "togglesplit"))
 
@@ -793,3 +793,67 @@ elif len(args) >= 2 and args[0] == "repl" and "unbind" in args[1]:
         self.assertEqual(proc.returncode, 0, proc.stderr)
         with open(state_path, "r", encoding="utf-8") as f:
             self.assertEqual(json.load(f)["submap"], "default")
+
+
+class TestPhase3b9ResizeAndWatchdogFixes(IsolatedTestCase):
+    """Milestone 3b-9: resize x/y/relative, plain movewindow refusal, and ancestor watch PID."""
+
+    def test_1_resize_catalog_renders_x_y_relative(self) -> None:
+        from backend.editor.dispatchers import render_from_catalog
+
+        dsp, arg = render_from_catalog("resizeactive", {"dx": 20, "dy": -10}, language="lua")
+        self.assertEqual(dsp, "window.resize({ x = 20, y = -10, relative = true })")
+        self.assertIsNone(arg)
+
+    def test_2_resize_hyprlang_accepts_relative_refuses_others(self) -> None:
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+
+        self.assertEqual(
+            map_lua_dispatcher_to_hyprlang("window.resize", "{ x = 20, y = 0, relative = true }"),
+            ("resizeactive", "20 0"),
+        )
+        for bad in [
+            "{ x = 20, y = 0 }",
+            "{ x = 20, y = 0, relative = false }",
+            '{ x = 20, y = 0, relative = true, window = "kitty" }',
+            "{ x = 20, y = 0, relative = true, z = 1 }",
+            '{ x = "20", y = 0, relative = true }',
+            "{ dx = 20, dy = 0 }",
+        ]:
+            with self.subTest(bad=bad):
+                with self.assertRaisesRegex(ValueError, "not supported for Hyprlang"):
+                    map_lua_dispatcher_to_hyprlang("window.resize", bad)
+
+    def test_3_movewindow_empty_args_refused_for_plain_bind_allowed_for_mouse(self) -> None:
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+
+        with self.assertRaisesRegex(ValueError, "only valid for mouse binds"):
+            map_lua_dispatcher_to_hyprlang("movewindow", None)
+        with self.assertRaisesRegex(ValueError, "only valid for mouse binds"):
+            map_lua_dispatcher_to_hyprlang("window.move", "")
+        self.assertEqual(
+            generate_hyprlang_bind(["SUPER"], "mouse:272", "movewindow", None, flags={"mouse": True}),
+            "bindm = SUPER, mouse:272, movewindow",
+        )
+
+    def test_4_resolve_watch_pid_walks_ancestors_to_quickshell(self) -> None:
+        import io
+        from unittest import mock
+        from backend.editor.recorder_submap import resolve_watch_pid
+
+        fake_proc = {
+            "/proc/300/cmdline": b"sh\x00-c\x00python3\x00",
+            "/proc/300/stat": "300 (sh) S 200 1 1 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 0 0 0\n",
+            "/proc/200/cmdline": b"/usr/bin/quickshell\x00-p\x00frontend/shell.qml\x00",
+            "/proc/200/stat": "200 (quickshell) S 100 1 1 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 0 0 0\n",
+        }
+
+        def fake_open(path, mode="r", **_kwargs):
+            if path in fake_proc:
+                data = fake_proc[path]
+                return io.BytesIO(data) if "b" in mode else io.StringIO(data)
+            raise FileNotFoundError(path)
+
+        with mock.patch("backend.editor.recorder_submap.os.getppid", return_value=300):
+            with mock.patch("builtins.open", side_effect=fake_open):
+                self.assertEqual(resolve_watch_pid(), 200)
