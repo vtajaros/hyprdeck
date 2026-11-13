@@ -24,6 +24,51 @@ HYPR_BIND_HINT_RE = re.compile(
 )
 
 
+def collect_disabled_uncomment_ops(
+    lines: list[str],
+    file_path: str,
+    language: str,
+) -> list[EditOp]:
+    """Group HKS-disabled lines (including multi-line Lua statements) into uncomment EditOps."""
+    is_lua = language == "lua"
+    prefix = LUA_DISABLED_PREFIX if is_lua else HYPRLANG_DISABLED_PREFIX
+    ops: list[EditOp] = []
+    i = 0
+    while i < len(lines):
+        line_str = lines[i]
+        if not line_str.lstrip(" \t").startswith(prefix):
+            i += 1
+            continue
+        start_line_no = i + 1
+        block_lines = [line_str]
+        if is_lua:
+            from backend.parser.lua_normalizer import extract_lua_statement_span
+            unprefixed: list[str] = []
+            j = i
+            while j < len(lines) and lines[j].lstrip(" \t").startswith(prefix):
+                raw_j = lines[j]
+                lead_len = len(raw_j) - len(raw_j.lstrip(" \t"))
+                unprefixed.append(raw_j[:lead_len] + raw_j[lead_len + len(prefix):])
+                j += 1
+            span_text = extract_lua_statement_span(unprefixed, 1)
+            span_count = max(1, len(span_text.splitlines()))
+            block_lines = lines[i:i + span_count]
+            i += span_count
+        else:
+            i += 1
+
+        ops.append(
+            EditOp(
+                kind="uncomment",
+                file=file_path,
+                line_number=start_line_no,
+                expected_text="\n".join(block_lines),
+                language=language,
+            )
+        )
+    return ops
+
+
 def detect_disabled_binds(
     entrypoint: str,
     config_dir: str,
@@ -42,23 +87,9 @@ def detect_disabled_binds(
 
     lines = text.splitlines()
     is_lua = language == "lua"
-    prefix = LUA_DISABLED_PREFIX if is_lua else HYPRLANG_DISABLED_PREFIX
 
-    disabled_lines: list[tuple[int, str]] = []
-    disabled_ops: list[EditOp] = []
-
-    for idx, line_str in enumerate(lines, start=1):
-        if line_str.lstrip(" \t").startswith(prefix):
-            disabled_lines.append((idx, line_str))
-            disabled_ops.append(
-                EditOp(
-                    kind="uncomment",
-                    file=abs_entry,
-                    line_number=idx,
-                    expected_text=line_str,
-                    language=language,
-                )
-            )
+    disabled_ops = collect_disabled_uncomment_ops(lines, abs_entry, language)
+    disabled_lines = [(op.line_number, op.expected_text) for op in disabled_ops]
 
     if not disabled_lines:
         return []

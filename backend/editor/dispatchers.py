@@ -207,6 +207,273 @@ DISPATCHER_CATALOG: list[dict[str, Any]] = [
 ]
 
 
+LUA_TO_HYPRLANG_DISPATCHER_MAP: dict[str, str] = {
+    "exec_cmd": "exec",
+    "window.close": "killactive",
+    "window.float": "togglefloating",
+    "window.fullscreen": "fullscreen",
+    "focus": "movefocus",
+    "window.move": "movewindow",
+    "window.resize": "resizeactive",
+    "window.pin": "pin",
+    "layout": "togglesplit",
+    "submap": "submap",
+}
+
+HYPRLANG_NATIVE_DISPATCHERS: frozenset[str] = frozenset({
+    "exec",
+    "killactive",
+    "togglefloating",
+    "fullscreen",
+    "movefocus",
+    "movewindow",
+    "resizewindow",
+    "resizeactive",
+    "workspace",
+    "movetoworkspace",
+    "movetoworkspacesilent",
+    "pin",
+    "togglesplit",
+    "submap",
+})
+
+
+def _parse_lua_table(raw: str) -> dict[str, Any]:
+    """Parse a flat Lua table literal like `{ workspace = 2, silent = true }`."""
+    s = raw.strip()
+    if not (s.startswith("{") and s.endswith("}")):
+        raise ValueError(f"Expected Lua table, got {raw!r}")
+    inner = s[1:-1].strip()
+    if not inner:
+        return {}
+    # Split on top-level commas respecting quotes
+    parts: list[str] = []
+    cur: list[str] = []
+    in_str: str | None = None
+    in_esc = False
+    for ch in inner:
+        if in_esc:
+            in_esc = False
+            cur.append(ch)
+            continue
+        if ch == "\\" and in_str is not None:
+            in_esc = True
+            cur.append(ch)
+            continue
+        if in_str is not None:
+            if ch == in_str:
+                in_str = None
+            cur.append(ch)
+            continue
+        if ch in ('"', "'"):
+            in_str = ch
+            cur.append(ch)
+            continue
+        if ch in ("(", "[", "{"):
+            raise ValueError(f"Nested Lua expression {raw!r} is not supported for Hyprlang")
+        if ch == ",":
+            parts.append("".join(cur).strip())
+            cur = []
+            continue
+        cur.append(ch)
+    if cur:
+        parts.append("".join(cur).strip())
+
+    result: dict[str, Any] = {}
+    for item in parts:
+        if not item:
+            continue
+        if "=" not in item:
+            raise ValueError(f"Positional table entry {item!r} is not supported for Hyprlang")
+        k, v = item.split("=", 1)
+        k = k.strip()
+        v = v.strip()
+        if not k.isidentifier():
+            raise ValueError(f"Unsupported Lua table key {k!r} for Hyprlang")
+        if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+            result[k] = v[1:-1]
+        elif v == "true":
+            result[k] = True
+        elif v == "false":
+            result[k] = False
+        elif v.lstrip("+-").isdigit():
+            result[k] = int(v)
+        else:
+            raise ValueError(f"Unsupported Lua table value {v!r} for Hyprlang")
+    return result
+
+
+def map_lua_dispatcher_to_hyprlang(
+    dispatcher: str,
+    args: str | None = None,
+) -> tuple[str, str | None]:
+    """Losslessly map a Lua or catalog dispatcher (+ optional Lua table args) to Hyprlang.
+
+    Raises ValueError with 'not supported for Hyprlang' when the dispatcher or its
+    arguments have no safe, lossless Hyprlang equivalent.
+    """
+    clean = dispatcher.strip()
+    key = clean.lower()
+    if key.startswith("hl.dsp."):
+        key = key[len("hl.dsp."):]
+
+    clean_args = args.strip() if args is not None else ""
+    is_table = clean_args.startswith("{") and clean_args.endswith("}")
+    table: dict[str, Any] | None = None
+    if is_table:
+        try:
+            table = _parse_lua_table(clean_args)
+        except ValueError as exc:
+            raise ValueError(f"Dispatcher '{clean}' args are not supported for Hyprlang: {exc}") from exc
+
+    # Native Hyprlang dispatchers (not Lua-prefixed)
+    if clean.lower() in HYPRLANG_NATIVE_DISPATCHERS and not clean.lower().startswith("hl.dsp."):
+        if table is not None:
+            # Allow table translation via the same rules below if applicable
+            pass
+        else:
+            return clean, (clean_args or None)
+
+    if key == "exec_cmd" or key == "exec":
+        if table is not None:
+            if set(table.keys()) != {"cmd"} or not str(table["cmd"]).strip():
+                raise ValueError(f"Dispatcher '{clean}' table args {clean_args!r} are not supported for Hyprlang")
+            return "exec", str(table["cmd"]).strip()
+        if not clean_args:
+            raise ValueError(f"Dispatcher '{clean}' requires non-empty arguments")
+        return "exec", clean_args
+
+    if key in ("window.close", "killactive"):
+        if clean_args and table != {}:
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+        return "killactive", None
+
+    if key in ("window.pin", "pin"):
+        if clean_args and table != {}:
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+        return "pin", None
+
+    if key in ("window.float", "togglefloating"):
+        if not clean_args:
+            return "togglefloating", None
+        if table is not None:
+            if set(table.keys()) == {"action"} and str(table["action"]).lower() == "toggle":
+                return "togglefloating", None
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang (only action='toggle' is lossless)")
+        if clean_args.strip("\"'").lower() == "toggle":
+            return "togglefloating", None
+        raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+
+    if key in ("window.fullscreen", "fullscreen"):
+        if not clean_args:
+            return "fullscreen", "0"
+        if table is not None:
+            if set(table.keys()) == {"mode"}:
+                mode = str(table["mode"]).lower()
+                if mode == "fullscreen":
+                    return "fullscreen", "0"
+                if mode == "maximized":
+                    return "fullscreen", "1"
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+        val = clean_args.strip("\"'").lower()
+        if val in ("0", "fullscreen"):
+            return "fullscreen", "0"
+        if val in ("1", "maximized"):
+            return "fullscreen", "1"
+        raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+
+    if key in ("focus", "movefocus"):
+        if table is not None:
+            if set(table.keys()) == {"direction"}:
+                d = str(table["direction"]).lower()
+                if d in ("left", "right", "up", "down", "l", "r", "u", "d"):
+                    return "movefocus", d
+            if set(table.keys()) == {"workspace"} and str(table["workspace"]).strip():
+                return "workspace", str(table["workspace"]).strip()
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+        val = clean_args.strip("\"'")
+        if val.lower() in ("left", "right", "up", "down", "l", "r", "u", "d"):
+            return "movefocus", val.lower()
+        if val and val.lstrip("+-e").isdigit():
+            return "workspace", val
+        raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+
+    if key in ("window.move", "movewindow"):
+        if table is not None:
+            if set(table.keys()) == {"direction"}:
+                d = str(table["direction"]).lower()
+                if d in ("left", "right", "up", "down", "l", "r", "u", "d"):
+                    return "movewindow", d
+            if set(table.keys()) <= {"workspace", "silent"} and "workspace" in table:
+                ws = str(table["workspace"]).strip()
+                if ws:
+                    silent = bool(table.get("silent", False))
+                    return ("movetoworkspacesilent" if silent else "movetoworkspace"), ws
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+        val = clean_args.strip("\"'")
+        if val.lower() in ("left", "right", "up", "down", "l", "r", "u", "d"):
+            return "movewindow", val.lower()
+        if val and val.lstrip("+-e").isdigit():
+            return "movetoworkspace", val
+        raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+
+    if key == "workspace":
+        if table is not None:
+            if set(table.keys()) == {"workspace"} and str(table["workspace"]).strip():
+                return "workspace", str(table["workspace"]).strip()
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+        if not clean_args:
+            raise ValueError(f"Dispatcher '{clean}' requires non-empty arguments")
+        return "workspace", clean_args
+
+    if key in ("movetoworkspace", "movetoworkspacesilent"):
+        if table is not None:
+            if set(table.keys()) <= {"workspace", "silent"} and "workspace" in table:
+                ws = str(table["workspace"]).strip()
+                if ws:
+                    silent = bool(table.get("silent", key == "movetoworkspacesilent"))
+                    return ("movetoworkspacesilent" if silent else "movetoworkspace"), ws
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+        if not clean_args:
+            raise ValueError(f"Dispatcher '{clean}' requires non-empty arguments")
+        return key, clean_args
+
+    if key in ("window.resize", "resizeactive"):
+        if table is not None:
+            if set(table.keys()) <= {"dx", "dy"} and table:
+                dx = table.get("dx", 0)
+                dy = table.get("dy", 0)
+                if isinstance(dx, int) and not isinstance(dx, bool) and isinstance(dy, int) and not isinstance(dy, bool):
+                    return "resizeactive", f"{dx} {dy}"
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+        parts = clean_args.split()
+        if len(parts) == 2 and all(p.lstrip("+-").isdigit() for p in parts):
+            return "resizeactive", f"{parts[0]} {parts[1]}"
+        raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+
+    if key in ("layout", "togglesplit"):
+        if key == "togglesplit" and (not clean_args or table == {}):
+            return "togglesplit", None
+        if table is not None:
+            if set(table.keys()) == {"action"} and str(table["action"]).lower() == "togglesplit":
+                return "togglesplit", None
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+        if clean_args.strip("\"'").lower() == "togglesplit":
+            return "togglesplit", None
+        raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+
+    if key == "submap":
+        if table is not None:
+            if set(table.keys()) == {"submap"} and str(table["submap"]).strip():
+                return "submap", str(table["submap"]).strip()
+            raise ValueError(f"Dispatcher '{clean}' with args {clean_args!r} is not supported for Hyprlang")
+        if not clean_args:
+            raise ValueError(f"Dispatcher '{clean}' requires non-empty arguments")
+        return "submap", clean_args
+
+    raise ValueError(f"Dispatcher '{clean}' is not supported for Hyprlang")
+
+
 def get_catalog() -> list[dict[str, Any]]:
     """Return the data-driven dispatcher catalog."""
     return list(DISPATCHER_CATALOG)

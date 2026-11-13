@@ -51,7 +51,10 @@ def resolve_sidecar_path(
         return os.path.abspath(os.path.expanduser(cli_path.strip()))
 
     src_env = env if env is not None else os.environ
-    env_sidecar = src_env.get("HKS_SIDECAR", "").strip()
+    env_sidecar = (
+        src_env.get("HKS_SIDECAR", "").strip()
+        or src_env.get("HKS_SIDECAR_PATH", "").strip()
+    )
     if env_sidecar:
         return os.path.abspath(os.path.expanduser(env_sidecar))
 

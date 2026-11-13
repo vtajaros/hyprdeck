@@ -29,6 +29,101 @@ from backend.parser.modifiers import (
 
 DECLARED_VIA_RE = re.compile(r"\bhl\.(bind\w*)\s*\(")
 
+
+def extract_lua_statement_span(file_lines: list[str], source_line: int) -> str:
+    """Extract the full Lua hl.bind*(...) statement starting at 1-based `source_line`.
+
+    Tracks parentheses across multiple lines while respecting Lua strings ('...',
+    "...", [[...]]), backslash escapes, and comments (-- ... and --[[...]]).
+    """
+    if source_line < 1 or source_line > len(file_lines):
+        return ""
+    start_idx = source_line - 1
+    first_line = file_lines[start_idx]
+    m_decl = DECLARED_VIA_RE.search(first_line)
+    if not m_decl:
+        return first_line
+
+    # Join candidate lines from start_idx onward lazily; scan character by character
+    joined = "\n".join(file_lines[start_idx:])
+    pos = m_decl.end()  # right after the opening '('
+    depth = 1
+    in_str: str | None = None
+    in_esc = False
+    in_line_comment = False
+    in_block_comment = False
+    n = len(joined)
+    close_pos = -1
+
+    i = pos
+    while i < n:
+        ch = joined[i]
+        if in_line_comment:
+            if ch == "\n":
+                in_line_comment = False
+            i += 1
+            continue
+        if in_block_comment:
+            if joined[i:i + 2] == "]]":
+                in_block_comment = False
+                i += 2
+                continue
+            i += 1
+            continue
+        if in_str == "[[":
+            if joined[i:i + 2] == "]]":
+                in_str = None
+                i += 2
+                continue
+            i += 1
+            continue
+        if in_str is not None:
+            if in_esc:
+                in_esc = False
+            elif ch == "\\":
+                in_esc = True
+            elif ch == in_str:
+                in_str = None
+            i += 1
+            continue
+
+        # Not in string or comment
+        if joined[i:i + 4] == "--[[":
+            in_block_comment = True
+            i += 4
+            continue
+        if joined[i:i + 2] == "--":
+            in_line_comment = True
+            i += 2
+            continue
+        if joined[i:i + 2] == "[[":
+            in_str = "[["
+            i += 2
+            continue
+        if ch in ('"', "'"):
+            in_str = ch
+            i += 1
+            continue
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                close_pos = i
+                break
+        i += 1
+
+    if close_pos == -1:
+        return first_line
+
+    # Include trailing whitespace/comment on the closing line if no other code follows
+    nl_after = joined.find("\n", close_pos + 1)
+    line_tail = joined[close_pos + 1:] if nl_after == -1 else joined[close_pos + 1:nl_after]
+    tail_stripped = line_tail.strip()
+    if not tail_stripped or tail_stripped.startswith("--"):
+        return joined if nl_after == -1 else joined[:nl_after]
+    return joined[:close_pos + 1]
+
 KNOWN_OPT_FLAGS: dict[str, str] = {
     "locked": "locked",
     "repeating": "repeating",
@@ -170,11 +265,7 @@ def normalize_lua_output(
         parse_status = str(rb.get("parse_status") or "ok")
 
         file_lines = _read_lines_preserved(source_file, line_cache)
-        original_line = (
-            file_lines[source_line - 1]
-            if 1 <= source_line <= len(file_lines)
-            else ""
-        )
+        original_line = extract_lua_statement_span(file_lines, source_line)
 
         m_decl = DECLARED_VIA_RE.search(original_line)
         declared_via = m_decl.group(1) if m_decl else None

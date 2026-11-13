@@ -453,16 +453,9 @@ def resolve_uncomment_op(
             text = f.read()
 
         lines = text.splitlines()
-        disabled_ops: dict[int, EditOp] = {}
-        for idx, line_str in enumerate(lines, start=1):
-            if line_str.lstrip(" \t").startswith(prefix):
-                disabled_ops[idx] = EditOp(
-                    kind="uncomment",
-                    file=fpath,
-                    line_number=idx,
-                    expected_text=line_str,
-                    language=lang,
-                )
+        from backend.editor.disabled import collect_disabled_uncomment_ops
+        ops_list = collect_disabled_uncomment_ops(lines, fpath, lang)
+        disabled_ops: dict[int, EditOp] = {op.line_number: op for op in ops_list}
 
         if not disabled_ops:
             continue
@@ -535,6 +528,10 @@ def make_expected_bind(
     modmask = sum(MODIFIER_BITS[m] for m in canonical_mods if m in MODIFIER_BITS)
     dsp_clean = dispatcher.strip()
     args_clean = args.strip() if args else ""
+    if language == "hyprlang":
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+        dsp_clean, mapped_args = map_lua_dispatcher_to_hyprlang(dsp_clean, args)
+        args_clean = mapped_args.strip() if mapped_args else ""
 
     from backend.models.types import default_flags
     final_flags = default_flags()
@@ -625,6 +622,13 @@ def resolve_replace_op(
     final_dispatcher = cur_dsp if dispatcher_unchanged else (new_dispatcher or cur_dsp)
     final_args = cur_arg if dispatcher_unchanged else new_args
 
+    from backend.editor.codegen import validate_required_args
+    if not dispatcher_unchanged:
+        validate_required_args(final_dispatcher, final_args)
+        if target_bind.language == "hyprlang":
+            from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+            map_lua_dispatcher_to_hyprlang(final_dispatcher, final_args)
+
     if target_bind.language == "lua":
         new_line = generate_lua_bind(
             mods=new_mods,
@@ -684,6 +688,12 @@ def resolve_insert_op(
 
     Returns (EditOp, InsertPlan, expected_new_bind).
     """
+    from backend.editor.codegen import validate_required_args
+    validate_required_args(dispatcher, args)
+    if language == "hyprlang":
+        from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+        map_lua_dispatcher_to_hyprlang(dispatcher, args)
+
     from backend.editor.insert_policy import HYPRLANG_ANCHOR, LUA_ANCHOR
     target_file = file_path
     anchor = LUA_ANCHOR if language == "lua" else HYPRLANG_ANCHOR

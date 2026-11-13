@@ -189,6 +189,153 @@ def verify_with_hyprland(
     )
 
 
+_LUA_ONLY_DISPATCHERS = frozenset({
+    "exec_cmd",
+    "window.close",
+    "window.float",
+    "window.fullscreen",
+    "window.move",
+    "window.resize",
+    "window.pin",
+})
+
+
+def validate_hyprlang_structure(text: str, entrypoint: str = "hyprland.conf") -> VerifyResult:
+    """Strict stdlib structural validator for Hyprlang .conf files.
+
+    Used as a UNIT-ONLY fallback when `Hyprland --verify-config` runs in Lua-only mode.
+    Checks brace balance, quote termination, bind* field arity, Lua-only dispatcher leaks,
+    and submap = reset pairing.
+    """
+    brace_depth = 0
+    active_submap: str | None = None
+    lines = text.splitlines()
+
+    for line_no, raw_line in enumerate(lines, start=1):
+        in_str: str | None = None
+        in_esc = False
+        code_chars: list[str] = []
+        for ch in raw_line:
+            if in_esc:
+                in_esc = False
+                code_chars.append(ch)
+                continue
+            if ch == "\\" and in_str is not None:
+                in_esc = True
+                code_chars.append(ch)
+                continue
+            if in_str is not None:
+                if ch == in_str:
+                    in_str = None
+                code_chars.append(ch)
+                continue
+            if ch in ('"', "'"):
+                in_str = ch
+                code_chars.append(ch)
+                continue
+            if ch == "#":
+                break
+            if ch == "{":
+                brace_depth += 1
+            elif ch == "}":
+                brace_depth -= 1
+                if brace_depth < 0:
+                    return VerifyResult(
+                        ok=False,
+                        exit_code=1,
+                        message=f"{entrypoint}:{line_no}: unexpected closing brace '}}'",
+                        line=line_no,
+                        reason="config_error",
+                        raw_output="",
+                    )
+            code_chars.append(ch)
+
+        if in_str is not None:
+            return VerifyResult(
+                ok=False,
+                exit_code=1,
+                message=f"{entrypoint}:{line_no}: unterminated string literal ({in_str})",
+                line=line_no,
+                reason="config_error",
+                raw_output="",
+            )
+
+        code = "".join(code_chars).strip()
+        if not code:
+            continue
+
+        m_sub = re.match(r"^submap\s*=\s*(.+)$", code)
+        if m_sub:
+            sub_val = m_sub.group(1).strip()
+            if sub_val == "reset":
+                active_submap = None
+            else:
+                active_submap = sub_val
+            continue
+
+        m_bind = re.match(r"^(bind[a-zA-Z]*)\s*=\s*(.*)$", code)
+        if m_bind:
+            rhs = m_bind.group(2)
+            fields = [f.strip() for f in rhs.split(",")]
+            if len(fields) < 3:
+                return VerifyResult(
+                    ok=False,
+                    exit_code=1,
+                    message=f"{entrypoint}:{line_no}: {m_bind.group(1)} requires at least 3 comma-separated fields",
+                    line=line_no,
+                    reason="config_error",
+                    raw_output="",
+                )
+            key_field = fields[1]
+            dsp_field = fields[2]
+            if not key_field or not dsp_field:
+                return VerifyResult(
+                    ok=False,
+                    exit_code=1,
+                    message=f"{entrypoint}:{line_no}: empty key or dispatcher in {m_bind.group(1)}",
+                    line=line_no,
+                    reason="config_error",
+                    raw_output="",
+                )
+            if dsp_field.lower() in _LUA_ONLY_DISPATCHERS or dsp_field.lower().startswith("hl.dsp."):
+                return VerifyResult(
+                    ok=False,
+                    exit_code=1,
+                    message=f"{entrypoint}:{line_no}: Lua-only dispatcher '{dsp_field}' in Hyprlang config",
+                    line=line_no,
+                    reason="config_error",
+                    raw_output="",
+                )
+
+    if brace_depth != 0:
+        return VerifyResult(
+            ok=False,
+            exit_code=1,
+            message=f"{entrypoint}:{len(lines)}: unclosed '{{' brace(s) (depth={brace_depth})",
+            line=len(lines),
+            reason="config_error",
+            raw_output="",
+        )
+    if active_submap is not None:
+        return VerifyResult(
+            ok=False,
+            exit_code=1,
+            message=f"{entrypoint}:{len(lines)}: unclosed submap '{active_submap}' (missing 'submap = reset')",
+            line=len(lines),
+            reason="config_error",
+            raw_output="",
+        )
+
+    return VerifyResult(
+        ok=True,
+        exit_code=0,
+        message="hyprlang structure ok (UNIT-ONLY)",
+        line=None,
+        reason="ok",
+        raw_output="",
+    )
+
+
 def verify_with_recorder(
     candidate_path: str,
     config_dir: str,

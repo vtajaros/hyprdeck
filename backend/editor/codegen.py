@@ -23,6 +23,31 @@ def escape_lua_string(s: str) -> str:
     return f'"{escaped}"'
 
 
+REQUIRE_ARGS_DISPATCHERS: frozenset[str] = frozenset({
+    "exec_cmd",
+    "hl.dsp.exec_cmd",
+    "exec",
+    "workspace",
+    "movetoworkspace",
+    "movetoworkspacesilent",
+    "submap",
+    "hl.dsp.submap",
+})
+
+
+def validate_required_args(dispatcher: str | None, args: str | None) -> None:
+    """Reject empty or whitespace-only args for dispatchers that require an argument."""
+    if not dispatcher:
+        return
+    clean_dsp = dispatcher.strip()
+    if "(" in clean_dsp:
+        # Inline Lua call like hl.dsp.exec_cmd("kitty") already carries its argument
+        return
+    if clean_dsp.lower() in REQUIRE_ARGS_DISPATCHERS:
+        if args is None or not str(args).strip():
+            raise ValueError(f"Dispatcher '{clean_dsp}' requires non-empty arguments")
+
+
 def validate_code_tokens(dispatcher: str, args: str | None = None) -> None:
     """Validate dispatcher and args to ensure no newlines and balanced quotes/brackets."""
     if "\n" in dispatcher or "\r" in dispatcher:
@@ -143,10 +168,13 @@ def _rewrite_lua_shortcut(original_line: str, new_combo_expr: str) -> str | None
         return None
     prefix_text = m.group(0)
     start_pos = len(prefix_text)
+    m_lead = re.match(r"^(\s*)", original_line[start_pos:])
+    lead_ws = m_lead.group(1) if m_lead else ""
+    scan_start = start_pos + len(lead_ws)
     in_str: str | None = None
     in_esc = False
     depth = 0
-    for i in range(start_pos, len(original_line)):
+    for i in range(scan_start, len(original_line)):
         ch = original_line[i]
         if in_esc:
             in_esc = False
@@ -170,19 +198,19 @@ def _rewrite_lua_shortcut(original_line: str, new_combo_expr: str) -> str | None
             depth -= 1
             continue
         if ch == "," and depth == 0:
-            combo = original_line[start_pos:i]
+            combo = original_line[scan_start:i]
             rest = original_line[i:]  # starts with ','
             # Check spacing after comma for column alignment preservation
             m_sep = re.match(r"^,([ \t]+)", rest)
             if m_sep and "\n" not in original_line:
-                orig_col = start_pos + len(combo) + len(m_sep.group(0))
-                new_prefix = f"{prefix_text}{new_combo_expr},"
+                orig_col = scan_start + len(combo) + len(m_sep.group(0))
+                new_prefix = f"{prefix_text}{lead_ws}{new_combo_expr},"
                 if len(new_prefix) < orig_col and len(m_sep.group(1)) >= 2:
                     padding = " " * (orig_col - len(new_prefix))
                     return new_prefix + padding + rest[len(m_sep.group(0)):]
                 elif len(m_sep.group(1)) >= 2:
                     return new_prefix + " " + rest[len(m_sep.group(0)):]
-            return f"{prefix_text}{new_combo_expr}{rest}"
+            return f"{prefix_text}{lead_ws}{new_combo_expr}{rest}"
     return None
 
 
@@ -236,6 +264,8 @@ def generate_lua_bind(
 
     if dispatcher is None:
         raise ValueError("dispatcher cannot be None when not preserving original dispatcher")
+
+    validate_required_args(dispatcher, args)
 
     d_lower = dispatcher.strip().lower()
     is_exec = d_lower in ("exec_cmd", "hl.dsp.exec_cmd", "exec")
@@ -378,6 +408,8 @@ def generate_hyprlang_bind(
     if dispatcher is None:
         raise ValueError("dispatcher cannot be None when not preserving original dispatcher")
 
+    validate_required_args(dispatcher, args)
+
     d_lower = dispatcher.strip().lower()
     is_exec = d_lower in ("exec_cmd", "hl.dsp.exec_cmd", "exec")
     if is_exec:
@@ -396,8 +428,9 @@ def generate_hyprlang_bind(
         mod_tokens = ["$mainMod" if m == "SUPER" else m for m in mod_tokens]
 
     mods_str = " ".join(mod_tokens)
-    clean_dsp = dispatcher.strip()
-    clean_args = args.strip() if args else ""
+    from backend.editor.dispatchers import map_lua_dispatcher_to_hyprlang
+    clean_dsp, mapped_args = map_lua_dispatcher_to_hyprlang(dispatcher, args)
+    clean_args = mapped_args.strip() if mapped_args else ""
     if clean_args and ("\n" in clean_args or "\r" in clean_args):
         raise ValueError("Newlines are not allowed in args")
 

@@ -241,9 +241,8 @@ def apply_ops_to_text(text: str, ops: list[EditOp]) -> str:
         expected_lines = op.expected_text.splitlines() or [""]
         span = len(expected_lines)
         actual_lines = [_split_line_and_eol(raw_lines[i])[0] for i in range(idx, idx + span)]
-        _, eol = _split_line_and_eol(raw_lines[idx + span - 1])
-        if not eol:
-            eol = default_eol
+        _, orig_eol = _split_line_and_eol(raw_lines[idx + span - 1])
+        eol = orig_eol if orig_eol else default_eol
 
         # Re-verify against current line state
         if actual_lines != expected_lines:
@@ -277,7 +276,14 @@ def apply_ops_to_text(text: str, ops: list[EditOp]) -> str:
 
         elif op.kind == "replace_line":
             assert op.new_text is not None
-            raw_lines[idx:idx + span] = [f"{op.new_text}{eol}"]
+            new_lines = op.new_text.split("\n")
+            if len(new_lines) == 1:
+                raw_lines[idx:idx + span] = [f"{new_lines[0]}{orig_eol}"]
+            else:
+                line_eol = orig_eol or default_eol
+                replacement = [f"{ln}{line_eol}" for ln in new_lines[:-1]]
+                replacement.append(f"{new_lines[-1]}{orig_eol}")
+                raw_lines[idx:idx + span] = replacement
 
         elif op.kind == "delete_line":
             del raw_lines[idx:idx + span]

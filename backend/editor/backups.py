@@ -98,7 +98,7 @@ def atomic_write_bytes(
     mode_source: str | None = None,
 ) -> None:
     """Atomically write bytes to target_path using a temp file in the same directory, fsync, and os.replace."""
-    abs_target = os.path.abspath(os.path.expanduser(target_path))
+    abs_target = os.path.realpath(os.path.expanduser(target_path))
     target_dir = os.path.dirname(abs_target)
     basename = os.path.basename(abs_target)
     os.makedirs(target_dir, exist_ok=True)

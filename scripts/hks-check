@@ -12,7 +12,7 @@ echo
 
 # 1. Backend Unit Tests
 echo "[1/3] Running backend test suite..."
-python3 -m unittest discover -s backend/tests -v
+python3 -m unittest discover -s backend/tests -t . -v
 echo
 
 # 2. Frontend QML Unit Tests
