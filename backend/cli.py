@@ -561,6 +561,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     rec_enter = rec_sub.add_parser("enter", help="Enter the recorder submap.")
     rec_enter.add_argument("--language", dest="language", default="lua", choices=["lua", "hyprlang"])
     rec_enter.add_argument("--submap", dest="submap", default="hks_record")
+    rec_enter.add_argument("--watch-pid", dest="watch_pid", type=int, default=None)
+    rec_enter.add_argument("--watchdog-timeout", dest="watchdog_timeout", type=float, default=20.0)
     rec_enter.add_argument("--json", dest="json_output", action="store_true", default=False)
 
     rec_leave = rec_sub.add_parser("leave", help="Leave the recorder submap.")
@@ -1852,7 +1854,12 @@ def _handle_recorder(args: argparse.Namespace) -> int:
     submap = getattr(args, "submap", "hks_record")
 
     if action == "enter":
-        res = enter_submap(language=language, submap_name=submap)
+        res = enter_submap(
+            language=language,
+            submap_name=submap,
+            watch_pid=getattr(args, "watch_pid", None),
+            watchdog_timeout=float(getattr(args, "watchdog_timeout", 20.0)),
+        )
         res["action"] = "enter"
     elif action == "leave":
         res = leave_submap(language=language)
@@ -1892,6 +1899,11 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
+        if args.subcommand != "recorder" and not getattr(args, "no_live", False):
+            try:
+                heal_submap()
+            except Exception:
+                pass
         if args.subcommand == "scan":
             doc, exit_code = run_scan_pipeline(
                 config_dir=args.config_dir,

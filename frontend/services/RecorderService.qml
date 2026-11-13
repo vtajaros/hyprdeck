@@ -114,7 +114,8 @@ Singleton {
             root.active = false;
             root.submap = "default";
             if (!data || !data.ok) {
-                root.error = (data && data.message) ? data.message : (raw || "Failed to leave recorder submap");
+                var baseErr = (data && data.message) ? data.message : (raw || "Failed to leave recorder submap");
+                root.error = baseErr + " — Recover manually: hyprctl dispatch 'hl.dsp.submap(\"reset\")'";
             }
             if (cb) cb(data);
         });

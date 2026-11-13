@@ -102,7 +102,7 @@ Popup {
                     RecorderService.leave(function(retryData) {
                         RecorderService.status(function(finalData) {
                             if (finalData && finalData.submap && finalData.submap !== "default") {
-                                EditService.showToast("Submap reset warning: still in '" + finalData.submap + "'. Run 'hks recorder heal'.", false);
+                                EditService.showToast("Submap reset warning: still in '" + finalData.submap + "'. Run: hyprctl dispatch 'hl.dsp.submap(\"reset\")'", false);
                             }
                         });
                     });

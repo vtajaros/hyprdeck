@@ -113,6 +113,13 @@ echo "Before count: $BEFORE, After count: $AFTER"
 [ "$BEFORE" -eq "$AFTER" ] && echo "Submap test PASSED: Bind counts match exactly!"
 ```
 
+### Emergency Recorder Submap Recovery
+If the UI or backend crashes while inside `hks_record`, the detached OS watchdog resets the submap automatically within the timeout (or immediately on parent exit). To force-reset manually from a TTY or terminal:
+
+```bash
+hyprctl dispatch 'hl.dsp.submap("reset")'
+```
+
 ---
 
 ## 4. Desktop UI Interactive Verification
