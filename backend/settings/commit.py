@@ -43,9 +43,9 @@ def _render_overrides_document(
     existing_text: str | None,
     merged_values: Mapping[str, Any],
 ) -> str:
-    """Update 'appearance' and 'desktop' sections in overrides text; remove empty sections."""
+    """Update 'appearance', 'desktop', and 'input' sections in overrides text; remove empty sections."""
     doc = existing_text
-    for sec in ("appearance", "desktop"):
+    for sec in ("appearance", "desktop", "input"):
         sec_vals = {
             opt_id: val
             for opt_id, val in merged_values.items()

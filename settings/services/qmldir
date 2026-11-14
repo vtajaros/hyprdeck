@@ -1,2 +1,3 @@
 singleton SettingsService 1.0 SettingsService.qml
 singleton DisplayService 1.0 DisplayService.qml
+singleton InputService 1.0 InputService.qml

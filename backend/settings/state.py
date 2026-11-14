@@ -38,7 +38,10 @@ def parse_getoption_output(raw: str, expected_type: str) -> tuple[bool, Any]:
     if "float" in data:
         return True, round(float(data["float"]), 4)
     if "str" in data:
-        return True, str(data["str"])
+        s = str(data["str"])
+        if s == "[[EMPTY]]":
+            s = ""
+        return True, s
     if "css" in data:
         # e.g. "8 8 8 8" for gaps_in / gaps_out
         first = str(data["css"]).strip().split()[0]

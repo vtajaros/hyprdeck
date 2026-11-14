@@ -53,6 +53,9 @@ FloatingWindow {
         if (!DisplayService.loading && !DisplayService.hasDraftChanges && !DisplayService.countdownActive) {
             DisplayService.reload();
         }
+        if (!InputService.loading && !InputService.hasDraftChanges && !InputService.countdownActive) {
+            InputService.reload();
+        }
     }
 
     function _performClose() {
@@ -95,17 +98,17 @@ FloatingWindow {
         id: closeGuard
         recorderActive: false
         editDialogOpen: false
-        dialogOpen: win.unsavedPromptOpen || DisplayService.countdownActive
+        dialogOpen: win.unsavedPromptOpen || DisplayService.countdownActive || InputService.countdownActive
         focusItem: rootSurface.Window.activeFocusItem
     }
 
     Component.onCompleted: {
         SettingsService.reload();
         DisplayService.reload();
+        InputService.reload();
     }
 
     readonly property var placeholderPages: [
-        { id: "input", icon: "󰌌", title: "Input", summary: "Mouse sensitivity, touchpad gestures, and keyboard repeat rate." },
         { id: "audio", icon: "󰕾", title: "Audio", summary: "Output sinks, input sources, and per-device volume." },
         { id: "bluetooth", icon: "󰂯", title: "Bluetooth", summary: "Adapter power, pairing, and connected devices." },
         { id: "network", icon: "󰖩", title: "Network", summary: "Wi-Fi networks, Ethernet links, and DNS status." },
@@ -274,6 +277,17 @@ FloatingWindow {
                             }
                         }
 
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰌌"
+                            text: "Input"
+                            active: win.currentPage === "input" && globalSearch.text.trim().length === 0
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.currentPage = "input";
+                            }
+                        }
+
                         Rectangle {
                             width: parent.width
                             height: 1
@@ -312,6 +326,11 @@ FloatingWindow {
                 DisplayPage {
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "display"
+                }
+
+                InputPage {
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "input"
                 }
 
                 PlaceholderPage {
@@ -440,10 +459,13 @@ FloatingWindow {
             }
         }
 
-        // Display 15s Confirm-or-Revert Countdown Modal
+        // Shared 15s Confirm-or-Revert Countdown Modal (Display & Input)
         Rectangle {
+            readonly property bool inputModal: InputService.countdownActive && !DisplayService.countdownActive
+            readonly property bool modalBusy: inputModal ? InputService.busy : DisplayService.busy
+            readonly property int modalSecs: inputModal ? InputService.remainingSeconds : DisplayService.remainingSeconds
             anchors.fill: parent
-            visible: DisplayService.countdownActive
+            visible: DisplayService.countdownActive || InputService.countdownActive
             color: HKS.alpha(HKS.bg, 0.78)
             z: 30
 
@@ -465,7 +487,7 @@ FloatingWindow {
                     spacing: 12
 
                     Text {
-                        text: "Keep these display settings?"
+                        text: parent.parent.parent.inputModal ? "Keep these input settings?" : "Keep these display settings?"
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeLarge
                         font.weight: Font.Bold
@@ -474,7 +496,7 @@ FloatingWindow {
 
                     Text {
                         width: parent.width
-                        text: "Reverting automatically in " + DisplayService.remainingSeconds + "s unless confirmed."
+                        text: "Reverting automatically in " + parent.parent.parent.modalSecs + "s unless confirmed."
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeSmall
                         color: HKS.warning
@@ -489,16 +511,28 @@ FloatingWindow {
                             text: "Revert now"
                             variant: "danger"
                             compact: true
-                            enabled: !DisplayService.busy
-                            onClicked: DisplayService.revertChanges()
+                            enabled: !parent.parent.parent.parent.modalBusy
+                            onClicked: {
+                                if (parent.parent.parent.parent.inputModal) {
+                                    InputService.revertChanges();
+                                } else {
+                                    DisplayService.revertChanges();
+                                }
+                            }
                         }
 
                         ActionButton {
                             text: "Keep changes"
                             variant: "accent"
                             compact: true
-                            enabled: !DisplayService.busy
-                            onClicked: DisplayService.keepChanges()
+                            enabled: !parent.parent.parent.parent.modalBusy
+                            onClicked: {
+                                if (parent.parent.parent.parent.inputModal) {
+                                    InputService.keepChanges();
+                                } else {
+                                    DisplayService.keepChanges();
+                                }
+                            }
                         }
                     }
                 }

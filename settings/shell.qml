@@ -96,6 +96,30 @@ ShellRoot {
             return JSON.stringify({ ok: true });
         }
 
+        function debugInputApply(jsonChanges: string): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            var parsed = null;
+            try {
+                parsed = JSON.parse(String(jsonChanges));
+            } catch (e) {
+                return JSON.stringify({ ok: false, error: "Invalid JSON changes: " + e.message });
+            }
+            InputService.applyChanges(parsed);
+            return JSON.stringify({ ok: true });
+        }
+
+        function debugInputKeep(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            InputService.keepChanges();
+            return JSON.stringify({ ok: true });
+        }
+
+        function debugInputRevert(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            InputService.revertChanges();
+            return JSON.stringify({ ok: true });
+        }
+
         function debugState(): string {
             if (!root.debugEnabled) return root._debugDisabledJson();
             var optsMap = ({});
@@ -131,6 +155,22 @@ ShellRoot {
                     loading: DisplayService.loading,
                     error: DisplayService.error,
                     statusMessage: DisplayService.statusMessage
+                },
+                input: {
+                    options: InputService.options,
+                    devices: InputService.devices,
+                    deviceOverrides: InputService.deviceOverrides,
+                    draftOptions: InputService.draftOptions,
+                    draftDevices: InputService.draftDevices,
+                    includeInstalled: InputService.includeInstalled,
+                    overridesSha256: InputService.overridesSha256,
+                    countdownActive: InputService.countdownActive,
+                    remainingSeconds: InputService.remainingSeconds,
+                    busy: InputService.busy,
+                    loading: InputService.loading,
+                    error: InputService.error,
+                    warningsText: InputService.warningsText,
+                    statusMessage: InputService.statusMessage
                 }
             });
         }

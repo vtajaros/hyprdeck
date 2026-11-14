@@ -728,6 +728,33 @@ def build_arg_parser() -> argparse.ArgumentParser:
     disp_bri.add_argument("--ddc", dest="use_ddc", action="store_true", default=False, help="Read/set via ddcutil.")
     disp_bri.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
+    # settings input subcommand
+    st_inp = st_sub.add_parser("input", help="Input keyboard/mouse/touchpad/per-device operations.")
+    inp_sub = st_inp.add_subparsers(dest="input_action", required=True)
+
+    inp_state = inp_sub.add_parser("state", help="Read input options, XKB layouts, and devices state.")
+    inp_state.add_argument("--state-dir", dest="state_dir", default=None, help="Override revert-guard state dir.")
+    _add_common_st_args(inp_state)
+
+    inp_apply = inp_sub.add_parser("apply", help="Validate and apply input/device configuration.")
+    inp_apply.add_argument("source", nargs="?", default=None, help="Path to JSON input changes file, or '-' for stdin.")
+    inp_apply.add_argument("--inline", dest="inline_json", default=None, help="Inline JSON string.")
+    inp_apply.add_argument("--apply", dest="apply", action="store_true", default=False, help="Write changes (requires --scan-sha256).")
+    inp_apply.add_argument("--scan-sha256", dest="scan_sha256", default=None, help="Expected SHA-256 of hks-overrides.lua (or 'absent').")
+    inp_apply.add_argument("--timeout", dest="timeout", type=float, default=15.0, help="Revert-guard confirmation timeout seconds.")
+    inp_apply.add_argument("--watch-pid", dest="watch_pid", default=None, help="PID to watch (or 'ppid' for parent process).")
+    inp_apply.add_argument("--state-dir", dest="state_dir", default=None, help="Override revert-guard state dir.")
+    _add_common_st_args(inp_apply)
+
+    inp_conf = inp_sub.add_parser("confirm", help="Confirm active input changes and disarm revert watchdog.")
+    inp_conf.add_argument("--state-dir", dest="state_dir", default=None, help="Override revert-guard state dir.")
+    inp_conf.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    inp_rev = inp_sub.add_parser("revert", help="Immediately revert active input changes and disarm watchdog.")
+    inp_rev.add_argument("--state-dir", dest="state_dir", default=None, help="Override revert-guard state dir.")
+    inp_rev.add_argument("--no-live", dest="no_live", action="store_true", default=False, help="Disable live hyprctl reload during revert.")
+    inp_rev.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
     return parser
 
 
@@ -2289,6 +2316,125 @@ def _handle_settings_display(
     return 1 if res.errors else 0
 
 
+def _handle_settings_input(
+    args: argparse.Namespace,
+    cfg_dir: str | None,
+    reload_override: str | None,
+    debug_bdir: str | None,
+) -> int:
+    from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
+    from backend.editor.backups import compute_file_sha256
+    from backend.settings.input.apply_flow import (
+        apply_input_changes,
+        confirm_input_changes,
+        get_input_state,
+        revert_input_changes,
+    )
+    from backend.settings.input.devices import probe_devices
+
+    i_action = args.input_action
+
+    if i_action == "confirm":
+        res = confirm_input_changes(state_dir=getattr(args, "state_dir", None))
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0 if res.get("ok") else 1
+
+    if i_action == "revert":
+        res = revert_input_changes(state_dir=getattr(args, "state_dir", None))
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0 if res.get("ok") else 1
+
+    if i_action == "state":
+        st = get_input_state(
+            config_dir=cfg_dir,
+            entrypoint=args.entrypoint,
+            no_live=args.no_live,
+            state_dir=getattr(args, "state_dir", None),
+        )
+        sys.stdout.write(json.dumps(st, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    # i_action == "apply"
+    disc = discover_config(
+        config_dir=cfg_dir,
+        entrypoint=args.entrypoint,
+        no_live=args.no_live,
+    )
+    env_info = disc.environment
+    dry_run = not bool(args.apply)
+    if args.apply and not args.scan_sha256:
+        msg = "--apply requires --scan-sha256 <overrides_sha256_or_absent>."
+        sys.stdout.write(json.dumps({"applied": False, "errors": [msg]}, indent=2) + "\n")
+        return 2
+
+    try:
+        payload = _read_json_any(args.source, getattr(args, "inline_json", None))
+    except (OSError, ValueError) as exc:
+        sys.stdout.write(json.dumps({"applied": False, "errors": [str(exc)]}, indent=2) + "\n")
+        return 1
+
+    if not isinstance(payload, dict):
+        sys.stdout.write(
+            json.dumps({"applied": False, "errors": ["Input payload must be a JSON object"]}, indent=2)
+            + "\n"
+        )
+        return 1
+
+    opt_changes = payload.get("options") if "options" in payload or "devices" in payload else payload
+    dev_changes = payload.get("devices") if isinstance(payload, dict) else None
+
+    try:
+        current_devices = probe_devices() if dev_changes else None
+    except Exception as exc:
+        sys.stdout.write(json.dumps({"applied": False, "errors": [str(exc)]}, indent=2) + "\n")
+        return 1
+
+    ov_path = os.path.join(env_info.config_dir, OVERRIDES_FILENAME)
+    cur_sha = compute_file_sha256(ov_path) if os.path.isfile(ov_path) else SHA256_ABSENT
+    expected_sha = args.scan_sha256 if args.scan_sha256 else cur_sha
+    if args.no_live:
+        reload_mode = "none"
+    elif reload_override is not None:
+        reload_mode = reload_override
+    else:
+        reload_mode = "config-only"
+
+    watch_pid: int | None = None
+    if getattr(args, "watch_pid", None) is not None:
+        wp_raw = str(args.watch_pid).strip().lower()
+        if wp_raw == "ppid":
+            watch_pid = os.getppid()
+        else:
+            try:
+                watch_pid = int(wp_raw)
+            except ValueError:
+                sys.stdout.write(
+                    json.dumps({"applied": False, "errors": [f"Invalid --watch-pid: {wp_raw!r}"]}, indent=2) + "\n"
+                )
+                return 2
+
+    res = apply_input_changes(
+        opt_changes if isinstance(opt_changes, dict) else {},
+        device_changes=dev_changes,
+        current_devices=current_devices,
+        config_dir=env_info.config_dir,
+        entrypoint=env_info.entrypoint,
+        expected_sha256=expected_sha,
+        timeout_seconds=float(args.timeout),
+        watch_pid=watch_pid,
+        backup_dir=debug_bdir,
+        state_dir=getattr(args, "state_dir", None),
+        reload_mode=reload_mode,
+        dry_run=dry_run,
+    )
+    sys.stdout.write(json.dumps(res.to_dict(), indent=2) + "\n")
+    sys.stdout.flush()
+    return 1 if res.errors else 0
+
+
 def _handle_settings(args: argparse.Namespace) -> int:
     from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
     from backend.editor.backups import compute_file_sha256
@@ -2301,6 +2447,9 @@ def _handle_settings(args: argparse.Namespace) -> int:
 
     if action == "display":
         return _handle_settings_display(args, cfg_dir, reload_override, debug_bdir)
+
+    if action == "input":
+        return _handle_settings_input(args, cfg_dir, reload_override, debug_bdir)
 
     if action == "state":
         st = current_state(

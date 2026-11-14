@@ -11,8 +11,10 @@ from typing import Mapping
 from backend.core.constants import (
     ENV_SETTINGS_CONFIG_DIR,
     ENV_SETTINGS_DEBUG,
+    ENV_SETTINGS_DEVICES_FIXTURE,
     ENV_SETTINGS_MONITORS_FIXTURE,
     ENV_SETTINGS_RELOAD_MODE,
+    ENV_SETTINGS_XKB_PATH,
     ENV_STATE_DIR,
 )
 from backend.core.revert_guard import resolve_state_dir
@@ -58,6 +60,14 @@ def assert_env_isolated(env: Mapping[str, str] | None = None) -> None:
     dbg_cfg = env_dict.get(ENV_SETTINGS_CONFIG_DIR, "").strip()
     if dbg_cfg:
         assert_path_isolated(dbg_cfg, ENV_SETTINGS_CONFIG_DIR)
+    repo_fixtures = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+    dev_fx = env_dict.get(ENV_SETTINGS_DEVICES_FIXTURE, "").strip()
+    if dev_fx and not is_under_path(dev_fx, repo_fixtures):
+        assert_path_isolated(dev_fx, ENV_SETTINGS_DEVICES_FIXTURE)
+        if not is_under_path(dev_fx, tempfile.gettempdir()):
+            raise AssertionError(
+                f"Test isolation violation: {ENV_SETTINGS_DEVICES_FIXTURE} ({dev_fx!r}) must be under /tmp or test fixtures"
+            )
 
 
 _CLEARED_ENV_VARS = (
@@ -65,6 +75,8 @@ _CLEARED_ENV_VARS = (
     ENV_SETTINGS_CONFIG_DIR,
     ENV_SETTINGS_RELOAD_MODE,
     ENV_SETTINGS_MONITORS_FIXTURE,
+    ENV_SETTINGS_DEVICES_FIXTURE,
+    ENV_SETTINGS_XKB_PATH,
 )
 
 
@@ -132,6 +144,7 @@ def install_suite_isolation_guard() -> None:
     import backend.settings.commit as st_commit_mod
     import backend.settings.display.apply_flow as disp_apply_mod
     import backend.settings.display.brightness as disp_bri_mod
+    import backend.settings.input.apply_flow as inp_apply_mod
 
     orig_atomic_write = bkp_mod.atomic_write_bytes
     orig_create_backup = bkp_mod.create_backup
@@ -307,3 +320,54 @@ def install_suite_isolation_guard() -> None:
     disp_apply_mod.confirm_display_changes = guarded_confirm_disp
     disp_apply_mod.revert_display_changes = guarded_revert_disp
     disp_bri_mod.set_brightness = guarded_set_bri
+
+    orig_apply_inp = inp_apply_mod.apply_input_changes
+    orig_confirm_inp = inp_apply_mod.confirm_input_changes
+    orig_revert_inp = inp_apply_mod.revert_input_changes
+
+    @functools.wraps(orig_apply_inp)
+    def guarded_apply_inp(option_changes=None, *, config_dir: str, entrypoint: str, **kwargs):
+        assert_path_isolated(config_dir, "apply_input_changes(config_dir)")
+        assert_path_isolated(entrypoint, "apply_input_changes(entrypoint)")
+        resolved_bdir = bkp_mod.resolve_backup_dir(
+            backup_dir=kwargs.get("backup_dir"), env=kwargs.get("env")
+        )
+        assert_path_isolated(resolved_bdir, "apply_input_changes(backup_dir)")
+        resolved_sdir = rg_mod.resolve_state_dir(
+            state_dir=kwargs.get("state_dir"), env=kwargs.get("env")
+        )
+        assert_path_isolated(resolved_sdir, "apply_input_changes(state_dir)")
+        return orig_apply_inp(
+            option_changes,
+            config_dir=config_dir,
+            entrypoint=entrypoint,
+            **kwargs,
+        )
+
+    @functools.wraps(orig_confirm_inp)
+    def guarded_confirm_inp(*, handle=None, state_dir=None, env=None):
+        if handle is not None:
+            assert_path_isolated(handle.confirm_path, "confirm_input_changes(confirm_path)")
+        else:
+            assert_path_isolated(
+                rg_mod.resolve_state_dir(state_dir=state_dir, env=env),
+                "confirm_input_changes(state_dir)",
+            )
+        return orig_confirm_inp(handle=handle, state_dir=state_dir, env=env)
+
+    @functools.wraps(orig_revert_inp)
+    def guarded_revert_inp(*, handle=None, state_dir=None, env=None, **kwargs):
+        if handle is not None and handle.plan.get("target_path"):
+            assert_path_isolated(
+                str(handle.plan["target_path"]), "revert_input_changes(target_path)"
+            )
+        else:
+            assert_path_isolated(
+                rg_mod.resolve_state_dir(state_dir=state_dir, env=env),
+                "revert_input_changes(state_dir)",
+            )
+        return orig_revert_inp(handle=handle, state_dir=state_dir, env=env, **kwargs)
+
+    inp_apply_mod.apply_input_changes = guarded_apply_inp
+    inp_apply_mod.confirm_input_changes = guarded_confirm_inp
+    inp_apply_mod.revert_input_changes = guarded_revert_inp

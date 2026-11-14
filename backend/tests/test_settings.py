@@ -41,7 +41,7 @@ class TestSettingsCatalog(unittest.TestCase):
             self.assertIsInstance(opt, OptionSpec)
             self.assertNotIn(opt.id, seen_ids, f"Duplicate id: {opt.id}")
             seen_ids.add(opt.id)
-            self.assertIn(opt.section, ("appearance", "desktop"))
+            self.assertIn(opt.section, ("appearance", "desktop", "input"))
             sections.add(opt.section)
             self.assertIn(opt.type, ("bool", "int", "float", "color", "enum", "string"))
             self.assertTrue(opt.label.strip())
@@ -57,12 +57,14 @@ class TestSettingsCatalog(unittest.TestCase):
                 self.assertGreater(opt.step, 0)
             if opt.type == "enum":
                 self.assertTrue(opt.enum_values)
-        self.assertEqual(sections, {"appearance", "desktop"})
+        self.assertEqual(sections, {"appearance", "desktop", "input"})
 
     def test_catalog_matches_recorded_live_probe_fixture(self) -> None:
         with open(_FIXTURE_PATH, "r", encoding="utf-8") as f:
             probe = json.load(f)
         for opt in CATALOG:
+            if opt.section not in ("appearance", "desktop"):
+                continue
             self.assertIn(opt.getoption_name, probe)
             raw = probe[opt.getoption_name]
             capable, val = parse_getoption_output(raw, opt.type)

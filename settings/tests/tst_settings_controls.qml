@@ -48,6 +48,10 @@ TestCase {
         id: dispLogic
     }
 
+    InputControlLogic {
+        id: inputLogic
+    }
+
     function test_close_guard_blocks_when_prompt_open() {
         guard.dialogOpen = false;
         verify(guard.closeAllowed);
@@ -108,5 +112,50 @@ TestCase {
         compare(dispLogic.transformLabel(1), "90°");
         compare(dispLogic.transformLabel(3), "270°");
         compare(dispLogic.transformLabel(7), "Flipped 270°");
+    }
+
+    function test_input_layout_list_operations() {
+        var r1 = inputLogic.addLayout(["us"], ["intl"], "de", "nodeadkeys");
+        compare(r1.layouts.join(","), "us,de");
+        compare(r1.variants.join(","), "intl,nodeadkeys");
+
+        var r2 = inputLogic.moveLayout(r1.layouts, r1.variants, 1, -1);
+        compare(r2.layouts.join(","), "de,us");
+        compare(r2.variants.join(","), "nodeadkeys,intl");
+
+        var r3 = inputLogic.removeLayout(r2.layouts, r2.variants, 0);
+        compare(r3.layouts.join(","), "us");
+        compare(r3.variants.join(","), "intl");
+
+        // Cannot remove the last remaining layout
+        var r4 = inputLogic.removeLayout(r3.layouts, r3.variants, 0);
+        compare(r4.layouts.join(","), "us");
+    }
+
+    function test_input_risky_detection_and_modal_state() {
+        var catalog = [
+            { id: "input.repeat_rate", risky: false },
+            { id: "input.kb_layout", risky: true },
+            { id: "input.sensitivity", risky: true }
+        ];
+        verify(!inputLogic.hasRiskyChanges({ "input.repeat_rate": 35 }, {}, catalog));
+        verify(inputLogic.hasRiskyChanges({ "input.kb_layout": "de" }, {}, catalog));
+        verify(inputLogic.hasRiskyChanges({}, { "at-translated-set-2-keyboard": { enabled: false } }, catalog));
+        verify(inputLogic.modalActive(true, false));
+        verify(inputLogic.modalActive(false, true));
+        verify(!inputLogic.modalActive(false, false));
+    }
+
+    function test_input_virtual_device_filtering_and_last_device_guard() {
+        var devs = [
+            { name: "at-translated-set-2-keyboard", category: "keyboard", virtual: false, enabled: true },
+            { name: "fcitx5-virtual-kbd", category: "keyboard", virtual: true, enabled: true },
+            { name: "elan-touchpad", category: "touchpad", virtual: false, enabled: true }
+        ];
+        compare(inputLogic.filterDevices(devs, false).length, 2);
+        compare(inputLogic.filterDevices(devs, true).length, 3);
+        verify(!inputLogic.canDisableDevice(devs, {}, "at-translated-set-2-keyboard"));
+        verify(!inputLogic.canDisableDevice(devs, {}, "elan-touchpad"));
+        verify(inputLogic.canDisableDevice(devs, {}, "fcitx5-virtual-kbd"));
     }
 }

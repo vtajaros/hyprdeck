@@ -1,0 +1,75 @@
+{
+  "_comment": "SYNTHETIC multi-device fixture for unit tests (not from real hardware)",
+  "mice": [
+    {
+      "address": "0x1001",
+      "name": "syn-logitech-mouse",
+      "defaultSpeed": 0.25,
+      "scrollFactor": 1.0
+    },
+    {
+      "address": "0x1002",
+      "name": "syn-elan-touchpad",
+      "defaultSpeed": 0.0,
+      "scrollFactor": 0.5
+    },
+    {
+      "address": "0x1003",
+      "name": "syn-virtual-mouse",
+      "defaultSpeed": 0.0,
+      "scrollFactor": -1.0
+    }
+  ],
+  "keyboards": [
+    {
+      "address": "0x2001",
+      "name": "syn-mech-keyboard",
+      "rules": "",
+      "model": "",
+      "layout": "us,de",
+      "variant": ",nodeadkeys",
+      "options": "grp:alt_shift_toggle",
+      "active_layout_index": 0,
+      "active_keymap": "English (US)",
+      "capsLock": false,
+      "numLock": false,
+      "main": true
+    },
+    {
+      "address": "0x2002",
+      "name": "syn-quote\"back\\slash-kbd-ü",
+      "rules": "",
+      "model": "",
+      "layout": "us",
+      "variant": "",
+      "options": "",
+      "active_layout_index": 0,
+      "active_keymap": "English (US)",
+      "capsLock": false,
+      "numLock": false,
+      "main": false
+    },
+    {
+      "address": "0x2003",
+      "name": "power-button",
+      "rules": "",
+      "model": "",
+      "layout": "us",
+      "variant": "",
+      "options": "",
+      "active_layout_index": 0,
+      "active_keymap": "English (US)",
+      "capsLock": false,
+      "numLock": false,
+      "main": false
+    }
+  ],
+  "tablets": [],
+  "touch": [],
+  "switches": [
+    {
+      "address": "0x3001",
+      "name": "Lid Switch"
+    }
+  ]
+}

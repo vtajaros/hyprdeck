@@ -1,0 +1,163 @@
+{
+"mice": [
+    {
+        "address": "0x558c2320b530",
+        "name": "gaming-mouse",
+        "defaultSpeed": 0.00000,
+        "scrollFactor": -1.00
+    },    {
+        "address": "0x558c236b4760",
+        "name": "gaming-mouse-keyboard-1",
+        "defaultSpeed": 0.00000,
+        "scrollFactor": -1.00
+    },    {
+        "address": "0x558c236ccf90",
+        "name": "pixa3815:00-093a:3817-mouse",
+        "defaultSpeed": 0.00000,
+        "scrollFactor": -1.00
+    },    {
+        "address": "0x558c236cd6b0",
+        "name": "pixa3815:00-093a:3817-touchpad",
+        "defaultSpeed": 0.00000,
+        "scrollFactor": -1.00
+    },    {
+        "address": "0x558c22a5e790",
+        "name": "gaming-mouse-1",
+        "defaultSpeed": 0.00000,
+        "scrollFactor": -1.00
+    }
+],
+"keyboards": [
+    {
+        "address": "0x558c228e7d50",
+        "name": "gaming-mouse-keyboard",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": false,
+        "main": false
+    },    {
+        "address": "0x558c2289b490",
+        "name": "video-bus",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": false,
+        "main": false
+    },    {
+        "address": "0x558c236f4150",
+        "name": "intel-hid-events",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": false,
+        "main": false
+    },    {
+        "address": "0x558c23736800",
+        "name": "intel-hid-5-button-array",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": false,
+        "main": false
+    },    {
+        "address": "0x558c23778070",
+        "name": "power-button",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": false,
+        "main": false
+    },    {
+        "address": "0x558c237b9870",
+        "name": "at-translated-set-2-keyboard",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": false,
+        "main": true
+    },    {
+        "address": "0x558c237fa970",
+        "name": "acer-wmi-hotkeys",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": false,
+        "main": false
+    },    {
+        "address": "0x558c22ba89d0",
+        "name": "input-remapper-keyboard",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": false,
+        "main": false
+    },    {
+        "address": "0x558c22e17ce0",
+        "name": "ysd-speaker-(avrcp)",
+        "rules": "",
+        "model": "",
+        "layout": "us",
+        "variant": "",
+        "options": "",
+        "active_layout_index": 0,
+        "active_keymap": "English (US)",
+        "capsLock": false,
+        "numLock": false,
+        "main": false
+    }
+],
+"tablets": [
+
+],
+"touch": [
+
+],
+"switches": [
+    {
+        "address": "0x558c236cbc50",
+        "name": "Lid Switch"
+    }
+]
+}
+

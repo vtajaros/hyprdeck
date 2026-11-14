@@ -1,0 +1,24 @@
+! model
+  pc104           Generic 104-key PC
+  pc105           Generic 105-key PC
+
+! layout
+  us              English (US)
+  de              German
+  fr              French
+  ru              Russian
+  ara             Arabic
+
+! variant
+  intl            us: English (US, intl., with dead keys)
+  dvorak          us: English (Dvorak)
+  nodeadkeys      de: German (no dead keys)
+  phonetic        ru: Russian (phonetic)
+
+! option
+  grp                  Switching to another layout
+  grp:alt_shift_toggle Alt+Shift
+  grp:win_space_toggle Win+Space
+  caps                 Caps Lock behavior
+  caps:escape          Make Caps Lock an additional Escape
+  caps:swapescape      Swap ESC and Caps Lock

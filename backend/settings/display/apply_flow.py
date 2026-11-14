@@ -12,33 +12,17 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Mapping, Sequence
 
 from backend.core import revert_guard
-from backend.core.constants import MONITORS_SECTION_NAME, OVERRIDES_FILENAME, SHA256_ABSENT
-from backend.core.overrides import OverridesError, replace_section
-from backend.core.revert_guard import (
-    RevertGuardError,
-    RevertGuardHandle,
-    clear_active_handle,
-    load_active_handle,
-    resolve_state_dir,
-    save_active_handle,
+from backend.core.confirm_flow import (
+    DEFAULT_CONFIRM_TIMEOUT_SECONDS,
+    ConfirmDomainValidation,
+    apply_with_confirm_flow,
+    confirm_flow_changes,
+    revert_flow_changes,
 )
-from backend.core.revert_watchdog import _append_log, _pid_alive
-from backend.core.transaction import (
-    VALID_RELOAD_MODES,
-    TransactionResult,
-    apply_managed_change,
-    run_reload_and_check,
-)
-from backend.editor.backups import (
-    BackupConflictError,
-    BackupError,
-    compute_file_sha256,
-    create_backup,
-    resolve_backup_dir,
-    restore_backup,
-)
+from backend.core.constants import MONITORS_SECTION_NAME
+from backend.core.revert_guard import RevertGuardHandle
+from backend.core.transaction import TransactionResult, apply_managed_change
 from backend.editor.codegen import encode_lua_string
-from backend.settings.commit import _check_include_installed
 from backend.settings.display.state import (
     MonitorOutput,
     extract_monitors_overrides,
@@ -336,7 +320,7 @@ def apply_display_changes(
     config_dir: str,
     entrypoint: str,
     expected_sha256: str,
-    timeout_seconds: float = 15.0,
+    timeout_seconds: float = DEFAULT_CONFIRM_TIMEOUT_SECONDS,
     watch_pid: int | None = None,
     backup_dir: str | None = None,
     state_dir: str | None = None,
@@ -348,213 +332,47 @@ def apply_display_changes(
     dry_run: bool = False,
 ) -> DisplayApplyResult:
     """Validate, build candidate overrides, arm revert_guard, apply_managed_change, and return handle."""
-    if reload_mode not in VALID_RELOAD_MODES:
-        return DisplayApplyResult(
-            applied=False,
-            errors=[f"Invalid reload_mode: {reload_mode!r}"],
+
+    def _validate(existing_text: str | None) -> ConfirmDomainValidation:
+        validated_rules, val_errs = validate_display_changes(changes, current_outputs)
+        if val_errs:
+            return ConfirmDomainValidation(errors=val_errs)
+        existing_monitors = (
+            extract_monitors_overrides(existing_text) if existing_text is not None else {}
         )
+        merged_rules = _merge_rules_with_existing(existing_monitors, validated_rules)
+        section_body = render_monitors_section(merged_rules)
+        return ConfirmDomainValidation(section_body=section_body, metadata=merged_rules)
 
-    abs_config_dir = os.path.abspath(os.path.expanduser(config_dir))
-    abs_entry = os.path.abspath(os.path.expanduser(entrypoint))
-    ov_path = os.path.join(abs_config_dir, OVERRIDES_FILENAME)
-
-    # (a) Validate include block + monitor rules
-    inc_err = _check_include_installed(abs_entry)
-    if inc_err is not None:
-        return DisplayApplyResult(applied=False, errors=[inc_err])
-
-    validated_rules, val_errs = validate_display_changes(changes, current_outputs)
-    if val_errs:
-        return DisplayApplyResult(applied=False, errors=val_errs)
-
-    # (b) Build candidate overrides
-    existing_text: str | None = None
-    existing_monitors: dict[str, dict[str, Any]] = {}
-    was_absent = not os.path.exists(ov_path)
-    if not was_absent:
-        if not os.path.isfile(ov_path):
-            return DisplayApplyResult(
-                applied=False,
-                errors=[f"Overrides path is not a regular file: {ov_path}"],
-            )
-        cur_sha = compute_file_sha256(ov_path)
-        if cur_sha != expected_sha256:
-            return DisplayApplyResult(
-                applied=False,
-                errors=[
-                    f"SHA-256 mismatch on {ov_path}: current {cur_sha} != expected {expected_sha256}."
-                ],
-            )
-        with open(ov_path, "r", encoding="utf-8") as f:
-            existing_text = f.read()
-        try:
-            existing_monitors = extract_monitors_overrides(existing_text)
-        except OverridesError as exc:
-            return DisplayApplyResult(
-                applied=False,
-                errors=[f"Malformed overrides file: {exc}"],
-            )
-    else:
-        if expected_sha256 != SHA256_ABSENT:
-            return DisplayApplyResult(
-                applied=False,
-                errors=[
-                    f"Target file does not exist: {ov_path} "
-                    f"(expected sha256 {expected_sha256!r}; pass {SHA256_ABSENT!r} to create)."
-                ],
-            )
-
-    merged_rules = _merge_rules_with_existing(existing_monitors, validated_rules)
-    section_body = render_monitors_section(merged_rules)
-    candidate_text = replace_section(existing_text, MONITORS_SECTION_NAME, section_body)
-    candidate_bytes = candidate_text.encode("utf-8")
-    candidate_sha = hashlib.sha256(candidate_bytes).hexdigest()
-
-    if dry_run:
-        tx_dry = apply_managed_change(
-            ov_path,
-            candidate_bytes,
-            expected_sha256=expected_sha256,
-            config_dir=abs_config_dir,
-            entrypoint=abs_entry,
-            reload_mode=reload_mode,
-            verify=True,
-            require_binds_unchanged=True,
-            backup_dir=backup_dir,
-            env=env,
-            hyprland_runner=hyprland_runner,
-            reload_runner=reload_runner,
-            sleep_fn=sleep_fn,
-            dry_run=True,
-        )
-        return DisplayApplyResult(
-            applied=False,
-            errors=list(tx_dry.errors),
-            diff=tx_dry.diff,
-            transaction=tx_dry,
-            rules=merged_rules,
-        )
-
-    # (c) Arm revert_guard BEFORE any write or live reload (fail closed)
-    resolved_bdir = resolve_backup_dir(backup_dir=backup_dir, env=env)
-    resolved_sdir = resolve_state_dir(state_dir=state_dir, env=env)
-
-    pre_backup = None
-    if not was_absent:
-        try:
-            pre_backup = create_backup(
-                ov_path,
-                backup_dir=resolved_bdir,
-                config_dir=abs_config_dir,
-                env=env,
-            )
-        except BackupError as exc:
-            return DisplayApplyResult(
-                applied=False,
-                errors=[f"Failed to create pre-apply backup before arming guard: {exc}"],
-            )
-
-    try:
-        handle = revert_guard.arm(
-            plan={
-                "backup_id": pre_backup.id if pre_backup is not None else None,
-                "backup_dir": resolved_bdir,
-                "target_path": ov_path,
-                "expected_current_sha256": candidate_sha,
-                "created": was_absent,
-                "reload_mode": reload_mode,
-            },
-            timeout_seconds=timeout_seconds,
-            watch_pid=watch_pid,
-            state_dir=resolved_sdir,
-            env=env,
-        )
-    except RevertGuardError as exc:
-        return DisplayApplyResult(
-            applied=False,
-            errors=[f"Revert guard failed to arm: {exc}"],
-        )
-
-    # (d) apply_managed_change (verifies with Hyprland --verify-config before writing)
-    try:
-        tx_res = apply_managed_change(
-            ov_path,
-            candidate_bytes,
-            expected_sha256=expected_sha256,
-            config_dir=abs_config_dir,
-            entrypoint=abs_entry,
-            reload_mode=reload_mode,
-            verify=True,
-            require_binds_unchanged=True,
-            backup_dir=resolved_bdir,
-            env=env,
-            hyprland_runner=hyprland_runner,
-            reload_runner=reload_runner,
-            sleep_fn=sleep_fn,
-            dry_run=False,
-        )
-    except Exception as exc:
-        try:
-            revert_guard.confirm(handle)
-        except Exception:
-            pass
-        revert_guard.cancel(handle)
-        clear_active_handle(state_dir=resolved_sdir, env=env)
-        return DisplayApplyResult(
-            applied=False,
-            errors=[f"Apply failed unexpectedly after arming guard: {exc}"],
-        )
-
-    if not tx_res.applied:
-        try:
-            revert_guard.confirm(handle)
-        except Exception:
-            pass
-        revert_guard.cancel(handle)
-        clear_active_handle(state_dir=resolved_sdir, env=env)
-        return DisplayApplyResult(
-            applied=False,
-            errors=list(tx_res.errors) or ["Display transaction failed without specific error."],
-            diff=tx_res.diff,
-            transaction=tx_res,
-            rules=merged_rules,
-        )
-
-    # (e) Persist active guard and return deadline + handle info
-    deadline_epoch = time.time() + float(timeout_seconds)
-    save_active_handle(
-        handle,
-        deadline_epoch=deadline_epoch,
+    cf_res = apply_with_confirm_flow(
+        section_name=MONITORS_SECTION_NAME,
+        domain_validator=_validate,
+        config_dir=config_dir,
+        entrypoint=entrypoint,
+        expected_sha256=expected_sha256,
+        reload_mode=reload_mode,
         timeout_seconds=timeout_seconds,
-        state_dir=resolved_sdir,
+        watch_pid=watch_pid,
+        backup_dir=backup_dir,
+        state_dir=state_dir,
         env=env,
+        hyprland_runner=hyprland_runner,
+        reload_runner=reload_runner,
+        sleep_fn=sleep_fn,
+        dry_run=dry_run,
+        apply_fn=apply_managed_change,
     )
+    merged_rules = cf_res.metadata if isinstance(cf_res.metadata, list) else []
     return DisplayApplyResult(
-        applied=True,
-        errors=[],
-        diff=tx_res.diff,
-        deadline_epoch=deadline_epoch,
-        timeout_seconds=float(timeout_seconds),
-        handle=handle,
-        transaction=tx_res,
+        applied=cf_res.applied,
+        errors=cf_res.errors,
+        diff=cf_res.diff,
+        deadline_epoch=cf_res.deadline_epoch,
+        timeout_seconds=cf_res.timeout_seconds,
+        handle=cf_res.handle,
+        transaction=cf_res.transaction,
         rules=merged_rules,
     )
-
-
-def _wait_pid_exit(pid: int, timeout_s: float = 0.6) -> None:
-    if pid <= 1:
-        return
-    deadline = time.monotonic() + timeout_s
-    while time.monotonic() < deadline:
-        try:
-            waited_pid, _ = os.waitpid(pid, os.WNOHANG)
-            if waited_pid == pid:
-                return
-        except ChildProcessError:
-            pass
-        if not _pid_alive(pid):
-            return
-        time.sleep(0.03)
 
 
 def confirm_display_changes(
@@ -564,22 +382,12 @@ def confirm_display_changes(
     env: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Confirm pending display changes by signaling the watchdog's confirm_path."""
-    eff_handle = handle
-    if eff_handle is None:
-        loaded = load_active_handle(state_dir=state_dir, env=env)
-        if loaded is None:
-            return {"ok": False, "confirmed": False, "error": "No pending display guard to confirm."}
-        eff_handle = loaded[0]
-
-    revert_guard.confirm(eff_handle)
-    clear_active_handle(state_dir=state_dir, env=env)
-    _wait_pid_exit(eff_handle.pid, timeout_s=0.6)
-    return {
-        "ok": True,
-        "confirmed": True,
-        "plan_path": eff_handle.plan_path,
-        "confirm_path": eff_handle.confirm_path,
-    }
+    return confirm_flow_changes(
+        handle=handle,
+        state_dir=state_dir,
+        env=env,
+        label="display",
+    )
 
 
 def revert_display_changes(
@@ -591,77 +399,12 @@ def revert_display_changes(
     sleep_fn: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
     """Immediately revert pending display changes and disarm the watchdog."""
-    eff_handle = handle
-    if eff_handle is None:
-        loaded = load_active_handle(state_dir=state_dir, env=env)
-        if loaded is None:
-            return {"ok": False, "reverted": False, "error": "No pending display guard to revert."}
-        eff_handle = loaded[0]
-
-    # Disarm watchdog first so it does not race the synchronous restore below.
-    try:
-        revert_guard.confirm(eff_handle)
-    except Exception:
-        pass
-    revert_guard.cancel(eff_handle)
-    _wait_pid_exit(eff_handle.pid, timeout_s=0.5)
-    clear_active_handle(state_dir=state_dir, env=env)
-
-    plan = eff_handle.plan
-    target_path = str(plan.get("target_path") or "")
-    expected_sha = str(plan.get("expected_current_sha256") or "")
-    created = bool(plan.get("created", False))
-    reload_mode = str(plan.get("reload_mode", "full"))
-    backup_id = plan.get("backup_id")
-    backup_dir = plan.get("backup_dir")
-    log_path = eff_handle.log_path or plan.get("log_path")
-
-    already_reverted = False
-    if created:
-        if os.path.exists(target_path):
-            cur_sha = compute_file_sha256(target_path)
-            if cur_sha != expected_sha:
-                return {
-                    "ok": False,
-                    "reverted": False,
-                    "error": f"Concurrent modification on {target_path} (sha {cur_sha} != {expected_sha}).",
-                }
-            os.unlink(target_path)
-            _append_log(log_path, f"Explicitly reverted created file {target_path} (deleted).")
-        else:
-            already_reverted = True
-    else:
-        if not backup_id:
-            return {"ok": False, "reverted": False, "error": f"Missing backup_id for {target_path}."}
-        try:
-            restore_backup(
-                str(backup_id),
-                expected_current_sha256=expected_sha,
-                backup_dir=str(backup_dir) if backup_dir else None,
-                env=dict(env) if env is not None else None,
-            )
-            _append_log(log_path, f"Explicitly reverted {target_path} to backup {backup_id}.")
-        except BackupConflictError:
-            already_reverted = True
-        except BackupError as exc:
-            return {"ok": False, "reverted": False, "error": f"Revert failed: {exc}"}
-
-    if reload_mode != "none" and not already_reverted:
-        ok, err = run_reload_and_check(
-            reload_mode,
-            reload_runner=reload_runner,
-            sleep_fn=sleep_fn,
-        )
-        if not ok:
-            return {
-                "ok": False,
-                "reverted": False,
-                "error": f"File reverted, but reload ({reload_mode}) failed: {err}",
-            }
-
-    return {
-        "ok": True,
-        "reverted": True,
-        "already_reverted": already_reverted,
-        "target_path": target_path,
-    }
+    return revert_flow_changes(
+        handle=handle,
+        state_dir=state_dir,
+        env=env,
+        reload_runner=reload_runner,
+        sleep_fn=sleep_fn,
+        default_reload_mode="full",
+        label="display",
+    )

@@ -175,6 +175,16 @@ def _normalize_vrr(raw_vrr: Any) -> int:
 
 def parse_monitors_json(raw_list: Sequence[Mapping[str, Any]]) -> list[MonitorOutput]:
     """Parse JSON list returned by `hyprctl monitors all -j`."""
+    id_to_name: dict[str, str] = {}
+    for item in raw_list:
+        if not isinstance(item, Mapping):
+            continue
+        item_name = str(item.get("name") or "").strip()
+        if not item_name:
+            continue
+        if "id" in item and item.get("id") is not None:
+            id_to_name[str(int(item["id"]))] = item_name
+
     outputs: list[MonitorOutput] = []
     for item in raw_list:
         if not isinstance(item, Mapping):
@@ -211,6 +221,8 @@ def parse_monitors_json(raw_list: Sequence[Mapping[str, Any]]) -> list[MonitorOu
         if not isinstance(hw, Mapping):
             hw = {}
         mirror_raw = str(item.get("mirrorOf") or "none").strip() or "none"
+        if mirror_raw not in ("", "none") and mirror_raw in id_to_name:
+            mirror_raw = id_to_name[mirror_raw]
 
         outputs.append(
             MonitorOutput(

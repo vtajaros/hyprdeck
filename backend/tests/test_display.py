@@ -119,6 +119,16 @@ class TestDisplayStateAndScales(IsolatedTestCase):
         self.assertEqual(mode_matches_available("1920x1200@60", avail), "1920x1200@60.00")
         self.assertIsNone(mode_matches_available("1280x720@60", avail))
 
+    def test_mirror_of_numeric_id_mapped_to_output_name(self) -> None:
+        with open(_DUAL_FIXTURE, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        raw[1]["mirrorOf"] = str(raw[0]["id"])
+        outputs = parse_monitors_json(raw)
+        self.assertEqual(outputs[1].mirror_of, raw[0]["name"])
+        raw[1]["mirrorOf"] = "none"
+        outputs_none = parse_monitors_json(raw)
+        self.assertEqual(outputs_none[1].mirror_of, "none")
+
 
 class TestDisplayValidationAndLua(IsolatedTestCase):
     def _single_outputs(self):
