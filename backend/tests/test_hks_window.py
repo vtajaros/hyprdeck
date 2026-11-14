@@ -122,7 +122,10 @@ class HksWindowScriptTests(unittest.TestCase):
 
     def _qs_log(self) -> str:
         p = os.path.join(self.state, "qs.log")
-        return open(p).read() if os.path.exists(p) else ""
+        if not os.path.exists(p):
+            return ""
+        with open(p, encoding="utf-8") as f:
+            return f.read()
 
     def start_daemon(self, hidden: bool = True) -> None:
         env = self.env()

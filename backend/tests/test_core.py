@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+import warnings
 from contextlib import redirect_stdout
 from unittest import mock
 
@@ -188,6 +189,9 @@ class TestOverrides(unittest.TestCase):
 class TestTransaction(IsolatedTestCase):
     def setUp(self) -> None:
         super().setUp()
+        # arm() intentionally spawns a detached setsid daemon without waiting on Popen
+        warnings.simplefilter("ignore", ResourceWarning)
+        self.addCleanup(warnings.resetwarnings)
         self.cfg_dir = os.path.join(self._isolated_root, "hypr")
         os.makedirs(self.cfg_dir, exist_ok=True)
         self.entry = os.path.join(self.cfg_dir, "hyprland.lua")
@@ -448,6 +452,9 @@ class TestTransaction(IsolatedTestCase):
 class TestRevertWatchdog(IsolatedTestCase):
     def setUp(self) -> None:
         super().setUp()
+        # arm() intentionally spawns a detached setsid daemon without waiting on Popen
+        warnings.simplefilter("ignore", ResourceWarning)
+        self.addCleanup(warnings.resetwarnings)
         self.state_dir = os.path.join(self._isolated_root, "state")
         os.makedirs(self.state_dir, exist_ok=True)
         self._orig_state_env = os.environ.get(constants.ENV_STATE_DIR)
@@ -629,6 +636,9 @@ class TestCoreIsolation(IsolatedTestCase):
 class TestCoreCLI(IsolatedTestCase):
     def setUp(self) -> None:
         super().setUp()
+        # arm() intentionally spawns a detached setsid daemon without waiting on Popen
+        warnings.simplefilter("ignore", ResourceWarning)
+        self.addCleanup(warnings.resetwarnings)
         self.cfg_dir = os.path.join(self._isolated_root, "hypr")
         os.makedirs(self.cfg_dir, exist_ok=True)
         self.entry = os.path.join(self.cfg_dir, "hyprland.lua")

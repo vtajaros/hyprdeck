@@ -4,6 +4,10 @@ from __future__ import annotations
 
 OVERRIDES_FILENAME = "hks-overrides.lua"
 
+APP_DISPLAY_NAME = "System Settings"
+SETTINGS_WINDOW_TITLE = "System Settings"
+SETTINGS_QUICKSHELL_DIR = "settings"
+
 INCLUDE_BEGIN_MARKER = "-- HKS-OVERRIDES-BEGIN"
 INCLUDE_END_MARKER = "-- HKS-OVERRIDES-END"
 

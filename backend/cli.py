@@ -649,6 +649,44 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ov_act_p.add_argument("--scan-sha256", dest="scan_sha256", default=None, help="Expected SHA-256 of the entrypoint before editing.")
         ov_act_p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
+    # settings subcommand
+    st_p = subparsers.add_parser(
+        "settings",
+        help="Read, preview, commit, or reset Hyprland settings.",
+    )
+    st_sub = st_p.add_subparsers(dest="settings_action", required=True)
+
+    def _add_common_st_args(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--config-dir", dest="config_dir", default=None, help="Override Hyprland config dir.")
+        p.add_argument("--entrypoint", dest="entrypoint", default=None, help="Override entrypoint file.")
+        p.add_argument("--no-live", dest="no_live", action="store_true", default=False, help="Disable live hyprctl probing/reload.")
+        p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    st_state = st_sub.add_parser("state", help="Read merged live + overrides settings state.")
+    _add_common_st_args(st_state)
+
+    st_prev = st_sub.add_parser("preview", help="Ephemerally preview settings changes via hyprctl eval.")
+    st_prev.add_argument("source", nargs="?", default=None, help="Path to JSON changes file, or '-' for stdin.")
+    st_prev.add_argument("--inline", dest="inline_json", default=None, help="Inline JSON string.")
+    st_prev.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    st_rev = st_sub.add_parser("revert-preview", help="Revert ephemeral preview via hyprctl reload config-only.")
+    st_rev.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    st_com = st_sub.add_parser("commit", help="Validate and commit settings changes to hks-overrides.lua (dry-run by default).")
+    st_com.add_argument("source", nargs="?", default=None, help="Path to JSON changes file (or {changes, resets}), or '-' for stdin.")
+    st_com.add_argument("--inline", dest="inline_json", default=None, help="Inline JSON string.")
+    st_com.add_argument("--apply", dest="apply", action="store_true", default=False, help="Write changes to disk (requires --scan-sha256).")
+    st_com.add_argument("--scan-sha256", dest="scan_sha256", default=None, help="Expected SHA-256 of hks-overrides.lua (or 'absent').")
+    _add_common_st_args(st_com)
+
+    st_rst = st_sub.add_parser("reset", help="Reset a section or option in hks-overrides.lua (dry-run by default).")
+    st_rst.add_argument("--section", dest="section", default=None, help="Section to reset (appearance | desktop).")
+    st_rst.add_argument("--option", dest="option_id", default=None, help="Single option ID to reset.")
+    st_rst.add_argument("--apply", dest="apply", action="store_true", default=False, help="Write changes to disk (requires --scan-sha256).")
+    st_rst.add_argument("--scan-sha256", dest="scan_sha256", default=None, help="Expected SHA-256 of hks-overrides.lua.")
+    _add_common_st_args(st_rst)
+
     return parser
 
 
@@ -2031,6 +2069,112 @@ def _handle_overrides(args: argparse.Namespace) -> int:
     return 1 if res.errors else 0
 
 
+def _read_json_source(source: str | None, inline_json: str | None = None) -> dict[str, Any]:
+    if inline_json is not None:
+        raw = inline_json
+    elif source == "-":
+        raw = sys.stdin.read()
+    elif source is not None:
+        with open(source, "r", encoding="utf-8") as f:
+            raw = f.read()
+    else:
+        raise ValueError("Either a JSON source path/'-' or --inline is required")
+    data = json.loads(raw or "{}")
+    if not isinstance(data, dict):
+        raise ValueError("JSON input must be an object")
+    return data
+
+
+def _handle_settings(args: argparse.Namespace) -> int:
+    from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
+    from backend.editor.backups import compute_file_sha256
+    from backend.settings.commit import commit_settings, reset_settings
+    from backend.settings.preview import PreviewValidationError, preview_settings, revert_preview
+    from backend.settings.state import current_state
+
+    action = args.settings_action
+
+    if action == "state":
+        st = current_state(
+            config_dir=args.config_dir,
+            entrypoint=args.entrypoint,
+            no_live=args.no_live,
+        )
+        sys.stdout.write(json.dumps(st, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    if action == "preview":
+        try:
+            payload = _read_json_source(args.source, getattr(args, "inline_json", None))
+            res = preview_settings(payload)
+        except (OSError, ValueError, PreviewValidationError) as exc:
+            sys.stdout.write(json.dumps({"ok": False, "error": str(exc)}, indent=2) + "\n")
+            return 1
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0 if res.get("ok") else 1
+
+    if action == "revert-preview":
+        res = revert_preview()
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0 if res.get("ok") else 1
+
+    disc = discover_config(
+        config_dir=args.config_dir,
+        entrypoint=args.entrypoint,
+        no_live=args.no_live,
+    )
+    env_info = disc.environment
+    dry_run = not bool(args.apply)
+    if args.apply and not args.scan_sha256:
+        msg = "--apply requires --scan-sha256 <overrides_sha256_or_absent>."
+        sys.stdout.write(json.dumps({"applied": False, "errors": [msg]}, indent=2) + "\n")
+        return 2
+
+    ov_path = os.path.join(env_info.config_dir, OVERRIDES_FILENAME)
+    cur_sha = compute_file_sha256(ov_path) if os.path.isfile(ov_path) else SHA256_ABSENT
+    expected_sha = args.scan_sha256 if args.scan_sha256 else cur_sha
+    reload_mode = "none" if args.no_live else "config-only"
+
+    if action == "commit":
+        try:
+            payload = _read_json_source(args.source, getattr(args, "inline_json", None))
+        except (OSError, ValueError) as exc:
+            sys.stdout.write(json.dumps({"applied": False, "errors": [str(exc)]}, indent=2) + "\n")
+            return 1
+        if "changes" in payload or "resets" in payload:
+            changes = payload.get("changes") or {}
+            resets = payload.get("resets") or []
+        else:
+            changes = payload
+            resets = []
+        res = commit_settings(
+            changes,
+            resets=resets,
+            config_dir=env_info.config_dir,
+            entrypoint=env_info.entrypoint,
+            expected_sha256=expected_sha,
+            reload_mode=reload_mode,
+            dry_run=dry_run,
+        )
+    else:
+        res = reset_settings(
+            section=args.section,
+            option_id=args.option_id,
+            config_dir=env_info.config_dir,
+            entrypoint=env_info.entrypoint,
+            expected_sha256=expected_sha,
+            reload_mode=reload_mode,
+            dry_run=dry_run,
+        )
+
+    sys.stdout.write(json.dumps(res.to_dict(), indent=2) + "\n")
+    sys.stdout.flush()
+    return 1 if res.errors else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_arg_parser()
     try:
@@ -2152,6 +2296,9 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.subcommand == "overrides":
             return _handle_overrides(args)
+
+        if args.subcommand == "settings":
+            return _handle_settings(args)
     except DiscoveryError as exc:
         sys.stderr.write(f"hks: error: {exc}\n")
         return 2

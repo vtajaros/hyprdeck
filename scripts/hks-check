@@ -27,16 +27,19 @@ fi
 
 if [ -n "$QMLTESTRUNNER" ]; then
     QT_QPA_PLATFORM=offscreen "$QMLTESTRUNNER" -import "$REPO_ROOT/frontend/tests/mocks" -input "$REPO_ROOT/frontend/tests/"
+    if [ -d "$REPO_ROOT/settings/tests" ]; then
+        QT_QPA_PLATFORM=offscreen "$QMLTESTRUNNER" -import "$REPO_ROOT/frontend/tests/mocks" -input "$REPO_ROOT/settings/tests/"
+    fi
     echo "QML unit tests passed successfully."
 else
     echo "qmltestrunner not found; skipping QML unit tests."
 fi
 echo
 
-# 3. Frontend QML Lint
-echo "[3/3] Running qmllint on frontend files..."
+# 3. Frontend & Settings QML Lint
+echo "[3/3] Running qmllint on frontend and settings files..."
 if command -v qmllint >/dev/null 2>&1; then
-    QML_FILES=($(find frontend -name "*.qml" | sort))
+    QML_FILES=($(find frontend settings -name "*.qml" | sort))
     echo "Found ${#QML_FILES[@]} QML files."
     qmllint "${QML_FILES[@]}"
     echo "qmllint passed with 0 errors/warnings."

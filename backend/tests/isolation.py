@@ -104,6 +104,7 @@ def install_suite_isolation_guard() -> None:
     import backend.core.transaction as tx_mod
     import backend.describe.sidecar_store as sc_mod
     import backend.editor.backups as bkp_mod
+    import backend.settings.commit as st_commit_mod
 
     orig_atomic_write = bkp_mod.atomic_write_bytes
     orig_create_backup = bkp_mod.create_backup
@@ -199,3 +200,21 @@ def install_suite_isolation_guard() -> None:
     tx_mod.undo_managed_change = guarded_undo_managed
     rg_mod.arm = guarded_arm
     rg_mod.confirm = guarded_confirm
+
+    orig_commit_settings = st_commit_mod.commit_settings
+    orig_reset_settings = st_commit_mod.reset_settings
+
+    @functools.wraps(orig_commit_settings)
+    def guarded_commit_settings(changes, *, config_dir: str, entrypoint: str, **kwargs):
+        assert_path_isolated(config_dir, "commit_settings(config_dir)")
+        assert_path_isolated(entrypoint, "commit_settings(entrypoint)")
+        return orig_commit_settings(changes, config_dir=config_dir, entrypoint=entrypoint, **kwargs)
+
+    @functools.wraps(orig_reset_settings)
+    def guarded_reset_settings(*, config_dir: str, entrypoint: str, **kwargs):
+        assert_path_isolated(config_dir, "reset_settings(config_dir)")
+        assert_path_isolated(entrypoint, "reset_settings(entrypoint)")
+        return orig_reset_settings(config_dir=config_dir, entrypoint=entrypoint, **kwargs)
+
+    st_commit_mod.commit_settings = guarded_commit_settings
+    st_commit_mod.reset_settings = guarded_reset_settings
