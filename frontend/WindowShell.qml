@@ -13,8 +13,75 @@ FloatingWindow {
     implicitWidth: 1000
     implicitHeight: 700
     color: HKS.bg
+    visible: Quickshell.env("HKS_START_HIDDEN") !== "1"
 
+    readonly property bool keepAlive: Quickshell.env("HKS_KEEP_ALIVE") === "1"
+    // True while openWindow() is mid-pulse, so the `closed` signal emitted by our
+    // own hide step is not mistaken for a compositor-initiated close.
+    property bool reopening: false
+
+    // Compositor-initiated close (Super+X / Alt+F4 / xdg_toplevel.close): the
+    // backing window is gone, but Quickshell's internal "wants visible" flag is
+    // left set, which makes a later `visible = true` a silent no-op. Writing
+    // visible=false here resets that flag. (`closed` verified live on 0.3.2.)
+    onClosed: {
+        if (win.reopening) {
+            return;
+        }
+        if (win.keepAlive) {
+            win.visible = false;
+        }
+    }
     property string currentPage: Quickshell.env("HKS_PAGE") || "all" // "all" | "conflicts" | "disabled" | "backups" | "settings"
+
+    Timer {
+        id: reopenTimer
+        interval: 16
+        repeat: false
+        onTriggered: {
+            win.visible = true;
+            win.reopening = false;
+        }
+    }
+
+    // Always pulse (hide, then show 16ms later) regardless of the reported
+    // `visible` state: it re-maps on the active workspace, raises focus, and
+    // clears a stuck internal visibility flag.
+    function openWindow() {
+        win.reopening = true;
+        win.visible = false;
+        reopenTimer.restart();
+        if (!KeybindData.loading) {
+            KeybindData.reload();
+        }
+    }
+
+    function closeWindow() {
+        reopenTimer.stop();
+        win.reopening = false;
+        if (keepAlive) {
+            win.visible = false;
+        } else {
+            Qt.quit();
+        }
+    }
+
+    // Truth comes from the backing window, not the (possibly stale) `visible`.
+    function toggleWindow() {
+        if (win.backingWindowVisible) {
+            win.closeWindow();
+        } else {
+            win.openWindow();
+        }
+    }
+
+    CloseGuard {
+        id: closeGuard
+        recorderActive: RecorderService.active
+        editDialogOpen: EditService.editDialogOpen
+        dialogOpen: EditService.dialogOpen
+        focusItem: rootSurface.Window.activeFocusItem
+    }
 
     Component.onCompleted: {
         EditService.loadBackups();
@@ -28,8 +95,21 @@ FloatingWindow {
     }
 
     Rectangle {
+        id: rootSurface
         anchors.fill: parent
         color: HKS.bg
+        focus: true
+
+        // App-wide Escape: only reached when no page/dialog accepted it first
+        // (pages keep their own handling), and never from a text input.
+        Keys.onEscapePressed: function(event) {
+            if (closeGuard.escapeAllowed) {
+                win.closeWindow();
+                event.accepted = true;
+            } else {
+                event.accepted = false;
+            }
+        }
 
         // Main layout: Sidebar (left) + Content Area (right)
         Row {
@@ -42,6 +122,39 @@ FloatingWindow {
                 height: parent.height
                 color: HKS.surface
                 border.width: 0
+
+                // Close [X] (no compositor titlebar: QT_WAYLAND_DISABLE_WINDOWDECORATION=1)
+                Rectangle {
+                    id: closeButton
+                    z: 5
+                    anchors.top: parent.top
+                    anchors.right: parent.right
+                    anchors.topMargin: HKS.space12
+                    anchors.rightMargin: HKS.space8
+                    width: 24
+                    height: 24
+                    radius: 6
+                    opacity: closeGuard.closeAllowed ? 1.0 : 0.35
+                    color: closeMa.containsMouse && closeGuard.closeAllowed
+                        ? HKS.alpha(HKS.critical, 0.25) : "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        font.family: HKS.fontFamily
+                        font.pixelSize: 11
+                        color: closeMa.containsMouse && closeGuard.closeAllowed ? HKS.critical : HKS.muted
+                    }
+
+                    MouseArea {
+                        id: closeMa
+                        anchors.fill: parent
+                        enabled: closeGuard.closeAllowed
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: win.closeWindow()
+                    }
+                }
 
                 // 1px subtle divider on right
                 Rectangle {
@@ -159,7 +272,11 @@ FloatingWindow {
                     id: allBindsPage
                     anchors.fill: parent
                     visible: win.currentPage === "all"
-                    onRequestClose: win.visible = false
+                    onRequestClose: {
+                        if (closeGuard.closeAllowed) {
+                            win.closeWindow();
+                        }
+                    }
                 }
 
                 Conflicts {

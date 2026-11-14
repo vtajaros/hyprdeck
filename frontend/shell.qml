@@ -11,13 +11,32 @@ ShellRoot {
 
     IpcHandler {
         target: "hks"
+        function open() {
+            if (shellLoader.item && typeof shellLoader.item.openWindow === "function") {
+                shellLoader.item.openWindow();
+            }
+        }
+        function toggle() {
+            if (shellLoader.item && typeof shellLoader.item.toggleWindow === "function") {
+                shellLoader.item.toggleWindow();
+            } else {
+                Qt.quit();
+            }
+        }
         function close() {
-            Qt.quit();
+            if (shellLoader.item && typeof shellLoader.item.closeWindow === "function") {
+                shellLoader.item.closeWindow();
+            } else {
+                Qt.quit();
+            }
         }
         function reload() {
             KeybindData.reload();
         }
         function openAdd() {
+            if (shellLoader.item && typeof shellLoader.item.openWindow === "function") {
+                shellLoader.item.openWindow();
+            }
             EditService.requestAdd();
         }
         function openEditFirst() {
