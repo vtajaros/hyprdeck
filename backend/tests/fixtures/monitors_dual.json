@@ -1,0 +1,66 @@
+[
+  {
+    "id": 0,
+    "name": "eDP-1",
+    "description": "LG Display 0x076F",
+    "make": "LG Display",
+    "model": "0x076F",
+    "serial": "",
+    "width": 1920,
+    "height": 1200,
+    "refreshRate": 60.001,
+    "x": 0,
+    "y": 0,
+    "scale": 1.25,
+    "transform": 0,
+    "focused": true,
+    "dpmsStatus": true,
+    "vrr": false,
+    "disabled": false,
+    "mirrorOf": "none",
+    "availableModes": [
+      "1920x1200@60.00Hz"
+    ],
+    "colorManagementPreset": "srgb",
+    "hardwareDetails": {
+      "backend": "drm",
+      "hdr": false,
+      "chroma": true,
+      "bt2020": false,
+      "vrrCapable": false
+    }
+  },
+  {
+    "id": 1,
+    "name": "HDMI-A-1",
+    "description": "Dell U2724D",
+    "make": "Dell",
+    "model": "U2724D",
+    "serial": "ABC123",
+    "width": 2560,
+    "height": 1440,
+    "refreshRate": 144.0,
+    "x": 1920,
+    "y": 0,
+    "scale": 1.0,
+    "transform": 0,
+    "focused": false,
+    "dpmsStatus": true,
+    "vrr": true,
+    "disabled": false,
+    "mirrorOf": "none",
+    "availableModes": [
+      "2560x1440@144.00Hz",
+      "2560x1440@60.00Hz",
+      "1920x1080@60.00Hz"
+    ],
+    "colorManagementPreset": "hdr",
+    "hardwareDetails": {
+      "backend": "drm",
+      "hdr": true,
+      "chroma": true,
+      "bt2020": true,
+      "vrrCapable": true
+    }
+  }
+]

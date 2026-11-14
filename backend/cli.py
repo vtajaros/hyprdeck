@@ -660,6 +660,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
         p.add_argument("--config-dir", dest="config_dir", default=None, help="Override Hyprland config dir.")
         p.add_argument("--entrypoint", dest="entrypoint", default=None, help="Override entrypoint file.")
         p.add_argument("--no-live", dest="no_live", action="store_true", default=False, help="Disable live hyprctl probing/reload.")
+        p.add_argument(
+            "--reload-mode",
+            dest="reload_mode",
+            choices=["none", "config-only", "full"],
+            default=None,
+            help="Override reload mode (none | config-only | full).",
+        )
         p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
     st_state = st_sub.add_parser("state", help="Read merged live + overrides settings state.")
@@ -686,6 +693,40 @@ def build_arg_parser() -> argparse.ArgumentParser:
     st_rst.add_argument("--apply", dest="apply", action="store_true", default=False, help="Write changes to disk (requires --scan-sha256).")
     st_rst.add_argument("--scan-sha256", dest="scan_sha256", default=None, help="Expected SHA-256 of hks-overrides.lua.")
     _add_common_st_args(st_rst)
+
+    # settings display subcommand
+    st_disp = st_sub.add_parser("display", help="Display monitors and brightness operations.")
+    disp_sub = st_disp.add_subparsers(dest="display_action", required=True)
+
+    disp_state = disp_sub.add_parser("state", help="Read monitors, overrides, and brightness state.")
+    disp_state.add_argument("--enable-ddc", dest="enable_ddc", action="store_true", default=False, help="Probe ddcutil brightness.")
+    disp_state.add_argument("--state-dir", dest="state_dir", default=None, help="Override revert-guard state dir.")
+    _add_common_st_args(disp_state)
+
+    disp_apply = disp_sub.add_parser("apply", help="Validate and apply monitor configuration with revert watchdog.")
+    disp_apply.add_argument("source", nargs="?", default=None, help="Path to JSON monitor changes file, or '-' for stdin.")
+    disp_apply.add_argument("--inline", dest="inline_json", default=None, help="Inline JSON string.")
+    disp_apply.add_argument("--apply", dest="apply", action="store_true", default=False, help="Write changes and arm revert guard (requires --scan-sha256).")
+    disp_apply.add_argument("--scan-sha256", dest="scan_sha256", default=None, help="Expected SHA-256 of hks-overrides.lua (or 'absent').")
+    disp_apply.add_argument("--timeout", dest="timeout", type=float, default=15.0, help="Revert-guard confirmation timeout seconds.")
+    disp_apply.add_argument("--watch-pid", dest="watch_pid", default=None, help="PID to watch (or 'ppid' for parent process).")
+    disp_apply.add_argument("--state-dir", dest="state_dir", default=None, help="Override revert-guard state dir.")
+    _add_common_st_args(disp_apply)
+
+    disp_conf = disp_sub.add_parser("confirm", help="Confirm active display changes and disarm revert watchdog.")
+    disp_conf.add_argument("--state-dir", dest="state_dir", default=None, help="Override revert-guard state dir.")
+    disp_conf.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    disp_rev = disp_sub.add_parser("revert", help="Immediately revert active display changes and disarm watchdog.")
+    disp_rev.add_argument("--state-dir", dest="state_dir", default=None, help="Override revert-guard state dir.")
+    disp_rev.add_argument("--no-live", dest="no_live", action="store_true", default=False, help="Disable live hyprctl reload during revert.")
+    disp_rev.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    disp_bri = disp_sub.add_parser("brightness", help="Read or set panel/DDC brightness (5%% minimum floor).")
+    disp_bri.add_argument("--set", dest="set_percent", type=float, default=None, help="Target brightness percentage (5..100).")
+    disp_bri.add_argument("--device", dest="device", default=None, help="Backlight device name for brightnessctl.")
+    disp_bri.add_argument("--ddc", dest="use_ddc", action="store_true", default=False, help="Read/set via ddcutil.")
+    disp_bri.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
     return parser
 
@@ -2069,7 +2110,7 @@ def _handle_overrides(args: argparse.Namespace) -> int:
     return 1 if res.errors else 0
 
 
-def _read_json_source(source: str | None, inline_json: str | None = None) -> dict[str, Any]:
+def _read_json_any(source: str | None, inline_json: str | None = None) -> Any:
     if inline_json is not None:
         raw = inline_json
     elif source == "-":
@@ -2079,10 +2120,173 @@ def _read_json_source(source: str | None, inline_json: str | None = None) -> dic
             raw = f.read()
     else:
         raise ValueError("Either a JSON source path/'-' or --inline is required")
-    data = json.loads(raw or "{}")
+    return json.loads(raw or "{}")
+
+
+def _read_json_source(source: str | None, inline_json: str | None = None) -> dict[str, Any]:
+    data = _read_json_any(source, inline_json)
     if not isinstance(data, dict):
         raise ValueError("JSON input must be an object")
     return data
+
+
+def _resolve_settings_debug_overrides(
+    args: argparse.Namespace,
+) -> tuple[str | None, str | None, str | None]:
+    """Return (config_dir, reload_mode_override, debug_backup_dir) honoring HKS_SETTINGS_DEBUG."""
+    from backend.core.constants import (
+        ENV_SETTINGS_CONFIG_DIR,
+        ENV_SETTINGS_DEBUG,
+        ENV_SETTINGS_RELOAD_MODE,
+    )
+    from backend.core.revert_guard import resolve_debug_companion_dir
+
+    cfg_dir = getattr(args, "config_dir", None)
+    reload_override = getattr(args, "reload_mode", None)
+    debug_bdir: str | None = None
+    if os.environ.get(ENV_SETTINGS_DEBUG, "").strip() == "1":
+        if cfg_dir is None:
+            env_cfg = os.environ.get(ENV_SETTINGS_CONFIG_DIR, "").strip()
+            if env_cfg:
+                cfg_dir = env_cfg
+        if reload_override is None:
+            env_rel = os.environ.get(ENV_SETTINGS_RELOAD_MODE, "").strip()
+            if env_rel in ("none", "config-only", "full"):
+                reload_override = env_rel
+        if cfg_dir and not os.environ.get("HKS_BACKUP_DIR", "").strip():
+            debug_bdir = resolve_debug_companion_dir(cfg_dir, "backups")
+    return cfg_dir, reload_override, debug_bdir
+
+
+def _handle_settings_display(
+    args: argparse.Namespace,
+    cfg_dir: str | None,
+    reload_override: str | None,
+    debug_bdir: str | None,
+) -> int:
+    from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
+    from backend.editor.backups import compute_file_sha256
+    from backend.settings.display.apply_flow import (
+        apply_display_changes,
+        confirm_display_changes,
+        revert_display_changes,
+    )
+    from backend.settings.display.brightness import read_brightness, set_brightness
+    from backend.settings.display.state import get_display_state, probe_monitors
+
+    d_action = args.display_action
+
+    if d_action == "brightness":
+        if args.set_percent is not None:
+            res = set_brightness(
+                args.set_percent,
+                device=args.device,
+                use_ddc=args.use_ddc,
+            )
+            sys.stdout.write(json.dumps(res, indent=2) + "\n")
+            sys.stdout.flush()
+            return 0 if res.get("ok") else 1
+        info = read_brightness(enable_ddc=args.use_ddc)
+        sys.stdout.write(json.dumps(info.to_dict(), indent=2) + "\n")
+        sys.stdout.flush()
+        return 0 if info.available else 1
+
+    if d_action == "confirm":
+        res = confirm_display_changes(state_dir=getattr(args, "state_dir", None))
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0 if res.get("ok") else 1
+
+    if d_action == "revert":
+        res = revert_display_changes(state_dir=getattr(args, "state_dir", None))
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0 if res.get("ok") else 1
+
+    if d_action == "state":
+        st = get_display_state(
+            config_dir=cfg_dir,
+            entrypoint=args.entrypoint,
+            no_live=args.no_live,
+            enable_ddc=args.enable_ddc,
+            state_dir=getattr(args, "state_dir", None),
+        )
+        sys.stdout.write(json.dumps(st, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    # d_action == "apply"
+    disc = discover_config(
+        config_dir=cfg_dir,
+        entrypoint=args.entrypoint,
+        no_live=args.no_live,
+    )
+    env_info = disc.environment
+    dry_run = not bool(args.apply)
+    if args.apply and not args.scan_sha256:
+        msg = "--apply requires --scan-sha256 <overrides_sha256_or_absent>."
+        sys.stdout.write(json.dumps({"applied": False, "errors": [msg]}, indent=2) + "\n")
+        return 2
+
+    try:
+        payload = _read_json_any(args.source, getattr(args, "inline_json", None))
+    except (OSError, ValueError) as exc:
+        sys.stdout.write(json.dumps({"applied": False, "errors": [str(exc)]}, indent=2) + "\n")
+        return 1
+
+    if not isinstance(payload, (list, dict)):
+        sys.stdout.write(
+            json.dumps({"applied": False, "errors": ["Display payload must be a JSON array or object"]}, indent=2)
+            + "\n"
+        )
+        return 1
+
+    try:
+        current_outputs = probe_monitors()
+    except Exception as exc:
+        sys.stdout.write(json.dumps({"applied": False, "errors": [str(exc)]}, indent=2) + "\n")
+        return 1
+
+    ov_path = os.path.join(env_info.config_dir, OVERRIDES_FILENAME)
+    cur_sha = compute_file_sha256(ov_path) if os.path.isfile(ov_path) else SHA256_ABSENT
+    expected_sha = args.scan_sha256 if args.scan_sha256 else cur_sha
+    if args.no_live:
+        reload_mode = "none"
+    elif reload_override is not None:
+        reload_mode = reload_override
+    else:
+        reload_mode = "full"
+
+    watch_pid: int | None = None
+    if getattr(args, "watch_pid", None) is not None:
+        wp_raw = str(args.watch_pid).strip().lower()
+        if wp_raw == "ppid":
+            watch_pid = os.getppid()
+        else:
+            try:
+                watch_pid = int(wp_raw)
+            except ValueError:
+                sys.stdout.write(
+                    json.dumps({"applied": False, "errors": [f"Invalid --watch-pid: {wp_raw!r}"]}, indent=2) + "\n"
+                )
+                return 2
+
+    res = apply_display_changes(
+        payload,
+        current_outputs=current_outputs,
+        config_dir=env_info.config_dir,
+        entrypoint=env_info.entrypoint,
+        expected_sha256=expected_sha,
+        timeout_seconds=float(args.timeout),
+        watch_pid=watch_pid,
+        backup_dir=debug_bdir,
+        state_dir=getattr(args, "state_dir", None),
+        reload_mode=reload_mode,
+        dry_run=dry_run,
+    )
+    sys.stdout.write(json.dumps(res.to_dict(), indent=2) + "\n")
+    sys.stdout.flush()
+    return 1 if res.errors else 0
 
 
 def _handle_settings(args: argparse.Namespace) -> int:
@@ -2092,11 +2296,15 @@ def _handle_settings(args: argparse.Namespace) -> int:
     from backend.settings.preview import PreviewValidationError, preview_settings, revert_preview
     from backend.settings.state import current_state
 
+    cfg_dir, reload_override, debug_bdir = _resolve_settings_debug_overrides(args)
     action = args.settings_action
+
+    if action == "display":
+        return _handle_settings_display(args, cfg_dir, reload_override, debug_bdir)
 
     if action == "state":
         st = current_state(
-            config_dir=args.config_dir,
+            config_dir=cfg_dir,
             entrypoint=args.entrypoint,
             no_live=args.no_live,
         )
@@ -2105,6 +2313,17 @@ def _handle_settings(args: argparse.Namespace) -> int:
         return 0
 
     if action == "preview":
+        if reload_override == "none":
+            try:
+                payload = _read_json_source(args.source, getattr(args, "inline_json", None))
+                from backend.settings.preview import validate_changes
+                validate_changes(payload)
+            except (OSError, ValueError, PreviewValidationError) as exc:
+                sys.stdout.write(json.dumps({"ok": False, "error": str(exc)}, indent=2) + "\n")
+                return 1
+            sys.stdout.write(json.dumps({"ok": True, "rendered": "", "skipped_reload_mode": "none"}, indent=2) + "\n")
+            sys.stdout.flush()
+            return 0
         try:
             payload = _read_json_source(args.source, getattr(args, "inline_json", None))
             res = preview_settings(payload)
@@ -2116,13 +2335,17 @@ def _handle_settings(args: argparse.Namespace) -> int:
         return 0 if res.get("ok") else 1
 
     if action == "revert-preview":
+        if reload_override == "none":
+            sys.stdout.write(json.dumps({"ok": True, "skipped_reload_mode": "none"}, indent=2) + "\n")
+            sys.stdout.flush()
+            return 0
         res = revert_preview()
         sys.stdout.write(json.dumps(res, indent=2) + "\n")
         sys.stdout.flush()
         return 0 if res.get("ok") else 1
 
     disc = discover_config(
-        config_dir=args.config_dir,
+        config_dir=cfg_dir,
         entrypoint=args.entrypoint,
         no_live=args.no_live,
     )
@@ -2136,7 +2359,12 @@ def _handle_settings(args: argparse.Namespace) -> int:
     ov_path = os.path.join(env_info.config_dir, OVERRIDES_FILENAME)
     cur_sha = compute_file_sha256(ov_path) if os.path.isfile(ov_path) else SHA256_ABSENT
     expected_sha = args.scan_sha256 if args.scan_sha256 else cur_sha
-    reload_mode = "none" if args.no_live else "config-only"
+    if args.no_live:
+        reload_mode = "none"
+    elif reload_override is not None:
+        reload_mode = reload_override
+    else:
+        reload_mode = "config-only"
 
     if action == "commit":
         try:
@@ -2156,6 +2384,7 @@ def _handle_settings(args: argparse.Namespace) -> int:
             config_dir=env_info.config_dir,
             entrypoint=env_info.entrypoint,
             expected_sha256=expected_sha,
+            backup_dir=debug_bdir,
             reload_mode=reload_mode,
             dry_run=dry_run,
         )
@@ -2166,6 +2395,7 @@ def _handle_settings(args: argparse.Namespace) -> int:
             config_dir=env_info.config_dir,
             entrypoint=env_info.entrypoint,
             expected_sha256=expected_sha,
+            backup_dir=debug_bdir,
             reload_mode=reload_mode,
             dry_run=dry_run,
         )

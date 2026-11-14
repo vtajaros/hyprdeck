@@ -6,6 +6,23 @@ import "services"
 ShellRoot {
     id: root
 
+    readonly property bool debugEnabled: Quickshell.env("HKS_SETTINGS_DEBUG") === "1"
+
+    function _debugDisabledJson() {
+        return JSON.stringify({ ok: false, error: "debug mode disabled" });
+    }
+
+    function _parseJsonArg(raw) {
+        if (raw === undefined || raw === null) return raw;
+        var s = String(raw).trim();
+        if (s.length === 0) return "";
+        try {
+            return JSON.parse(s);
+        } catch (e) {
+            return String(raw);
+        }
+    }
+
     IpcHandler {
         target: AppInfo.ipcTarget
 
@@ -23,10 +40,99 @@ ShellRoot {
 
         function reload() {
             SettingsService.reload();
+            DisplayService.reload();
         }
 
         function navigate(page: string) {
             winLoader.item.navigate(page);
+        }
+
+        function debugSet(id: string, jsonValue: string): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            var val = root._parseJsonArg(jsonValue);
+            SettingsService.setDraft(String(id), val);
+            return JSON.stringify({ ok: true, id: String(id), value: val });
+        }
+
+        function debugSave(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            SettingsService.save();
+            return JSON.stringify({ ok: true });
+        }
+
+        function debugDiscard(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            SettingsService.discard();
+            return JSON.stringify({ ok: true });
+        }
+
+        function debugReset(section: string): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            SettingsService.resetSection(String(section));
+            return JSON.stringify({ ok: true, section: String(section) });
+        }
+
+        function debugDisplayApply(jsonChanges: string): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            var parsed = null;
+            try {
+                parsed = JSON.parse(String(jsonChanges));
+            } catch (e) {
+                return JSON.stringify({ ok: false, error: "Invalid JSON changes: " + e.message });
+            }
+            DisplayService.applyChanges(parsed);
+            return JSON.stringify({ ok: true });
+        }
+
+        function debugDisplayKeep(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            DisplayService.keepChanges();
+            return JSON.stringify({ ok: true });
+        }
+
+        function debugDisplayRevert(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            DisplayService.revertChanges();
+            return JSON.stringify({ ok: true });
+        }
+
+        function debugState(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            var optsMap = ({});
+            var allOpts = SettingsService.options || [];
+            for (var i = 0; i < allOpts.length; i++) {
+                var o = allOpts[i];
+                if (o && o.id) {
+                    optsMap[o.id] = SettingsService.effectiveValue(o);
+                }
+            }
+            return JSON.stringify({
+                ok: true,
+                currentPage: winLoader.item ? winLoader.item.currentPage : "",
+                options: optsMap,
+                unsaved: Object.keys(SettingsService.draftValues || ({})),
+                pendingResets: Object.keys(SettingsService.pendingResets || ({})),
+                hasUnsavedChanges: SettingsService.hasUnsavedChanges,
+                includeInstalled: SettingsService.includeInstalled,
+                overridesSha256: SettingsService.overridesSha256,
+                error: SettingsService.error,
+                statusMessage: SettingsService.statusMessage,
+                busy: SettingsService.busy,
+                loading: SettingsService.loading,
+                display: {
+                    outputs: DisplayService.outputs,
+                    draftOutputs: DisplayService.draftOutputs,
+                    brightness: DisplayService.brightness,
+                    includeInstalled: DisplayService.includeInstalled,
+                    overridesSha256: DisplayService.overridesSha256,
+                    countdownActive: DisplayService.countdownActive,
+                    remainingSeconds: DisplayService.remainingSeconds,
+                    busy: DisplayService.busy,
+                    loading: DisplayService.loading,
+                    error: DisplayService.error,
+                    statusMessage: DisplayService.statusMessage
+                }
+            });
         }
     }
 

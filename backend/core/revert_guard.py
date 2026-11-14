@@ -9,6 +9,7 @@ crashes (`SIGKILL`)—the detached watchdog reverts the change automatically.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import select
@@ -21,6 +22,9 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from backend.core.constants import (
+    ACTIVE_GUARD_FILENAME,
+    ENV_SETTINGS_CONFIG_DIR,
+    ENV_SETTINGS_DEBUG,
     ENV_STATE_DIR,
     REVERT_GUARD_SUBDIR,
     STATE_DIR_NAME,
@@ -41,6 +45,13 @@ class RevertGuardHandle:
     plan: dict[str, Any]
 
 
+def resolve_debug_companion_dir(config_dir: str, leaf: str) -> str:
+    """Return an isolated temp-dir companion path outside both $HOME and `config_dir`."""
+    abs_cfg = os.path.abspath(os.path.expanduser(config_dir))
+    digest = hashlib.sha256(abs_cfg.encode("utf-8")).hexdigest()[:12]
+    return os.path.abspath(os.path.join(tempfile.gettempdir(), f"hks-debug-{digest}", leaf))
+
+
 def resolve_state_dir(
     state_dir: str | None = None,
     env: Mapping[str, str] | None = None,
@@ -52,6 +63,10 @@ def resolve_state_dir(
     override = environ.get(ENV_STATE_DIR, "").strip()
     if override:
         return os.path.abspath(os.path.expanduser(override))
+    if environ.get(ENV_SETTINGS_DEBUG, "").strip() == "1":
+        dbg_cfg = environ.get(ENV_SETTINGS_CONFIG_DIR, "").strip()
+        if dbg_cfg:
+            return resolve_debug_companion_dir(dbg_cfg, REVERT_GUARD_SUBDIR)
     home = environ.get("HOME", "").strip() or os.path.expanduser("~")
     return os.path.abspath(
         os.path.join(home, ".local", "share", STATE_DIR_NAME, REVERT_GUARD_SUBDIR)
@@ -195,4 +210,74 @@ def cancel(handle: RevertGuardHandle) -> None:
         try:
             os.kill(handle.pid, signal.SIGTERM)
         except ProcessLookupError:
+            pass
+
+
+def save_active_handle(
+    handle: RevertGuardHandle,
+    *,
+    deadline_epoch: float,
+    timeout_seconds: float,
+    state_dir: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> str:
+    """Persist the active RevertGuardHandle so CLI confirm/revert calls can locate it."""
+    resolved_state = resolve_state_dir(state_dir=state_dir, env=env)
+    os.makedirs(resolved_state, exist_ok=True)
+    active_path = os.path.join(resolved_state, ACTIVE_GUARD_FILENAME)
+    payload = {
+        "plan_path": handle.plan_path,
+        "confirm_path": handle.confirm_path,
+        "log_path": handle.log_path,
+        "pid": handle.pid,
+        "plan": handle.plan,
+        "deadline_epoch": float(deadline_epoch),
+        "timeout_seconds": float(timeout_seconds),
+    }
+    _write_private_bytes(
+        active_path,
+        (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8"),
+    )
+    return active_path
+
+
+def load_active_handle(
+    *,
+    state_dir: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> tuple[RevertGuardHandle, float, float] | None:
+    """Load the persisted active RevertGuardHandle, or None if not present."""
+    resolved_state = resolve_state_dir(state_dir=state_dir, env=env)
+    active_path = os.path.join(resolved_state, ACTIVE_GUARD_FILENAME)
+    if not os.path.isfile(active_path):
+        return None
+    try:
+        with open(active_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(data, dict) or not data.get("plan_path") or not data.get("confirm_path"):
+        return None
+    handle = RevertGuardHandle(
+        plan_path=str(data["plan_path"]),
+        confirm_path=str(data["confirm_path"]),
+        log_path=str(data.get("log_path") or ""),
+        pid=int(data.get("pid") or 0),
+        plan=dict(data.get("plan") or {}),
+    )
+    return handle, float(data.get("deadline_epoch") or 0.0), float(data.get("timeout_seconds") or 15.0)
+
+
+def clear_active_handle(
+    *,
+    state_dir: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    """Remove the persisted active-guard file if present."""
+    resolved_state = resolve_state_dir(state_dir=state_dir, env=env)
+    active_path = os.path.join(resolved_state, ACTIVE_GUARD_FILENAME)
+    if os.path.exists(active_path):
+        try:
+            os.unlink(active_path)
+        except OSError:
             pass

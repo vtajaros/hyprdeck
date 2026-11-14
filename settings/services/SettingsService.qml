@@ -7,6 +7,9 @@ Singleton {
     id: root
 
     readonly property string rootPath: Quickshell.env("HKS_ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprland-keybind-studio")
+    readonly property bool debugMode: Quickshell.env("HKS_SETTINGS_DEBUG") === "1"
+    readonly property string debugConfigDir: debugMode ? (Quickshell.env("HKS_SETTINGS_CONFIG_DIR") || "") : ""
+    readonly property string debugReloadMode: debugMode ? (Quickshell.env("HKS_SETTINGS_RELOAD_MODE") || "") : ""
 
     property var options: []
     property var draftValues: ({})
@@ -69,6 +72,16 @@ Singleton {
         root.statusMessage = "";
     }
 
+    function _appendDebugArgs(cmd, includeReloadMode) {
+        if (root.debugMode && root.debugConfigDir.length > 0) {
+            cmd.push("--config-dir", root.debugConfigDir);
+        }
+        if (includeReloadMode && root.debugMode && root.debugReloadMode.length > 0) {
+            cmd.push("--reload-mode", root.debugReloadMode);
+        }
+        return cmd;
+    }
+
     function schedulePreview() {
         previewTimer.restart();
     }
@@ -93,7 +106,6 @@ Singleton {
     Process {
         id: stateProc
         workingDirectory: root.rootPath
-        command: ["python3", "-m", "backend.cli", "settings", "state", "--json"]
         stdout: StdioCollector { id: stateOut; waitForEnd: true }
         stderr: StdioCollector { id: stateErr; waitForEnd: true }
         onExited: (code, status) => {
@@ -179,7 +191,10 @@ Singleton {
     function reload() {
         root.error = "";
         root.loading = true;
+        var cmd = ["python3", "-m", "backend.cli", "settings", "state", "--json"];
+        _appendDebugArgs(cmd, false);
         stateProc.running = false;
+        stateProc.command = cmd;
         stateProc.running = true;
     }
 
@@ -204,14 +219,16 @@ Singleton {
             changes: root.draftValues,
             resets: Object.keys(root.pendingResets)
         });
-        commitProc.running = false;
-        commitProc.command = [
+        var cmd = [
             "python3", "-m", "backend.cli", "settings", "commit",
             "--inline", payload,
             "--apply",
             "--scan-sha256", root.overridesSha256,
             "--json"
         ];
+        _appendDebugArgs(cmd, true);
+        commitProc.running = false;
+        commitProc.command = cmd;
         commitProc.running = true;
     }
 
@@ -221,14 +238,16 @@ Singleton {
         root.error = "";
         root.statusMessage = "";
         root.busy = true;
-        commitProc.running = false;
-        commitProc.command = [
+        var cmd = [
             "python3", "-m", "backend.cli", "settings", "reset",
             "--section", sectionName,
             "--apply",
             "--scan-sha256", root.overridesSha256,
             "--json"
         ];
+        _appendDebugArgs(cmd, true);
+        commitProc.running = false;
+        commitProc.command = cmd;
         commitProc.running = true;
     }
 }

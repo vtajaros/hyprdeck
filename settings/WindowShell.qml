@@ -50,6 +50,9 @@ FloatingWindow {
         if (!SettingsService.loading && !SettingsService.hasUnsavedChanges) {
             SettingsService.reload();
         }
+        if (!DisplayService.loading && !DisplayService.hasDraftChanges && !DisplayService.countdownActive) {
+            DisplayService.reload();
+        }
     }
 
     function _performClose() {
@@ -92,16 +95,16 @@ FloatingWindow {
         id: closeGuard
         recorderActive: false
         editDialogOpen: false
-        dialogOpen: win.unsavedPromptOpen
+        dialogOpen: win.unsavedPromptOpen || DisplayService.countdownActive
         focusItem: rootSurface.Window.activeFocusItem
     }
 
     Component.onCompleted: {
         SettingsService.reload();
+        DisplayService.reload();
     }
 
     readonly property var placeholderPages: [
-        { id: "display", icon: "󰍹", title: "Display", summary: "Monitor resolution, refresh rate, scale, VRR, and arrangement." },
         { id: "input", icon: "󰌌", title: "Input", summary: "Mouse sensitivity, touchpad gestures, and keyboard repeat rate." },
         { id: "audio", icon: "󰕾", title: "Audio", summary: "Output sinks, input sources, and per-device volume." },
         { id: "bluetooth", icon: "󰂯", title: "Bluetooth", summary: "Adapter power, pairing, and connected devices." },
@@ -260,6 +263,17 @@ FloatingWindow {
                             }
                         }
 
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰍹"
+                            text: "Display"
+                            active: win.currentPage === "display" && globalSearch.text.trim().length === 0
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.currentPage = "display";
+                            }
+                        }
+
                         Rectangle {
                             width: parent.width
                             height: 1
@@ -293,6 +307,11 @@ FloatingWindow {
                     section: win.currentPage === "desktop" ? "desktop" : "appearance"
                     pageTitle: win.currentPage === "desktop" ? "Desktop behavior" : "Appearance"
                     searchQuery: globalSearch.text
+                }
+
+                DisplayPage {
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "display"
                 }
 
                 PlaceholderPage {
@@ -415,6 +434,71 @@ FloatingWindow {
                             variant: "danger"
                             compact: true
                             onClicked: win.closeWindow(true)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Display 15s Confirm-or-Revert Countdown Modal
+        Rectangle {
+            anchors.fill: parent
+            visible: DisplayService.countdownActive
+            color: HKS.alpha(HKS.bg, 0.78)
+            z: 30
+
+            MouseArea { anchors.fill: parent }
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 440
+                height: displayConfirmCol.implicitHeight + 36
+                radius: HKS.radius
+                color: HKS.surface
+                border.width: 1
+                border.color: HKS.accent
+
+                Column {
+                    id: displayConfirmCol
+                    anchors.fill: parent
+                    anchors.margins: 18
+                    spacing: 12
+
+                    Text {
+                        text: "Keep these display settings?"
+                        font.family: HKS.fontFamily
+                        font.pixelSize: HKS.fontSizeLarge
+                        font.weight: Font.Bold
+                        color: HKS.fg
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: "Reverting automatically in " + DisplayService.remainingSeconds + "s unless confirmed."
+                        font.family: HKS.fontFamily
+                        font.pixelSize: HKS.fontSizeSmall
+                        color: HKS.warning
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Row {
+                        anchors.right: parent.right
+                        spacing: 8
+
+                        ActionButton {
+                            text: "Revert now"
+                            variant: "danger"
+                            compact: true
+                            enabled: !DisplayService.busy
+                            onClicked: DisplayService.revertChanges()
+                        }
+
+                        ActionButton {
+                            text: "Keep changes"
+                            variant: "accent"
+                            compact: true
+                            enabled: !DisplayService.busy
+                            onClicked: DisplayService.keepChanges()
                         }
                     }
                 }

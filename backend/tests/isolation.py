@@ -8,7 +8,13 @@ import tempfile
 import unittest
 from typing import Mapping
 
-from backend.core.constants import ENV_STATE_DIR
+from backend.core.constants import (
+    ENV_SETTINGS_CONFIG_DIR,
+    ENV_SETTINGS_DEBUG,
+    ENV_SETTINGS_MONITORS_FIXTURE,
+    ENV_SETTINGS_RELOAD_MODE,
+    ENV_STATE_DIR,
+)
 from backend.core.revert_guard import resolve_state_dir
 from backend.describe.sidecar import resolve_sidecar_path
 from backend.editor.backups import resolve_backup_dir
@@ -41,7 +47,7 @@ def assert_path_isolated(path: str, label: str = "path") -> None:
 
 
 def assert_env_isolated(env: Mapping[str, str] | None = None) -> None:
-    """Verify resolved HKS_BACKUP_DIR, HKS_SIDECAR_PATH, and HKS_STATE_DIR are outside $HOME and real paths."""
+    """Verify resolved HKS_BACKUP_DIR, HKS_SIDECAR_PATH, HKS_STATE_DIR, and debug config dir are isolated."""
     env_dict = dict(env) if env is not None else dict(os.environ)
     bkp = resolve_backup_dir(env=env_dict)
     sc = resolve_sidecar_path(env=env_dict) or ""
@@ -49,6 +55,17 @@ def assert_env_isolated(env: Mapping[str, str] | None = None) -> None:
     assert_path_isolated(bkp, "HKS_BACKUP_DIR / backup_dir")
     assert_path_isolated(sc, "HKS_SIDECAR_PATH / sidecar_path")
     assert_path_isolated(st, f"{ENV_STATE_DIR} / state_dir")
+    dbg_cfg = env_dict.get(ENV_SETTINGS_CONFIG_DIR, "").strip()
+    if dbg_cfg:
+        assert_path_isolated(dbg_cfg, ENV_SETTINGS_CONFIG_DIR)
+
+
+_CLEARED_ENV_VARS = (
+    ENV_SETTINGS_DEBUG,
+    ENV_SETTINGS_CONFIG_DIR,
+    ENV_SETTINGS_RELOAD_MODE,
+    ENV_SETTINGS_MONITORS_FIXTURE,
+)
 
 
 class IsolatedTestCase(unittest.TestCase):
@@ -60,6 +77,7 @@ class IsolatedTestCase(unittest.TestCase):
         self._orig_bkp = os.environ.get("HKS_BACKUP_DIR")
         self._orig_sc = os.environ.get("HKS_SIDECAR_PATH")
         self._orig_st = os.environ.get(ENV_STATE_DIR)
+        self._orig_extra = {k: os.environ.get(k) for k in _CLEARED_ENV_VARS}
         self.backup_dir = os.path.join(self._isolated_root, "backups")
         self.sidecar_path = os.path.join(self._isolated_root, "hks", "descriptions.json")
         self.state_dir = os.path.join(self._isolated_root, "state")
@@ -68,6 +86,8 @@ class IsolatedTestCase(unittest.TestCase):
         os.environ["HKS_BACKUP_DIR"] = self.backup_dir
         os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
         os.environ[ENV_STATE_DIR] = self.state_dir
+        for k in _CLEARED_ENV_VARS:
+            os.environ.pop(k, None)
         self.addCleanup(self._cleanup_isolation)
 
     def _cleanup_isolation(self) -> None:
@@ -83,6 +103,11 @@ class IsolatedTestCase(unittest.TestCase):
             os.environ.pop(ENV_STATE_DIR, None)
         else:
             os.environ[ENV_STATE_DIR] = self._orig_st
+        for k, orig in self._orig_extra.items():
+            if orig is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = orig
         shutil.rmtree(self._isolated_root, ignore_errors=True)
 
     def assert_isolated(self) -> None:
@@ -105,6 +130,8 @@ def install_suite_isolation_guard() -> None:
     import backend.describe.sidecar_store as sc_mod
     import backend.editor.backups as bkp_mod
     import backend.settings.commit as st_commit_mod
+    import backend.settings.display.apply_flow as disp_apply_mod
+    import backend.settings.display.brightness as disp_bri_mod
 
     orig_atomic_write = bkp_mod.atomic_write_bytes
     orig_create_backup = bkp_mod.create_backup
@@ -218,3 +245,65 @@ def install_suite_isolation_guard() -> None:
 
     st_commit_mod.commit_settings = guarded_commit_settings
     st_commit_mod.reset_settings = guarded_reset_settings
+
+    orig_apply_disp = disp_apply_mod.apply_display_changes
+    orig_confirm_disp = disp_apply_mod.confirm_display_changes
+    orig_revert_disp = disp_apply_mod.revert_display_changes
+    orig_set_bri = disp_bri_mod.set_brightness
+
+    @functools.wraps(orig_apply_disp)
+    def guarded_apply_disp(changes, *, current_outputs, config_dir: str, entrypoint: str, **kwargs):
+        assert_path_isolated(config_dir, "apply_display_changes(config_dir)")
+        assert_path_isolated(entrypoint, "apply_display_changes(entrypoint)")
+        resolved_bdir = bkp_mod.resolve_backup_dir(
+            backup_dir=kwargs.get("backup_dir"), env=kwargs.get("env")
+        )
+        assert_path_isolated(resolved_bdir, "apply_display_changes(backup_dir)")
+        resolved_sdir = rg_mod.resolve_state_dir(
+            state_dir=kwargs.get("state_dir"), env=kwargs.get("env")
+        )
+        assert_path_isolated(resolved_sdir, "apply_display_changes(state_dir)")
+        return orig_apply_disp(
+            changes,
+            current_outputs=current_outputs,
+            config_dir=config_dir,
+            entrypoint=entrypoint,
+            **kwargs,
+        )
+
+    @functools.wraps(orig_confirm_disp)
+    def guarded_confirm_disp(*, handle=None, state_dir=None, env=None):
+        if handle is not None:
+            assert_path_isolated(handle.confirm_path, "confirm_display_changes(confirm_path)")
+        else:
+            assert_path_isolated(
+                rg_mod.resolve_state_dir(state_dir=state_dir, env=env),
+                "confirm_display_changes(state_dir)",
+            )
+        return orig_confirm_disp(handle=handle, state_dir=state_dir, env=env)
+
+    @functools.wraps(orig_revert_disp)
+    def guarded_revert_disp(*, handle=None, state_dir=None, env=None, **kwargs):
+        if handle is not None and handle.plan.get("target_path"):
+            assert_path_isolated(
+                str(handle.plan["target_path"]), "revert_display_changes(target_path)"
+            )
+        else:
+            assert_path_isolated(
+                rg_mod.resolve_state_dir(state_dir=state_dir, env=env),
+                "revert_display_changes(state_dir)",
+            )
+        return orig_revert_disp(handle=handle, state_dir=state_dir, env=env, **kwargs)
+
+    @functools.wraps(orig_set_bri)
+    def guarded_set_bri(percent, *, device=None, use_ddc=False, runner=None, timeout=3.0):
+        if runner is None:
+            raise AssertionError(
+                "Test isolation violation: set_brightness called in tests without mock runner"
+            )
+        return orig_set_bri(percent, device=device, use_ddc=use_ddc, runner=runner, timeout=timeout)
+
+    disp_apply_mod.apply_display_changes = guarded_apply_disp
+    disp_apply_mod.confirm_display_changes = guarded_confirm_disp
+    disp_apply_mod.revert_display_changes = guarded_revert_disp
+    disp_bri_mod.set_brightness = guarded_set_bri
