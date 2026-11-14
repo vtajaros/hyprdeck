@@ -8,6 +8,8 @@ import tempfile
 import unittest
 from typing import Mapping
 
+from backend.core.constants import ENV_STATE_DIR
+from backend.core.revert_guard import resolve_state_dir
 from backend.describe.sidecar import resolve_sidecar_path
 from backend.editor.backups import resolve_backup_dir
 
@@ -39,27 +41,33 @@ def assert_path_isolated(path: str, label: str = "path") -> None:
 
 
 def assert_env_isolated(env: Mapping[str, str] | None = None) -> None:
-    """Verify resolved HKS_BACKUP_DIR and HKS_SIDECAR_PATH are outside $HOME and real HKS/Hypr paths."""
+    """Verify resolved HKS_BACKUP_DIR, HKS_SIDECAR_PATH, and HKS_STATE_DIR are outside $HOME and real paths."""
     env_dict = dict(env) if env is not None else dict(os.environ)
     bkp = resolve_backup_dir(env=env_dict)
     sc = resolve_sidecar_path(env=env_dict) or ""
+    st = resolve_state_dir(env=env_dict)
     assert_path_isolated(bkp, "HKS_BACKUP_DIR / backup_dir")
     assert_path_isolated(sc, "HKS_SIDECAR_PATH / sidecar_path")
+    assert_path_isolated(st, f"{ENV_STATE_DIR} / state_dir")
 
 
 class IsolatedTestCase(unittest.TestCase):
-    """Base TestCase that enforces HKS_BACKUP_DIR and HKS_SIDECAR_PATH isolation."""
+    """Base TestCase that enforces HKS_BACKUP_DIR, HKS_SIDECAR_PATH, and HKS_STATE_DIR isolation."""
 
     def setUp(self) -> None:
         super().setUp()
         self._isolated_root = tempfile.mkdtemp(prefix="hks_test_iso_")
         self._orig_bkp = os.environ.get("HKS_BACKUP_DIR")
         self._orig_sc = os.environ.get("HKS_SIDECAR_PATH")
+        self._orig_st = os.environ.get(ENV_STATE_DIR)
         self.backup_dir = os.path.join(self._isolated_root, "backups")
         self.sidecar_path = os.path.join(self._isolated_root, "hks", "descriptions.json")
+        self.state_dir = os.path.join(self._isolated_root, "state")
         os.makedirs(self.backup_dir, exist_ok=True)
+        os.makedirs(self.state_dir, exist_ok=True)
         os.environ["HKS_BACKUP_DIR"] = self.backup_dir
         os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
+        os.environ[ENV_STATE_DIR] = self.state_dir
         self.addCleanup(self._cleanup_isolation)
 
     def _cleanup_isolation(self) -> None:
@@ -71,6 +79,10 @@ class IsolatedTestCase(unittest.TestCase):
             os.environ.pop("HKS_SIDECAR_PATH", None)
         else:
             os.environ["HKS_SIDECAR_PATH"] = self._orig_sc
+        if self._orig_st is None:
+            os.environ.pop(ENV_STATE_DIR, None)
+        else:
+            os.environ[ENV_STATE_DIR] = self._orig_st
         shutil.rmtree(self._isolated_root, ignore_errors=True)
 
     def assert_isolated(self) -> None:
@@ -88,6 +100,8 @@ def install_suite_isolation_guard() -> None:
     _GUARD_INSTALLED = True
 
     import functools
+    import backend.core.revert_guard as rg_mod
+    import backend.core.transaction as tx_mod
     import backend.describe.sidecar_store as sc_mod
     import backend.editor.backups as bkp_mod
 
@@ -133,3 +147,55 @@ def install_suite_isolation_guard() -> None:
     bkp_mod.restore_backup = guarded_restore_backup
     sc_mod._write_sidecar_atomic = guarded_write_sc
     sc_mod.backup_sidecar_file = guarded_backup_sc
+
+    orig_apply_managed = tx_mod.apply_managed_change
+    orig_undo_managed = tx_mod.undo_managed_change
+    orig_arm = rg_mod.arm
+    orig_confirm = rg_mod.confirm
+
+    @functools.wraps(orig_apply_managed)
+    def guarded_apply_managed(target_path: str, new_bytes: bytes, **kwargs):
+        assert_path_isolated(target_path, "apply_managed_change(target_path)")
+        if kwargs.get("config_dir"):
+            assert_path_isolated(kwargs["config_dir"], "apply_managed_change(config_dir)")
+        if kwargs.get("entrypoint"):
+            assert_path_isolated(kwargs["entrypoint"], "apply_managed_change(entrypoint)")
+        resolved_bdir = bkp_mod.resolve_backup_dir(
+            backup_dir=kwargs.get("backup_dir"), env=kwargs.get("env")
+        )
+        assert_path_isolated(resolved_bdir, "apply_managed_change(backup_dir)")
+        return orig_apply_managed(target_path, new_bytes, **kwargs)
+
+    @functools.wraps(orig_undo_managed)
+    def guarded_undo_managed(result, **kwargs):
+        if getattr(result, "target_path", ""):
+            assert_path_isolated(result.target_path, "undo_managed_change(target_path)")
+        resolved_bdir = bkp_mod.resolve_backup_dir(
+            backup_dir=kwargs.get("backup_dir"), env=kwargs.get("env")
+        )
+        assert_path_isolated(resolved_bdir, "undo_managed_change(backup_dir)")
+        return orig_undo_managed(result, **kwargs)
+
+    @functools.wraps(orig_arm)
+    def guarded_arm(plan, timeout_seconds: float = 15.0, watch_pid: int | None = None, *, state_dir=None, env=None):
+        resolved_st = rg_mod.resolve_state_dir(state_dir=state_dir, env=env)
+        assert_path_isolated(resolved_st, "revert_guard.arm(state_dir)")
+        if plan.get("target_path"):
+            assert_path_isolated(str(plan["target_path"]), "revert_guard.arm(target_path)")
+        if plan.get("backup_dir"):
+            assert_path_isolated(str(plan["backup_dir"]), "revert_guard.arm(backup_dir)")
+        if plan.get("confirm_path"):
+            assert_path_isolated(str(plan["confirm_path"]), "revert_guard.arm(confirm_path)")
+        if plan.get("log_path"):
+            assert_path_isolated(str(plan["log_path"]), "revert_guard.arm(log_path)")
+        return orig_arm(plan, timeout_seconds=timeout_seconds, watch_pid=watch_pid, state_dir=state_dir, env=env)
+
+    @functools.wraps(orig_confirm)
+    def guarded_confirm(handle):
+        assert_path_isolated(handle.confirm_path, "revert_guard.confirm(confirm_path)")
+        return orig_confirm(handle)
+
+    tx_mod.apply_managed_change = guarded_apply_managed
+    tx_mod.undo_managed_change = guarded_undo_managed
+    rg_mod.arm = guarded_arm
+    rg_mod.confirm = guarded_confirm

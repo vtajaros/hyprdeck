@@ -624,6 +624,31 @@ def build_arg_parser() -> argparse.ArgumentParser:
     sc_mig.add_argument("--new-id", dest="new_id", required=True, help="New bind ID.")
     _add_common_sc_args(sc_mig)
 
+    # overrides subcommand
+    ov_p = subparsers.add_parser(
+        "overrides",
+        help="Inspect or manage the HKS overrides include block.",
+    )
+    ov_sub = ov_p.add_subparsers(dest="overrides_action", required=True)
+
+    ov_status = ov_sub.add_parser("status", help="Show overrides include and file status.")
+    ov_status.add_argument("--config-dir", dest="config_dir", default=None, help="Override Hyprland config dir.")
+    ov_status.add_argument("--entrypoint", dest="entrypoint", default=None, help="Override entrypoint file.")
+    ov_status.add_argument("--no-live", dest="no_live", action="store_true", default=False, help="Disable live hyprctl probing.")
+    ov_status.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    for ov_act, ov_help in [
+        ("install-include", "Install the HKS overrides include block into hyprland.lua (dry-run by default)."),
+        ("uninstall-include", "Remove the HKS overrides include block from hyprland.lua (dry-run by default)."),
+    ]:
+        ov_act_p = ov_sub.add_parser(ov_act, help=ov_help)
+        ov_act_p.add_argument("--config-dir", dest="config_dir", default=None, help="Override Hyprland config dir.")
+        ov_act_p.add_argument("--entrypoint", dest="entrypoint", default=None, help="Override entrypoint file.")
+        ov_act_p.add_argument("--no-live", dest="no_live", action="store_true", default=False, help="Disable live hyprctl probing and reload.")
+        ov_act_p.add_argument("--apply", dest="apply", action="store_true", default=False, help="Write changes to disk (requires --scan-sha256).")
+        ov_act_p.add_argument("--scan-sha256", dest="scan_sha256", default=None, help="Expected SHA-256 of the entrypoint before editing.")
+        ov_act_p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
     return parser
 
 
@@ -1892,6 +1917,120 @@ def _handle_recorder(args: argparse.Namespace) -> int:
     return 0 if res.get("ok", True) else 1
 
 
+def _handle_overrides(args: argparse.Namespace) -> int:
+    from backend.core.constants import OVERRIDES_FILENAME
+    from backend.core.include_block import IncludeBlockError, has_include
+    from backend.core.overrides import OverridesError, parse_sections
+    from backend.core.transaction import install_include, uninstall_include
+    from backend.editor.backups import compute_file_sha256
+
+    disc = discover_config(
+        config_dir=args.config_dir,
+        entrypoint=args.entrypoint,
+        no_live=args.no_live,
+    )
+    env_info = disc.environment
+    action = args.overrides_action
+
+    if action == "status":
+        overrides_path = os.path.join(env_info.config_dir, OVERRIDES_FILENAME)
+        overrides_present = os.path.isfile(overrides_path)
+        overrides_sha = compute_file_sha256(overrides_path) if overrides_present else None
+        sections: list[str] = []
+        sections_error: str | None = None
+        if overrides_present:
+            try:
+                with open(overrides_path, "r", encoding="utf-8") as f:
+                    sections = list(parse_sections(f.read()).keys())
+            except OverridesError as exc:
+                sections_error = str(exc)
+
+        include_installed = False
+        include_error: str | None = None
+        if env_info.language == "lua" and os.path.isfile(env_info.entrypoint):
+            try:
+                with open(env_info.entrypoint, "r", encoding="utf-8") as f:
+                    include_installed = has_include(f.read())
+            except IncludeBlockError as exc:
+                include_error = str(exc)
+
+        payload = {
+            "config_dir": env_info.config_dir,
+            "entrypoint": env_info.entrypoint,
+            "entrypoint_sha256": compute_file_sha256(env_info.entrypoint)
+            if os.path.isfile(env_info.entrypoint)
+            else None,
+            "language": env_info.language,
+            "include_installed": include_installed,
+            "include_error": include_error,
+            "overrides_path": overrides_path,
+            "overrides_present": overrides_present,
+            "overrides_sha256": overrides_sha,
+            "sections": sections,
+            "sections_error": sections_error,
+        }
+        if args.json_output:
+            sys.stdout.write(json.dumps(payload, indent=2) + "\n")
+        else:
+            lines = [
+                f"Config dir:         {payload['config_dir']}",
+                f"Entrypoint:         {payload['entrypoint']} ({payload['language']})",
+                f"Entrypoint SHA-256: {payload['entrypoint_sha256']}",
+                f"Include installed:  {payload['include_installed']}",
+                f"Overrides file:     {payload['overrides_path']} (present={payload['overrides_present']})",
+                f"Overrides SHA-256:  {payload['overrides_sha256']}",
+                f"Sections:           {', '.join(sections) if sections else '(none)'}",
+            ]
+            if include_error:
+                lines.append(f"Include error:      {include_error}")
+            if sections_error:
+                lines.append(f"Sections error:     {sections_error}")
+            sys.stdout.write("\n".join(lines) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    dry_run = not bool(args.apply)
+    if args.apply and not args.scan_sha256:
+        msg = "--apply requires --scan-sha256 <entrypoint_sha256>."
+        if args.json_output:
+            sys.stdout.write(json.dumps({"applied": False, "errors": [msg]}, indent=2) + "\n")
+        else:
+            sys.stderr.write(f"hks overrides: error: {msg}\n")
+        return 2
+
+    reload_mode = "none" if args.no_live else "config-only"
+    fn = install_include if action == "install-include" else uninstall_include
+    res = fn(
+        env_info.config_dir,
+        env_info.entrypoint,
+        expected_sha256=args.scan_sha256,
+        reload_mode=reload_mode,
+        dry_run=dry_run,
+    )
+    if args.json_output:
+        sys.stdout.write(json.dumps(res.to_dict(), indent=2) + "\n")
+    else:
+        if res.errors:
+            for e in res.errors:
+                sys.stderr.write(f"hks overrides: error: {e}\n")
+        if res.diff:
+            sys.stdout.write(res.diff)
+        else:
+            sys.stdout.write("No changes.\n")
+        if dry_run and not res.errors:
+            sys.stdout.write(
+                f"(dry-run; pass --apply --scan-sha256 {res.sha_before} to write)\n"
+            )
+        elif res.applied:
+            sys.stdout.write(
+                f"Applied ({res.sha_after})."
+                + (f" Backup ID: {res.backup.id}" if res.backup else "")
+                + "\n"
+            )
+    sys.stdout.flush()
+    return 1 if res.errors else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_arg_parser()
     try:
@@ -2010,6 +2149,9 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.subcommand == "recorder":
             return _handle_recorder(args)
+
+        if args.subcommand == "overrides":
+            return _handle_overrides(args)
     except DiscoveryError as exc:
         sys.stderr.write(f"hks: error: {exc}\n")
         return 2
