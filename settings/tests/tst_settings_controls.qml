@@ -64,6 +64,10 @@ TestCase {
         id: netLogic
     }
 
+    ThemesControlLogic {
+        id: themesLogic
+    }
+
     function test_close_guard_blocks_when_prompt_open() {
         guard.dialogOpen = false;
         verify(guard.closeAllowed);
@@ -225,5 +229,18 @@ TestCase {
         verify(netLogic.destructiveConsequence("forget", connCut, {}).indexOf("only active connection") >= 0);
         compare(netLogic.wifiStateBanner(false, true, {}), "NetworkManager is unavailable.");
         compare(netLogic.wifiStateBanner(true, false, {}), "No Wi-Fi device found.");
+    }
+
+    function test_themes_scope_labels_and_cursor_clamp() {
+        compare(themesLogic.applyScopeLabel("live"), "Applies live");
+        compare(themesLogic.applyScopeLabel("new_apps"), "Applies to new apps (restart apps to pick up)");
+        compare(themesLogic.applyScopeLabel("next_login"), "Requires re-login (overridden by GTK_THEME env)");
+        compare(themesLogic.iconBadgeText("Papirus-Dynamic"), "Follows wallpaper (recommended)");
+        compare(themesLogic.iconBadgeText("Papirus-Dark"), "Resets on next wallpaper change");
+        compare(themesLogic.clampCursorSize(8), 16);
+        compare(themesLogic.clampCursorSize(100), 64);
+        compare(themesLogic.clampCursorSize(32), 32);
+        verify(themesLogic.hasConflict([{ id: "gtk_theme_env_override" }], "gtk_theme_env_override"));
+        verify(!themesLogic.hasConflict([], "gtk_theme_env_override"));
     }
 }

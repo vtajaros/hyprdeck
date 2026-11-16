@@ -4,3 +4,4 @@ singleton InputService 1.0 InputService.qml
 singleton AudioService 1.0 AudioService.qml
 singleton BluetoothService 1.0 BluetoothService.qml
 singleton NetworkService 1.0 NetworkService.qml
+singleton ThemesService 1.0 ThemesService.qml

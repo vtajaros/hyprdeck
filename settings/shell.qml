@@ -44,6 +44,7 @@ ShellRoot {
             AudioService.reload(false);
             BluetoothService.reload(false);
             NetworkService.reload(false);
+            ThemesService.reload(false);
         }
 
         function navigate(page: string) {
@@ -265,6 +266,36 @@ ShellRoot {
             return JSON.stringify({ ok: true, confirmOpen: NetworkService.confirmOpen });
         }
 
+        function debugThemesState(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            return JSON.stringify({
+                ok: true,
+                available: ThemesService.available,
+                wallpaper: ThemesService.wallpaper,
+                gtk: ThemesService.gtk,
+                icons: ThemesService.icons,
+                cursor: ThemesService.cursor,
+                qt: ThemesService.qt,
+                colorScheme: ThemesService.colorScheme,
+                conflicts: ThemesService.conflicts,
+                loading: ThemesService.loading,
+                busy: ThemesService.busy,
+                error: ThemesService.error,
+                statusMessage: ThemesService.statusMessage
+            });
+        }
+
+        function debugThemesSetCursor(name: string, size: int): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            ThemesService.setCursor(String(name || ""), Number(size || 24));
+            return JSON.stringify({ ok: true, name: String(name || ""), size: Number(size || 24) });
+        }
+
+        function debugThemesConflicts(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            return JSON.stringify({ ok: true, conflicts: ThemesService.conflicts });
+        }
+
         function debugState(): string {
             if (!root.debugEnabled) return root._debugDisabledJson();
             var optsMap = ({});
@@ -349,12 +380,26 @@ ShellRoot {
                     devices: NetworkService.devices,
                     connections: NetworkService.connections,
                     wifiNetworks: NetworkService.wifiNetworks,
+                    warnings: NetworkService.warnings,
                     safety: NetworkService.safety,
                     confirmOpen: NetworkService.confirmOpen,
                     busy: NetworkService.busy,
                     loading: NetworkService.loading,
                     error: NetworkService.error,
                     statusMessage: NetworkService.statusMessage
+                },
+                themes: {
+                    available: ThemesService.available,
+                    wallpaper: ThemesService.wallpaper,
+                    gtk: ThemesService.gtk,
+                    icons: ThemesService.icons,
+                    cursor: ThemesService.cursor,
+                    qt: ThemesService.qt,
+                    colorScheme: ThemesService.colorScheme,
+                    conflicts: ThemesService.conflicts,
+                    busy: ThemesService.busy,
+                    loading: ThemesService.loading,
+                    error: ThemesService.error
                 }
             });
         }

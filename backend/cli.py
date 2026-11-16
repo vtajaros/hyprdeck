@@ -909,6 +909,41 @@ def build_arg_parser() -> argparse.ArgumentParser:
     net_dns.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
     net_dns.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
+    # settings themes subcommand
+    st_thm = st_sub.add_parser("themes", help="System themes (wallpaper, GTK, icons, cursor, Qt6ct).")
+    thm_sub = st_thm.add_subparsers(dest="themes_action", required=True)
+
+    thm_state = thm_sub.add_parser("state", help="Read current theme state and consistency conflicts.")
+    thm_state.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    thm_state.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    thm_gtk = thm_sub.add_parser("gtk", help="Set GTK theme (gsettings + gtk-3.0/gtk-4.0 settings.ini).")
+    thm_gtk.add_argument("name", help="Installed GTK theme name.")
+    thm_gtk.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    thm_gtk.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    thm_icons = thm_sub.add_parser("icons", help="Set icon theme (gsettings + gtk-3.0/gtk-4.0 settings.ini).")
+    thm_icons.add_argument("name", help="Installed icon theme name.")
+    thm_icons.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    thm_icons.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    thm_cursor = thm_sub.add_parser("cursor", help="Set cursor theme and optional size (16..64).")
+    thm_cursor.add_argument("name", help="Installed cursor theme name.")
+    thm_cursor.add_argument("size", nargs="?", type=int, default=None, help="Optional cursor size (16..64).")
+    thm_cursor.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    thm_cursor.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    thm_qt = thm_sub.add_parser("qt", help="Update qt6ct.conf style, icon theme, or color scheme.")
+    thm_qt.add_argument("--style", dest="style", default=None, help="Qt6 style name.")
+    thm_qt.add_argument("--icons", dest="icons", default=None, help="Qt6ct icon theme name.")
+    thm_qt.add_argument("--colors", dest="colors", default=None, help="Qt6ct color scheme file/name.")
+    thm_qt.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    thm_qt.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    thm_wp = thm_sub.add_parser("wallpaper", help="Wallpaper actions.")
+    thm_wp.add_argument("wp_action", choices=("open",), help="Action: open wallpaper picker.")
+    thm_wp.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
     return parser
 
 
@@ -2763,6 +2798,48 @@ def _handle_settings_network(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 1
 
 
+def _handle_settings_themes(args: argparse.Namespace) -> int:
+    from backend.settings.themes.ops import (
+        open_wallpaper_picker,
+        set_cursor,
+        set_gtk_theme,
+        set_icon_theme,
+        set_qt,
+    )
+    from backend.settings.themes.state import get_themes_state
+
+    t_action = args.themes_action
+    timeout = getattr(args, "timeout", 5.0)
+
+    if t_action == "state":
+        st = get_themes_state(timeout=timeout)
+        sys.stdout.write(json.dumps(st, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    if t_action == "gtk":
+        res = set_gtk_theme(args.name, timeout=timeout)
+    elif t_action == "icons":
+        res = set_icon_theme(args.name, timeout=timeout)
+    elif t_action == "cursor":
+        res = set_cursor(args.name, size=args.size, timeout=timeout)
+    elif t_action == "qt":
+        res = set_qt(
+            style=args.style,
+            icon_theme=args.icons,
+            color_scheme_path=args.colors,
+            timeout=timeout,
+        )
+    elif t_action == "wallpaper":
+        res = open_wallpaper_picker()
+    else:
+        res = {"ok": False, "error": f"Unknown themes action: {t_action}"}
+
+    sys.stdout.write(json.dumps(res, indent=2) + "\n")
+    sys.stdout.flush()
+    return 0 if res.get("ok") else 1
+
+
 def _handle_settings(args: argparse.Namespace) -> int:
     from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
     from backend.editor.backups import compute_file_sha256
@@ -2781,6 +2858,9 @@ def _handle_settings(args: argparse.Namespace) -> int:
 
     if action == "network":
         return _handle_settings_network(args)
+
+    if action == "themes":
+        return _handle_settings_themes(args)
 
     if action == "display":
         return _handle_settings_display(args, cfg_dir, reload_override, debug_bdir)

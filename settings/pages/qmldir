@@ -4,3 +4,4 @@ InputPage 1.0 InputPage.qml
 AudioPage 1.0 AudioPage.qml
 BluetoothPage 1.0 BluetoothPage.qml
 NetworkPage 1.0 NetworkPage.qml
+ThemesPage 1.0 ThemesPage.qml

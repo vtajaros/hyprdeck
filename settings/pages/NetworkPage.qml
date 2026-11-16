@@ -376,6 +376,31 @@ Item {
                     }
 
                     Repeater {
+                        model: NetworkService.warnings
+                        delegate: Rectangle {
+                            id: warnBanner
+                            required property var modelData
+                            width: contentCol.width
+                            height: warnTxt.implicitHeight + 16
+                            radius: HKS.radiusSmall
+                            color: HKS.alpha(HKS.warning, 0.14)
+                            border.width: 1
+                            border.color: HKS.alpha(HKS.warning, 0.5)
+
+                            Text {
+                                id: warnTxt
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                text: String(warnBanner.modelData.message || "")
+                                font.family: HKS.fontFamily
+                                font.pixelSize: HKS.fontSizeSmall
+                                color: HKS.warning
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
+
+                    Repeater {
                         model: NetworkService.connections
                         delegate: Rectangle {
                             id: connCard

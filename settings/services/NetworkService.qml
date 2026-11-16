@@ -25,6 +25,7 @@ Singleton {
     property var debugDevices: []
     property var connections: []
     property var wifiNetworks: []
+    property var warnings: []
     property var safety: ({
         active_connection_count: 0,
         wifi_off_would_cut_session: false
@@ -63,6 +64,7 @@ Singleton {
         root.debugDevices = data.debug_devices || [];
         root.connections = data.connections || [];
         root.wifiNetworks = data.wifi_networks || [];
+        root.warnings = data.warnings || [];
         root.safety = data.safety || root.safety;
         root.error = data.error ? String(data.error) : "";
     }

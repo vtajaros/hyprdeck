@@ -257,6 +257,33 @@ class TestNetworkStateScenarios(IsolatedTestCase):
         self.assertFalse(st_eth["has_wifi_device"])
         self.assertEqual(st_eth["wifi_networks"], [])
 
+    def test_duplicate_ssid_and_stale_without_security_warnings(self) -> None:
+        runner = FakeNmcliRunner("dual")
+        dup_uuid = "151503d7-3bf1-4660-be58-e6efb5b47657"
+        runner.connections.append(
+            f"{dup_uuid}:EWAKWI-FI_5G:802-11-wireless:yes::no"
+        )
+        runner.conn_details["1b7f5db6-4c36-4232-b6f5-dc75b8970cc6"] = {
+            "connection.uuid": "1b7f5db6-4c36-4232-b6f5-dc75b8970cc6",
+            "802-11-wireless.ssid": "EWAKWI-FI_5G",
+            "802-11-wireless-security.key-mgmt": "wpa-psk",
+        }
+        runner.conn_details[dup_uuid] = {
+            "connection.uuid": dup_uuid,
+            "802-11-wireless.ssid": "EWAKWI-FI_5G",
+            "802-11-wireless-security.key-mgmt": "",
+        }
+        st = get_network_state(runner=runner)
+        self.assertTrue(st["available"])
+        warn_ids = [w["id"] for w in st["warnings"]]
+        self.assertIn("duplicate_ssid", warn_ids)
+        self.assertIn("stale_without_security", warn_ids)
+        by_uuid = {c["uuid"]: c for c in st["connections"]}
+        self.assertTrue(by_uuid["1b7f5db6-4c36-4232-b6f5-dc75b8970cc6"]["duplicate_ssid"])
+        self.assertFalse(by_uuid["1b7f5db6-4c36-4232-b6f5-dc75b8970cc6"]["stale_without_security"])
+        self.assertTrue(by_uuid[dup_uuid]["duplicate_ssid"])
+        self.assertTrue(by_uuid[dup_uuid]["stale_without_security"])
+
         st_dis = get_network_state(runner=FakeNmcliRunner("wifi_disabled"))
         self.assertFalse(st_dis["general"]["wifi_enabled"])
         self.assertEqual(st_dis["wifi_networks"], [])

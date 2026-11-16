@@ -16,6 +16,7 @@ from backend.core.constants import (
     ENV_SETTINGS_RELOAD_MODE,
     ENV_SETTINGS_XKB_PATH,
     ENV_STATE_DIR,
+    ENV_THEMES_HOME,
 )
 from backend.core.revert_guard import resolve_state_dir
 from backend.describe.sidecar import resolve_sidecar_path
@@ -77,6 +78,7 @@ _CLEARED_ENV_VARS = (
     ENV_SETTINGS_MONITORS_FIXTURE,
     ENV_SETTINGS_DEVICES_FIXTURE,
     ENV_SETTINGS_XKB_PATH,
+    ENV_THEMES_HOME,
 )
 
 
@@ -379,7 +381,10 @@ def install_suite_isolation_guard() -> None:
     def guarded_run_live_cmd(argv, *, timeout=live_cmd_mod.DEFAULT_LIVE_CMD_TIMEOUT_SECONDS, runner=None, env=None):
         if runner is None and not isinstance(argv, (str, bytes)):
             items = list(argv)
-            if items and items[0] in ("pactl", "wpctl", "busctl", "bluetoothctl", "rfkill", "nmcli"):
+            if items and items[0] in (
+                "pactl", "wpctl", "busctl", "bluetoothctl", "rfkill", "nmcli",
+                "gsettings", "hyprctl", "awww", "xfconf-query",
+            ):
                 raise AssertionError(
                     f"Test isolation violation: real {items[0]!r} called in tests without mock runner"
                 )

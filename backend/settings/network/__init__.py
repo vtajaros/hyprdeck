@@ -15,6 +15,8 @@ from backend.settings.network.ops import (
 )
 from backend.settings.network.state import (
     compute_network_safety,
+    compute_profile_warnings,
+    enrich_wifi_profiles,
     get_network_state,
     nmcli_env,
     parse_connections,
@@ -32,6 +34,8 @@ __all__ = [
     "DEFAULT_CONNECT_WAIT_SECONDS",
     "VALID_METERED_VALUES",
     "compute_network_safety",
+    "compute_profile_warnings",
+    "enrich_wifi_profiles",
     "connect_new_wifi",
     "connect_saved",
     "disconnect",

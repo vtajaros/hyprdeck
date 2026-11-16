@@ -77,6 +77,9 @@ FloatingWindow {
         if (!NetworkService.loading && !NetworkService.busy) {
             NetworkService.reload(true);
         }
+        if (!ThemesService.loading && !ThemesService.busy) {
+            ThemesService.reload(true);
+        }
     }
 
     function _performClose() {
@@ -130,6 +133,7 @@ FloatingWindow {
         AudioService.reload(false);
         BluetoothService.reload(false);
         NetworkService.reload(false);
+        ThemesService.reload(false);
     }
 
     Binding {
@@ -148,6 +152,12 @@ FloatingWindow {
         target: NetworkService
         property: "pollingEnabled"
         value: win.visible && win.currentPage === "network"
+    }
+
+    Binding {
+        target: ThemesService
+        property: "pollingEnabled"
+        value: win.visible && win.currentPage === "themes"
     }
 
     readonly property var placeholderPages: [
@@ -363,6 +373,18 @@ FloatingWindow {
                             }
                         }
 
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰏘"
+                            text: "Themes"
+                            active: win.currentPage === "themes" && globalSearch.text.trim().length === 0
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.currentPage = "themes";
+                                ThemesService.reload(false);
+                            }
+                        }
+
                         Rectangle {
                             width: parent.width
                             height: 1
@@ -421,6 +443,11 @@ FloatingWindow {
                 NetworkPage {
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "network"
+                }
+
+                ThemesPage {
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "themes"
                 }
 
                 PlaceholderPage {

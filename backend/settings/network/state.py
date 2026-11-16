@@ -281,6 +281,92 @@ def compute_network_safety(
     }
 
 
+def parse_wifi_profile_fields(raw: str) -> dict[str, str]:
+    """Parse `nmcli -t -f connection.uuid,802-11-wireless.ssid,802-11-wireless-security.key-mgmt connection show uuid X`."""
+    out: dict[str, str] = {}
+    for line in (raw or "").splitlines():
+        if not line.strip():
+            continue
+        parts = split_nmcli_terse_line(line)
+        if len(parts) >= 2:
+            out[parts[0].strip()] = ":".join(parts[1:]) if len(parts) > 2 else parts[1]
+    return out
+
+
+def enrich_wifi_profiles(
+    connections: list[dict[str, Any]],
+    *,
+    runner: LiveRunner | None,
+    timeout: float,
+    env: dict[str, str],
+) -> None:
+    """Add `ssid` and `has_security` (None when unreadable) to saved Wi-Fi profiles; tolerate vanished profiles."""
+    for c in connections:
+        c.setdefault("ssid", "")
+        c.setdefault("has_security", None)
+        c["duplicate_ssid"] = False
+        c["stale_without_security"] = False
+        if c.get("type") != "802-11-wireless":
+            continue
+        res = run_live_cmd(
+            [
+                "nmcli", "-t", "-f",
+                "connection.uuid,802-11-wireless.ssid,802-11-wireless-security.key-mgmt",
+                "connection", "show", "uuid", c["uuid"],
+            ],
+            timeout=timeout,
+            runner=runner,
+            env=env,
+        )
+        if not res.ok:
+            continue
+        fields = parse_wifi_profile_fields(res.out)
+        c["ssid"] = fields.get("802-11-wireless.ssid", "")
+        c["has_security"] = bool(fields.get("802-11-wireless-security.key-mgmt", "").strip())
+
+
+def compute_profile_warnings(connections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Flag saved Wi-Fi profiles sharing an SSID (duplicate_ssid) and security-less stale twins."""
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for c in connections:
+        if c.get("type") == "802-11-wireless" and c.get("ssid"):
+            groups.setdefault(str(c["ssid"]), []).append(c)
+
+    warnings: list[dict[str, Any]] = []
+    for ssid, members in sorted(groups.items()):
+        if len(members) < 2:
+            continue
+        for m in members:
+            m["duplicate_ssid"] = True
+        warnings.append(
+            {
+                "id": "duplicate_ssid",
+                "severity": "warning",
+                "ssid": ssid,
+                "uuids": [m["uuid"] for m in members],
+                "message": f"{len(members)} saved Wi-Fi profiles share the SSID {ssid!r}; connecting may pick the wrong one.",
+            }
+        )
+        if any(m.get("has_security") for m in members):
+            stale = [m for m in members if m.get("has_security") is False]
+            for m in stale:
+                m["stale_without_security"] = True
+            if stale:
+                warnings.append(
+                    {
+                        "id": "stale_without_security",
+                        "severity": "warning",
+                        "ssid": ssid,
+                        "uuids": [m["uuid"] for m in stale],
+                        "message": (
+                            f"Saved profile for {ssid!r} has no security section while another profile with the same SSID does; "
+                            "activating it can time out. Consider forgetting the stale profile."
+                        ),
+                    }
+                )
+    return warnings
+
+
 def _unavailable_state(error: str) -> dict[str, Any]:
     return {
         "available": False,
@@ -302,6 +388,7 @@ def _unavailable_state(error: str) -> dict[str, Any]:
             "active_connection_count": 0,
             "wifi_off_would_cut_session": False,
         },
+        "warnings": [],
         "error": error,
     }
 
@@ -365,6 +452,8 @@ def get_network_state(
         return _unavailable_state(conn_res.err.strip() or f"nmcli connection show failed (rc={conn_res.rc})")
 
     connections = parse_connections(conn_res.out)
+    enrich_wifi_profiles(connections, runner=runner, timeout=timeout, env=env)
+    profile_warnings = compute_profile_warnings(connections)
     safety = compute_network_safety(all_devices, connections, general)
 
     main_devices = [
@@ -391,6 +480,7 @@ def get_network_state(
         )
         if wifi_res.ok:
             known_names = {c["name"] for c in connections if c.get("type") == "802-11-wireless"}
+            known_names |= {c["ssid"] for c in connections if c.get("type") == "802-11-wireless" and c.get("ssid")}
             wifi_networks = parse_wifi_list(wifi_res.out, known_names)
 
     return {
@@ -402,5 +492,6 @@ def get_network_state(
         "connections": connections,
         "wifi_networks": wifi_networks,
         "safety": safety,
+        "warnings": profile_warnings,
         "error": None,
     }

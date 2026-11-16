@@ -1,0 +1,7 @@
+{
+  "gtk3_ini": "[Settings]\ngtk-theme-name = Adwaita\ngtk-application-prefer-dark-theme = 1\ngtk-icon-theme-name = Papirus-Dynamic\ngtk-font-name = JetBrainsMono Nerd Font 10\n",
+  "gtk4_ini": "[Settings]\ngtk-application-prefer-dark-theme=true\ngtk-cursor-blink=true\ngtk-cursor-blink-time=1000\ngtk-cursor-theme-name=Pop\ngtk-cursor-theme-size=24\ngtk-decoration-layout=:\ngtk-enable-animations=true\ngtk-font-name=JetBrainsMono Nerd Font 10\ngtk-icon-theme-name = Papirus-Dynamic\ngtk-primary-button-warps-slider=true\ngtk-sound-theme-name=ocean\ngtk-theme-name=Breeze\ngtk-xft-dpi=122880\n",
+  "qt6ct_conf": "[Appearance]\ncolor_scheme_path=/tmp/colors/BreezeDark.colors\ncustom_palette=true\nicon_theme=breeze-dark\nstandard_dialogs=default\nstyle=Breeze\n\n[Fonts]\nfixed=\"JetBrainsMono Nerd Font,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\"\n",
+  "hyprland_lua": "-- sample\nhl.env(\"GTK_THEME\", \"Adwaita:dark\")\nhl.env(\"XCURSOR_THEME\", \"Pop\")\n",
+  "awww_query": ": eDP-1: 1536x960, scale: 1.25, currently displaying: image: /mnt/BEWD/wallpaper bg/goated/wallhaven-yqkl97.jpg\n"
+}
