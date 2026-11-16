@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../theme"
 
 Singleton {
     id: root
@@ -13,7 +14,7 @@ Singleton {
     property string error: ""
     property string submap: "default"
 
-    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || "."
+    readonly property string rootPath: Deck.env("ROOT") || "."
 
     property var _pendingCallback: null
 

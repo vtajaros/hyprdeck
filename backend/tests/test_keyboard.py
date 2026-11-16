@@ -8,7 +8,7 @@ import os
 from contextlib import redirect_stdout
 from unittest import mock
 
-from backend.core.constants import ENV_HKS_WINDOW_SCRIPT
+from backend.core.constants import ENV_WINDOW_SCRIPT
 from backend.core.live_cmd import LiveCmdResult
 from backend.tests.isolation import IsolatedTestCase
 
@@ -52,7 +52,7 @@ class _KeyboardTestBase(IsolatedTestCase):
         with open(self.fake_script, "w", encoding="utf-8") as f:
             f.write("#!/bin/sh\nexit 0\n")
         os.chmod(self.fake_script, 0o755)
-        os.environ[ENV_HKS_WINDOW_SCRIPT] = self.fake_script
+        os.environ[ENV_WINDOW_SCRIPT] = self.fake_script
 
 
 class TestKeyboardIsolation(_KeyboardTestBase):

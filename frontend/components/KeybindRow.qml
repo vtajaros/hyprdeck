@@ -340,7 +340,7 @@ Rectangle {
                         id: actionsRow
                         anchors.bottom: parent.bottom
                         spacing: 10
-                        visible: Quickshell.env("HKS_MODE") !== "popup"
+                        visible: Deck.env("MODE") !== "popup"
 
                         ActionButton {
                             variant: "accent"

@@ -6,6 +6,8 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+# shellcheck source=scripts/lib-hyprdeck-env.sh
+source "$REPO_ROOT/scripts/lib-hyprdeck-env.sh"
 
 echo "=== HyprDeck: Verification Check ==="
 echo
@@ -53,10 +55,10 @@ echo "[4/6] Running HKS theme token check..."
 "$REPO_ROOT/scripts/hks-token-check"
 echo
 
-# 5. Headless Scene-Warning Regression Guard (optional via HKS_SKIP_SCENE=1)
+# 5. Headless Scene-Warning Regression Guard (optional via HYPRDECK_SKIP_SCENE=1 / HKS_SKIP_SCENE=1)
 echo "[5/6] Running headless QML scene-warning check..."
-if [ "${HKS_SKIP_SCENE:-0}" = "1" ]; then
-    echo "HKS_SKIP_SCENE=1 set; skipping headless scene check."
+if [ "$(hyprdeck_env_get SKIP_SCENE 0)" = "1" ]; then
+    echo "SKIP_SCENE=1 set; skipping headless scene check."
 elif command -v quickshell >/dev/null 2>&1 && [ -x "$REPO_ROOT/scripts/hks-scene-check" ]; then
     "$REPO_ROOT/scripts/hks-scene-check"
 else
@@ -64,10 +66,10 @@ else
 fi
 echo
 
-# 6. Headless Responsive Layout Check (optional via HKS_SKIP_LAYOUT=1; quick via HKS_LAYOUT_QUICK=1)
+# 6. Headless Responsive Layout Check (optional via HYPRDECK_SKIP_LAYOUT=1 / HKS_SKIP_LAYOUT=1)
 echo "[6/6] Running headless responsive layout check..."
-if [ "${HKS_SKIP_LAYOUT:-0}" = "1" ]; then
-    echo "HKS_SKIP_LAYOUT=1 set; skipping headless layout check."
+if [ "$(hyprdeck_env_get SKIP_LAYOUT 0)" = "1" ]; then
+    echo "SKIP_LAYOUT=1 set; skipping headless layout check."
 elif command -v quickshell >/dev/null 2>&1 && [ -x "$REPO_ROOT/scripts/hks-layout-check" ]; then
     "$REPO_ROOT/scripts/hks-layout-check"
 else

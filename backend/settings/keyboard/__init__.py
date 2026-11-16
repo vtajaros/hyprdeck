@@ -2,8 +2,8 @@
 
 from backend.settings.keyboard.ops import OPEN_HKS_TIMEOUT_SECONDS, open_hks
 from backend.settings.keyboard.state import (
-    HKS_WINDOW_CLASS,
-    HKS_WINDOW_TITLE,
+    HYPRDECK_WINDOW_CLASS,
+    HYPRDECK_WINDOW_TITLE,
     check_script_available,
     get_keyboard_state,
     parse_hyprctl_clients_for_hks,
@@ -13,8 +13,8 @@ from backend.settings.keyboard.state import (
 )
 
 __all__ = [
-    "HKS_WINDOW_CLASS",
-    "HKS_WINDOW_TITLE",
+    "HYPRDECK_WINDOW_CLASS",
+    "HYPRDECK_WINDOW_TITLE",
     "OPEN_HKS_TIMEOUT_SECONDS",
     "check_script_available",
     "get_keyboard_state",

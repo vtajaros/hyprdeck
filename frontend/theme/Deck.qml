@@ -25,7 +25,7 @@ Singleton {
     property string themeMode: "system"
 
     // Overridable colors.json path for isolated tests
-    readonly property string colorsPath: Quickshell.env("HKS_THEME_COLORS_PATH")
+    readonly property string colorsPath: env("THEME_COLORS_PATH")
         || (Quickshell.env("HOME") + "/.config/quickshell/theme/colors.json")
 
     // Internal state for atomic-replace diffing & partial-write protection
@@ -83,6 +83,16 @@ Singleton {
         "monospace"
     ]
     readonly property string fontFamily: "JetBrainsMono Nerd Font"
+
+    function env(suffix, fallback) {
+        var newVal = Quickshell.env("HYPRDECK_" + suffix);
+        if (newVal !== undefined && newVal !== null && String(newVal).length > 0)
+            return String(newVal);
+        var oldVal = Quickshell.env("HKS_" + suffix);
+        if (oldVal !== undefined && oldVal !== null && String(oldVal).length > 0)
+            return String(oldVal);
+        return fallback !== undefined ? String(fallback) : "";
+    }
 
     function alpha(c, opacity) {
         var col = Qt.color(c);

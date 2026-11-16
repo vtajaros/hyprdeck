@@ -7,8 +7,8 @@ import "services"
 ShellRoot {
     id: root
 
-    readonly property string mode: (Quickshell.env("HKS_MODE") || "window").toLowerCase()
-    readonly property bool debugEnabled: Quickshell.env("HKS_SETTINGS_DEBUG") === "1"
+    readonly property string mode: (Deck.env("MODE") || "window").toLowerCase()
+    readonly property bool debugEnabled: Deck.env("SETTINGS_DEBUG") === "1"
 
     IpcHandler {
         target: "hks"

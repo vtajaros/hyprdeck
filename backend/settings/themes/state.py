@@ -6,7 +6,7 @@ import os
 import re
 from typing import Any, Mapping
 
-from backend.core.constants import ENV_THEMES_HOME
+from backend.core.env import get_env
 from backend.core.live_cmd import DEFAULT_LIVE_CMD_TIMEOUT_SECONDS, LiveRunner, run_live_cmd
 
 _AWWW_IMAGE_RE = re.compile(r"currently displaying:\s*image:\s*(.+?)\s*$")
@@ -22,9 +22,9 @@ _QT_BUILTIN_STYLES = ("Fusion", "Windows")
 
 
 def resolve_themes_paths(env: Mapping[str, str] | None = None) -> dict[str, str]:
-    """Resolve theme config paths honoring HKS_THEMES_HOME for test isolation."""
+    """Resolve theme config paths honoring HYPRDECK_THEMES_HOME / HKS_THEMES_HOME for test isolation."""
     environ = env if env is not None else os.environ
-    override = environ.get(ENV_THEMES_HOME, "").strip()
+    override = get_env("THEMES_HOME", environ=environ)
     home = os.path.abspath(os.path.expanduser(override)) if override else (
         os.path.abspath(os.path.expanduser(environ.get("HOME", "").strip() or "~"))
     )

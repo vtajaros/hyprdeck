@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../theme"
 
 Singleton {
     id: root
@@ -28,8 +29,8 @@ Singleton {
         return false;
     }
 
-    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprdeck")
-    readonly property string fixturePath: Quickshell.env("HKS_FIXTURE") || ""
+    readonly property string rootPath: Deck.env("ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprdeck")
+    readonly property string fixturePath: Deck.env("FIXTURE") || ""
 
     FileView {
         id: fixtureFile

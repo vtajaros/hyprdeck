@@ -16,7 +16,7 @@ _logger = logging.getLogger("hks.recorder")
 DEFAULT_WATCHDOG_TIMEOUT = 20.0
 MAX_LEAVE_RETRIES = 3
 
-HKS_RECORD_SUBMAP = "hks_record"
+HYPRDECK_RECORD_SUBMAP = "hks_record"
 
 DUMMY_KEY_CANDIDATES = [
     "XF86Tools",
@@ -73,7 +73,7 @@ def get_free_dummy_key(
             data = json.loads(proc.stdout)
             if isinstance(data, list):
                 for b in data:
-                    if isinstance(b, dict) and b.get("submap") != HKS_RECORD_SUBMAP:
+                    if isinstance(b, dict) and b.get("submap") != HYPRDECK_RECORD_SUBMAP:
                         k = b.get("key")
                         if isinstance(k, str):
                             bound_keys.add(k.lower())
@@ -140,7 +140,7 @@ def resolve_watch_pid(explicit_pid: int | None = None) -> int:
 
 
 def spawn_detached_watchdog(
-    submap_name: str = HKS_RECORD_SUBMAP,
+    submap_name: str = HYPRDECK_RECORD_SUBMAP,
     language: str = "lua",
     timeout_seconds: float = DEFAULT_WATCHDOG_TIMEOUT,
     watch_pid: int | None = None,
@@ -209,7 +209,7 @@ def spawn_detached_watchdog(
 
 def enter(
     language: str = "lua",
-    submap_name: str = HKS_RECORD_SUBMAP,
+    submap_name: str = HYPRDECK_RECORD_SUBMAP,
     runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
     dummy_key: str | None = None,
     watch_pid: int | None = None,
@@ -387,7 +387,7 @@ def leave(
                 data = json.loads(binds_proc.stdout)
                 if isinstance(data, list):
                     for b in data:
-                        if isinstance(b, dict) and b.get("submap") == HKS_RECORD_SUBMAP:
+                        if isinstance(b, dict) and b.get("submap") == HYPRDECK_RECORD_SUBMAP:
                             k = b.get("key")
                             if isinstance(k, str) and k:
                                 keys_to_unbind.add(k)
@@ -417,7 +417,7 @@ def status(
 
 def heal(
     language: str = "lua",
-    submap_name: str = HKS_RECORD_SUBMAP,
+    submap_name: str = HYPRDECK_RECORD_SUBMAP,
     runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
 ) -> dict[str, Any]:
     """Reset to default submap if and only if the current submap is `submap_name`."""

@@ -61,11 +61,13 @@ def resolve_backup_dir(
     backup_dir: str | None = None,
     env: dict[str, str] | None = None,
 ) -> str:
-    """Resolve the backup directory (~/.local/share/hks/backups or $HKS_BACKUP_DIR)."""
+    """Resolve the backup directory ($HYPRDECK_BACKUP_DIR > $HKS_BACKUP_DIR > default)."""
+    from backend.core.env import get_env
+
     if backup_dir:
         return os.path.abspath(os.path.expanduser(backup_dir))
     environ = env if env is not None else os.environ
-    override = environ.get("HKS_BACKUP_DIR", "").strip()
+    override = get_env("BACKUP_DIR", environ=environ)
     if override:
         return os.path.abspath(os.path.expanduser(override))
     home = environ.get("HOME", "").strip() or os.path.expanduser("~")

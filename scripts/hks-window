@@ -13,12 +13,14 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIR="$REPO_ROOT/frontend"
+# shellcheck source=scripts/lib-hyprdeck-env.sh
+source "$REPO_ROOT/scripts/lib-hyprdeck-env.sh"
 
-HKS_WINDOW_TITLE="${HKS_WINDOW_TITLE:-HyprDeck Keybind Studio}"
-HKS_WINDOW_CLASS="${HKS_WINDOW_CLASS:-org.quickshell}"
-OPEN_WAIT_MS="${HKS_OPEN_WAIT_MS:-1500}"
-COLD_WAIT_MS="${HKS_COLD_WAIT_MS:-3000}"
-CLOSE_WAIT_MS="${HKS_CLOSE_WAIT_MS:-1500}"
+HYPRDECK_WINDOW_TITLE="$(hyprdeck_env_get WINDOW_TITLE "HyprDeck Keybind Studio")"
+HYPRDECK_WINDOW_CLASS="$(hyprdeck_env_get WINDOW_CLASS "org.quickshell")"
+OPEN_WAIT_MS="$(hyprdeck_env_get OPEN_WAIT_MS 1500)"
+COLD_WAIT_MS="$(hyprdeck_env_get COLD_WAIT_MS 3000)"
+CLOSE_WAIT_MS="$(hyprdeck_env_get CLOSE_WAIT_MS 1500)"
 
 ACTION="toggle"
 PASSTHROUGH_ARGS=()
@@ -43,13 +45,13 @@ hks_running() { pgrep -f "$MATCH_PATTERN" >/dev/null 2>&1; }
 # Ground truth: a mapped client whose title EQUALS the HKS title exactly and
 # whose class is the HKS class (python3 stdlib JSON parsing, no grep).
 window_mapped() {
-    hyprctl clients -j 2>/dev/null | HKS_T="$HKS_WINDOW_TITLE" HKS_C="$HKS_WINDOW_CLASS" python3 -c '
+    hyprctl clients -j 2>/dev/null | HYPRDECK_T="$HYPRDECK_WINDOW_TITLE" HYPRDECK_C="$HYPRDECK_WINDOW_CLASS" python3 -c '
 import json, os, sys
 try:
     clients = json.load(sys.stdin)
 except Exception:
     sys.exit(1)
-t, c = os.environ["HKS_T"], os.environ["HKS_C"]
+t, c = os.environ["HYPRDECK_T"], os.environ["HYPRDECK_C"]
 sys.exit(0 if any(
     isinstance(x, dict) and x.get("title") == t and x.get("class") == c
     and x.get("mapped", True) for x in clients) else 1)
@@ -96,15 +98,14 @@ start_instance() {
         echo "hks-window: python3 is not installed or not in PATH." >&2
         return 1
     fi
-    export HKS_ROOT="$REPO_ROOT"
-    export HYPRDECK_ROOT="${HYPRDECK_ROOT:-$REPO_ROOT}"
-    export HKS_MODE="window"
-    export HKS_KEEP_ALIVE="1"
+    hyprdeck_env_export_pair ROOT "$REPO_ROOT"
+    hyprdeck_env_export_pair MODE "window"
+    hyprdeck_env_export_pair KEEP_ALIVE "1"
     export QML_XHR_ALLOW_FILE_READ=1
     if [ "$1" = "hidden" ]; then
-        export HKS_START_HIDDEN="1"
+        hyprdeck_env_export_pair START_HIDDEN "1"
     else
-        unset HKS_START_HIDDEN
+        hyprdeck_env_unset_pair START_HIDDEN
     fi
     setsid quickshell -p "$FRONTEND_DIR" "${PASSTHROUGH_ARGS[@]}" \
         >>"$LOG_FILE" 2>&1 </dev/null &

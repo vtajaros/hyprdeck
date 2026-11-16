@@ -23,7 +23,7 @@ from backend.editor import (
 from backend.editor.codegen import generate_hyprlang_bind, generate_lua_bind
 from backend.editor.recorder_submap import (
     DUMMY_KEY_CANDIDATES,
-    HKS_RECORD_SUBMAP,
+    HYPRDECK_RECORD_SUBMAP,
     get_free_dummy_key,
 )
 from backend.models.types import BindRecord, DispatcherInfo
@@ -112,7 +112,7 @@ class TestPhase3b2Part0Recorder(unittest.TestCase):
     def test_leave_unbinds_only_hks_record_keys(self) -> None:
         canned_binds = [
             {"key": "XF86Tools", "submap": ""},  # User bind in default submap
-            {"key": "XF86Launch7", "submap": HKS_RECORD_SUBMAP},  # Dummy recorder bind
+            {"key": "XF86Launch7", "submap": HYPRDECK_RECORD_SUBMAP},  # Dummy recorder bind
         ]
         calls = []
 
@@ -120,7 +120,7 @@ class TestPhase3b2Part0Recorder(unittest.TestCase):
             calls.append(cmd)
             if cmd == ["hyprctl", "submap"]:
                 # First call returns stuck in hks_record, second returns default
-                sub = HKS_RECORD_SUBMAP if len([c for c in calls if c == ["hyprctl", "submap"]]) <= 1 else "default"
+                sub = HYPRDECK_RECORD_SUBMAP if len([c for c in calls if c == ["hyprctl", "submap"]]) <= 1 else "default"
                 return subprocess.CompletedProcess(args=cmd, returncode=0, stdout=sub, stderr="")
             if cmd == ["hyprctl", "binds", "-j"]:
                 return subprocess.CompletedProcess(args=cmd, returncode=0, stdout=json.dumps(canned_binds), stderr="")

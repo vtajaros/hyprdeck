@@ -62,17 +62,20 @@ def main() -> int:
 
     repo_root = Path(__file__).resolve().parent.parent
     shell_qml = repo_root / "settings" / "shell.qml"
-    quick = os.environ.get("HKS_LAYOUT_QUICK") == "1"
+    quick = (os.environ.get("HYPRDECK_LAYOUT_QUICK") or os.environ.get("HKS_LAYOUT_QUICK")) == "1"
     matrix = QUICK_MATRIX if quick else FULL_MATRIX
 
     env = {
         **os.environ,
         "QT_QPA_PLATFORM": "offscreen",
+        "HYPRDECK_KEEP_ALIVE": "1",
         "HKS_KEEP_ALIVE": "1",
+        "HYPRDECK_SETTINGS_DEBUG": "1",
         "HKS_SETTINGS_DEBUG": "1",
         "HYPRDECK_ROOT": str(repo_root),
         "HKS_ROOT": str(repo_root),
     }
+    env.pop("HYPRDECK_START_HIDDEN", None)
     env.pop("HKS_START_HIDDEN", None)
 
     proc = subprocess.Popen(

@@ -203,8 +203,10 @@ def probe_devices(
     timeout: float = 5.0,
 ) -> list[InputDevice]:
     """Query `hyprctl devices -j` (or read fixture JSON if specified)."""
+    from backend.core.env import get_env
+
     environ = env if env is not None else os.environ
-    eff_fixture = fixture_path or environ.get(ENV_SETTINGS_DEVICES_FIXTURE, "").strip()
+    eff_fixture = fixture_path or get_env("SETTINGS_DEVICES_FIXTURE", environ=environ)
     if eff_fixture:
         with open(os.path.expanduser(eff_fixture), "r", encoding="utf-8") as f:
             data = json.load(f)

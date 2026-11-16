@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../theme"
 
 Singleton {
     id: root
@@ -13,7 +14,7 @@ Singleton {
     property bool disabledHeld: false
     property var disabledBinds: []
 
-    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || "."
+    readonly property string rootPath: Deck.env("ROOT") || "."
 
     property var _pendingArgs: null
 

@@ -2395,27 +2395,23 @@ def _read_json_source(source: str | None, inline_json: str | None = None) -> dic
 def _resolve_settings_debug_overrides(
     args: argparse.Namespace,
 ) -> tuple[str | None, str | None, str | None]:
-    """Return (config_dir, reload_mode_override, debug_backup_dir) honoring HKS_SETTINGS_DEBUG."""
-    from backend.core.constants import (
-        ENV_SETTINGS_CONFIG_DIR,
-        ENV_SETTINGS_DEBUG,
-        ENV_SETTINGS_RELOAD_MODE,
-    )
+    """Return (config_dir, reload_mode_override, debug_backup_dir) honoring HYPRDECK_SETTINGS_DEBUG."""
+    from backend.core.env import get_env, get_env_flag
     from backend.core.revert_guard import resolve_debug_companion_dir
 
     cfg_dir = getattr(args, "config_dir", None)
     reload_override = getattr(args, "reload_mode", None)
     debug_bdir: str | None = None
-    if os.environ.get(ENV_SETTINGS_DEBUG, "").strip() == "1":
+    if get_env_flag("SETTINGS_DEBUG"):
         if cfg_dir is None:
-            env_cfg = os.environ.get(ENV_SETTINGS_CONFIG_DIR, "").strip()
+            env_cfg = get_env("SETTINGS_CONFIG_DIR")
             if env_cfg:
                 cfg_dir = env_cfg
         if reload_override is None:
-            env_rel = os.environ.get(ENV_SETTINGS_RELOAD_MODE, "").strip()
+            env_rel = get_env("SETTINGS_RELOAD_MODE")
             if env_rel in ("none", "config-only", "full"):
                 reload_override = env_rel
-        if cfg_dir and not os.environ.get("HKS_BACKUP_DIR", "").strip():
+        if cfg_dir and not get_env("BACKUP_DIR"):
             debug_bdir = resolve_debug_companion_dir(cfg_dir, "backups")
     return cfg_dir, reload_override, debug_bdir
 

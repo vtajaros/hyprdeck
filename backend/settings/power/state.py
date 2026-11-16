@@ -6,7 +6,7 @@ import os
 import re
 from typing import Any, Mapping
 
-from backend.core.constants import ENV_HYPRIDLE_PATH, ENV_POWER_SYSFS_ROOT
+from backend.core.env import get_env
 from backend.core.live_cmd import DEFAULT_LIVE_CMD_TIMEOUT_SECONDS, LiveRunner, run_live_cmd
 
 _CPU_DIR_RE = re.compile(r"^cpu[0-9]+$")
@@ -15,10 +15,10 @@ _CPU_DIR_RE = re.compile(r"^cpu[0-9]+$")
 def resolve_power_paths(env: Mapping[str, str] | None = None) -> dict[str, str]:
     """Resolve power/sysinfo paths honoring isolation env overrides."""
     environ = env if env is not None else os.environ
-    sysfs_ovr = environ.get(ENV_POWER_SYSFS_ROOT, "").strip()
+    sysfs_ovr = get_env("POWER_SYSFS_ROOT", environ=environ)
     sysfs_root = os.path.abspath(os.path.expanduser(sysfs_ovr)) if sysfs_ovr else "/sys"
 
-    idle_ovr = environ.get(ENV_HYPRIDLE_PATH, "").strip()
+    idle_ovr = get_env("HYPRIDLE_PATH", environ=environ)
     home = os.path.abspath(os.path.expanduser(environ.get("HOME", "").strip() or "~"))
     hypridle_conf = (
         os.path.abspath(os.path.expanduser(idle_ovr))
@@ -29,9 +29,9 @@ def resolve_power_paths(env: Mapping[str, str] | None = None) -> dict[str, str]:
     return {
         "sysfs_root": sysfs_root,
         "hypridle_conf": hypridle_conf,
-        "os_release": environ.get("HKS_OS_RELEASE_PATH", "").strip() or "/etc/os-release",
-        "proc_uptime": environ.get("HKS_PROC_UPTIME_PATH", "").strip() or "/proc/uptime",
-        "etc_hostname": environ.get("HKS_ETC_HOSTNAME_PATH", "").strip() or "/etc/hostname",
+        "os_release": get_env("OS_RELEASE_PATH", "/etc/os-release", environ=environ),
+        "proc_uptime": get_env("PROC_UPTIME_PATH", "/proc/uptime", environ=environ),
+        "etc_hostname": get_env("ETC_HOSTNAME_PATH", "/etc/hostname", environ=environ),
     }
 
 

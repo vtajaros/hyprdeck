@@ -13,7 +13,8 @@ import os
 import sys
 import time
 
-from backend.editor.recorder_submap import HKS_RECORD_SUBMAP, get_submap, leave
+from backend.core.env import get_env
+from backend.editor.recorder_submap import HYPRDECK_RECORD_SUBMAP, get_submap, leave
 
 
 def _pid_alive(pid: int) -> bool:
@@ -30,7 +31,7 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _log_failure(msg: str) -> None:
-    log_path = os.environ.get("HKS_WATCHDOG_LOG", "").strip()
+    log_path = get_env("WATCHDOG_LOG")
     if log_path:
         try:
             with open(log_path, "a", encoding="utf-8") as f:
@@ -46,7 +47,7 @@ def _log_failure(msg: str) -> None:
 
 
 def run_watchdog(
-    submap_name: str = HKS_RECORD_SUBMAP,
+    submap_name: str = HYPRDECK_RECORD_SUBMAP,
     language: str = "lua",
     timeout_seconds: float = 20.0,
     watch_pid: int = 0,
@@ -85,7 +86,7 @@ def run_watchdog(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="hks-recorder-watchdog")
-    parser.add_argument("--submap", default=HKS_RECORD_SUBMAP)
+    parser.add_argument("--submap", default=HYPRDECK_RECORD_SUBMAP)
     parser.add_argument("--language", default="lua")
     parser.add_argument("--timeout", type=float, default=20.0)
     parser.add_argument("--watch-pid", type=int, default=0)

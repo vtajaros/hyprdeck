@@ -56,15 +56,17 @@ def resolve_state_dir(
     state_dir: str | None = None,
     env: Mapping[str, str] | None = None,
 ) -> str:
-    """Resolve the HKS revert-guard state directory (~/.local/share/hks/revert-guard or $HKS_STATE_DIR)."""
+    """Resolve the revert-guard state directory ($HYPRDECK_STATE_DIR > $HKS_STATE_DIR > default)."""
+    from backend.core.env import get_env, get_env_flag
+
     if state_dir:
         return os.path.abspath(os.path.expanduser(state_dir))
     environ = env if env is not None else os.environ
-    override = environ.get(ENV_STATE_DIR, "").strip()
+    override = get_env("STATE_DIR", environ=environ)
     if override:
         return os.path.abspath(os.path.expanduser(override))
-    if environ.get(ENV_SETTINGS_DEBUG, "").strip() == "1":
-        dbg_cfg = environ.get(ENV_SETTINGS_CONFIG_DIR, "").strip()
+    if get_env_flag("SETTINGS_DEBUG", environ=environ):
+        dbg_cfg = get_env("SETTINGS_CONFIG_DIR", environ=environ)
         if dbg_cfg:
             return resolve_debug_companion_dir(dbg_cfg, REVERT_GUARD_SUBDIR)
     home = environ.get("HOME", "").strip() or os.path.expanduser("~")

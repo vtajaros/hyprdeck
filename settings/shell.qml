@@ -2,11 +2,12 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "services"
+import "theme"
 
 ShellRoot {
     id: root
 
-    readonly property bool debugEnabled: Quickshell.env("HKS_SETTINGS_DEBUG") === "1"
+    readonly property bool debugEnabled: Deck.env("SETTINGS_DEBUG") === "1"
 
     function _debugDisabledJson() {
         return JSON.stringify({ ok: false, error: "debug mode disabled" });

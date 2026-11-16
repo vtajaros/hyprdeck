@@ -2,12 +2,13 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../theme"
 
 Singleton {
     id: root
 
-    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprdeck")
-    readonly property bool debugMode: Quickshell.env("HKS_SETTINGS_DEBUG") === "1"
+    readonly property string rootPath: Deck.env("ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprdeck")
+    readonly property bool debugMode: Deck.env("SETTINGS_DEBUG") === "1"
 
     property bool available: false
     property var wallpaper: ({ path: "", exists: false, source: "none" })

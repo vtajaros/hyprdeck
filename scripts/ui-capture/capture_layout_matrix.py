@@ -103,11 +103,14 @@ def main() -> int:
     env = {
         **os.environ,
         "QT_QPA_PLATFORM": "offscreen",
+        "HYPRDECK_KEEP_ALIVE": "1",
         "HKS_KEEP_ALIVE": "1",
+        "HYPRDECK_SETTINGS_DEBUG": "1",
         "HKS_SETTINGS_DEBUG": "1",
         "HYPRDECK_ROOT": str(repo_root),
         "HKS_ROOT": str(repo_root),
     }
+    env.pop("HYPRDECK_START_HIDDEN", None)
     env.pop("HKS_START_HIDDEN", None)
 
     proc = subprocess.Popen(

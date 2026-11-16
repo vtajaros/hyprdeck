@@ -137,11 +137,13 @@ def load_xkb_rules(
     path: str | None = None,
     env: Mapping[str, str] | None = None,
 ) -> XkbRules:
-    """Load and parse system `evdev.lst` (or `HKS_SETTINGS_XKB_PATH` override)."""
+    """Load and parse system `evdev.lst` (`HYPRDECK_SETTINGS_XKB_PATH` > `HKS_SETTINGS_XKB_PATH`)."""
+    from backend.core.env import get_env
+
     environ = env if env is not None else os.environ
     eff_path = (
         path
-        or environ.get(ENV_SETTINGS_XKB_PATH, "").strip()
+        or get_env("SETTINGS_XKB_PATH", environ=environ)
         or DEFAULT_EVDEV_LST_PATH
     )
     with open(os.path.expanduser(eff_path), "r", encoding="utf-8", errors="replace") as f:

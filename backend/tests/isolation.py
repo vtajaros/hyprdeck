@@ -12,7 +12,7 @@ import unittest
 from typing import Mapping
 
 from backend.core.constants import (
-    ENV_HKS_WINDOW_SCRIPT,
+    ENV_BACKUP_DIR,
     ENV_HYPRIDLE_PATH,
     ENV_POWER_SYSFS_ROOT,
     ENV_SETTINGS_CONFIG_DIR,
@@ -21,9 +21,12 @@ from backend.core.constants import (
     ENV_SETTINGS_MONITORS_FIXTURE,
     ENV_SETTINGS_RELOAD_MODE,
     ENV_SETTINGS_XKB_PATH,
+    ENV_SIDECAR_PATH,
     ENV_STATE_DIR,
     ENV_THEMES_HOME,
+    ENV_WINDOW_SCRIPT,
 )
+from backend.core.env import get_env
 from backend.core.revert_guard import resolve_state_dir
 from backend.describe.sidecar import resolve_sidecar_path
 from backend.editor.backups import resolve_backup_dir
@@ -61,23 +64,23 @@ def assert_env_isolated(env: Mapping[str, str] | None = None) -> None:
     bkp = resolve_backup_dir(env=env_dict)
     sc = resolve_sidecar_path(env=env_dict) or ""
     st = resolve_state_dir(env=env_dict)
-    assert_path_isolated(bkp, "HKS_BACKUP_DIR / backup_dir")
-    assert_path_isolated(sc, "HKS_SIDECAR_PATH / sidecar_path")
-    assert_path_isolated(st, f"{ENV_STATE_DIR} / state_dir")
-    dbg_cfg = env_dict.get(ENV_SETTINGS_CONFIG_DIR, "").strip()
+    assert_path_isolated(bkp, f"{ENV_BACKUP_DIR} / HKS_BACKUP_DIR / backup_dir")
+    assert_path_isolated(sc, f"{ENV_SIDECAR_PATH} / HKS_SIDECAR_PATH / sidecar_path")
+    assert_path_isolated(st, f"{ENV_STATE_DIR} / HKS_STATE_DIR / state_dir")
+    dbg_cfg = get_env("SETTINGS_CONFIG_DIR", environ=env_dict)
     if dbg_cfg:
         assert_path_isolated(dbg_cfg, ENV_SETTINGS_CONFIG_DIR)
-    pwr_sysfs = env_dict.get(ENV_POWER_SYSFS_ROOT, "").strip()
+    pwr_sysfs = get_env("POWER_SYSFS_ROOT", environ=env_dict)
     if pwr_sysfs:
         assert_path_isolated(pwr_sysfs, ENV_POWER_SYSFS_ROOT)
-    hypridle_p = env_dict.get(ENV_HYPRIDLE_PATH, "").strip()
+    hypridle_p = get_env("HYPRIDLE_PATH", environ=env_dict)
     if hypridle_p:
         assert_path_isolated(hypridle_p, ENV_HYPRIDLE_PATH)
-    hks_win_p = env_dict.get(ENV_HKS_WINDOW_SCRIPT, "").strip()
+    hks_win_p = get_env("WINDOW_SCRIPT", environ=env_dict)
     if hks_win_p:
-        assert_path_isolated(hks_win_p, ENV_HKS_WINDOW_SCRIPT)
+        assert_path_isolated(hks_win_p, ENV_WINDOW_SCRIPT)
     repo_fixtures = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
-    dev_fx = env_dict.get(ENV_SETTINGS_DEVICES_FIXTURE, "").strip()
+    dev_fx = get_env("SETTINGS_DEVICES_FIXTURE", environ=env_dict)
     if dev_fx and not is_under_path(dev_fx, repo_fixtures):
         assert_path_isolated(dev_fx, ENV_SETTINGS_DEVICES_FIXTURE)
         if not is_under_path(dev_fx, tempfile.gettempdir()):
@@ -88,15 +91,25 @@ def assert_env_isolated(env: Mapping[str, str] | None = None) -> None:
 
 _CLEARED_ENV_VARS = (
     ENV_SETTINGS_DEBUG,
+    "HKS_SETTINGS_DEBUG",
     ENV_SETTINGS_CONFIG_DIR,
+    "HKS_SETTINGS_CONFIG_DIR",
     ENV_SETTINGS_RELOAD_MODE,
+    "HKS_SETTINGS_RELOAD_MODE",
     ENV_SETTINGS_MONITORS_FIXTURE,
+    "HKS_SETTINGS_MONITORS_FIXTURE",
     ENV_SETTINGS_DEVICES_FIXTURE,
+    "HKS_SETTINGS_DEVICES_FIXTURE",
     ENV_SETTINGS_XKB_PATH,
+    "HKS_SETTINGS_XKB_PATH",
     ENV_THEMES_HOME,
+    "HKS_THEMES_HOME",
     ENV_POWER_SYSFS_ROOT,
+    "HKS_POWER_SYSFS_ROOT",
     ENV_HYPRIDLE_PATH,
-    ENV_HKS_WINDOW_SCRIPT,
+    "HKS_HYPRIDLE_PATH",
+    ENV_WINDOW_SCRIPT,
+    "HKS_WINDOW_SCRIPT",
 )
 
 
@@ -108,14 +121,17 @@ _XDG_ENV_VARS = (
 
 
 class IsolatedTestCase(unittest.TestCase):
-    """Base TestCase that enforces HKS_BACKUP_DIR, HKS_SIDECAR_PATH, HKS_STATE_DIR, and XDG_* isolation."""
+    """Base TestCase that enforces HYPRDECK_* / HKS_* and XDG_* isolation."""
 
     def setUp(self) -> None:
         super().setUp()
         self._isolated_root = tempfile.mkdtemp(prefix="hks_test_iso_")
         self._orig_bkp = os.environ.get("HKS_BACKUP_DIR")
+        self._orig_hy_bkp = os.environ.get(ENV_BACKUP_DIR)
         self._orig_sc = os.environ.get("HKS_SIDECAR_PATH")
-        self._orig_st = os.environ.get(ENV_STATE_DIR)
+        self._orig_hy_sc = os.environ.get(ENV_SIDECAR_PATH)
+        self._orig_st = os.environ.get("HKS_STATE_DIR")
+        self._orig_hy_st = os.environ.get(ENV_STATE_DIR)
         self._orig_xdg = {k: os.environ.get(k) for k in _XDG_ENV_VARS}
         self._orig_extra = {k: os.environ.get(k) for k in _CLEARED_ENV_VARS}
         self.backup_dir = os.path.join(self._isolated_root, "backups")
@@ -133,7 +149,10 @@ class IsolatedTestCase(unittest.TestCase):
         ):
             os.makedirs(d, exist_ok=True)
         os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+        os.environ[ENV_BACKUP_DIR] = self.backup_dir
         os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
+        os.environ[ENV_SIDECAR_PATH] = self.sidecar_path
+        os.environ["HKS_STATE_DIR"] = self.state_dir
         os.environ[ENV_STATE_DIR] = self.state_dir
         os.environ["XDG_CONFIG_HOME"] = self.xdg_config_home
         os.environ["XDG_DATA_HOME"] = self.xdg_data_home
@@ -143,18 +162,18 @@ class IsolatedTestCase(unittest.TestCase):
         self.addCleanup(self._cleanup_isolation)
 
     def _cleanup_isolation(self) -> None:
-        if self._orig_bkp is None:
-            os.environ.pop("HKS_BACKUP_DIR", None)
-        else:
-            os.environ["HKS_BACKUP_DIR"] = self._orig_bkp
-        if self._orig_sc is None:
-            os.environ.pop("HKS_SIDECAR_PATH", None)
-        else:
-            os.environ["HKS_SIDECAR_PATH"] = self._orig_sc
-        if self._orig_st is None:
-            os.environ.pop(ENV_STATE_DIR, None)
-        else:
-            os.environ[ENV_STATE_DIR] = self._orig_st
+        for key, orig in (
+            ("HKS_BACKUP_DIR", self._orig_bkp),
+            (ENV_BACKUP_DIR, self._orig_hy_bkp),
+            ("HKS_SIDECAR_PATH", self._orig_sc),
+            (ENV_SIDECAR_PATH, self._orig_hy_sc),
+            ("HKS_STATE_DIR", self._orig_st),
+            (ENV_STATE_DIR, self._orig_hy_st),
+        ):
+            if orig is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = orig
         for k, orig in self._orig_xdg.items():
             if orig is None:
                 os.environ.pop(k, None)

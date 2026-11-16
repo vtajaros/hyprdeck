@@ -21,7 +21,10 @@ _CPU_DIR_RE = re.compile(r"^cpu[0-9]+$")
 def _resolve_sysfs_root() -> str:
     if os.geteuid() == 0:
         return "/sys"
-    override = os.environ.get("HKS_POWER_SYSFS_ROOT", "").strip()
+    override = (
+        os.environ.get("HYPRDECK_POWER_SYSFS_ROOT", "").strip()
+        or os.environ.get("HKS_POWER_SYSFS_ROOT", "").strip()
+    )
     return os.path.abspath(os.path.expanduser(override)) if override else "/sys"
 
 

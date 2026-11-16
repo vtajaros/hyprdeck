@@ -5,6 +5,7 @@ import "theme"
 import "services"
 import "components"
 import "pages"
+import "../theme"
 
 FloatingWindow {
     id: win
@@ -13,9 +14,9 @@ FloatingWindow {
     implicitWidth: 1000
     implicitHeight: 700
     color: Deck.bg
-    visible: Quickshell.env("HKS_START_HIDDEN") !== "1"
+    visible: Deck.env("START_HIDDEN") !== "1"
 
-    readonly property bool keepAlive: Quickshell.env("HKS_KEEP_ALIVE") === "1"
+    readonly property bool keepAlive: Deck.env("KEEP_ALIVE") === "1"
     // True while openWindow() is mid-pulse, so the `closed` signal emitted by our
     // own hide step is not mistaken for a compositor-initiated close.
     property bool reopening: false
@@ -37,7 +38,7 @@ FloatingWindow {
             Deck.refreshTheme();
         }
     }
-    property string currentPage: Quickshell.env("HKS_PAGE") || "all" // "all" | "conflicts" | "disabled" | "backups" | "settings"
+    property string currentPage: Deck.env("PAGE") || "all" // "all" | "conflicts" | "disabled" | "backups" | "settings"
 
     Timer {
         id: reopenTimer

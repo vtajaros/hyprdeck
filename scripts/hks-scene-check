@@ -19,8 +19,11 @@ def main() -> int:
     shell_qml = repo_root / "settings" / "shell.qml"
     env = {
         **os.environ,
+        "HYPRDECK_START_HIDDEN": "1",
         "HKS_START_HIDDEN": "1",
+        "HYPRDECK_KEEP_ALIVE": "1",
         "HKS_KEEP_ALIVE": "1",
+        "HYPRDECK_SETTINGS_DEBUG": "1",
         "HKS_SETTINGS_DEBUG": "1",
         "HYPRDECK_ROOT": str(repo_root),
         "HKS_ROOT": str(repo_root),

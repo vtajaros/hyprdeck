@@ -27,9 +27,11 @@ if ! command -v quickshell >/dev/null 2>&1; then
     exit 1
 fi
 
-export HKS_ROOT="$REPO_ROOT"
-export HYPRDECK_ROOT="${HYPRDECK_ROOT:-$REPO_ROOT}"
-export HKS_MODE="recorder-test"
+# shellcheck source=scripts/lib-hyprdeck-env.sh
+source "$REPO_ROOT/scripts/lib-hyprdeck-env.sh"
+
+hyprdeck_env_export_pair ROOT "$REPO_ROOT"
+hyprdeck_env_export_pair MODE "recorder-test"
 export QML_XHR_ALLOW_FILE_READ=1
 
 exec quickshell -p "$FRONTEND_DIR" "$@"

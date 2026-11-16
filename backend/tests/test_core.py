@@ -715,5 +715,64 @@ class TestCoreCLI(IsolatedTestCase):
             self.assertTrue(has_include(f.read()))
 
 
+class TestEnvPrecedence(unittest.TestCase):
+    """Verify HYPRDECK_* > HKS_* > default resolution across helpers."""
+
+    def test_get_env_old_only_new_only_and_new_wins(self) -> None:
+        from backend.core.env import get_env, get_env_flag
+
+        self.assertEqual(get_env("FOO", "def", environ={}), "def")
+        self.assertEqual(get_env("FOO", "def", environ={"HKS_FOO": "old"}), "old")
+        self.assertEqual(get_env("FOO", "def", environ={"HYPRDECK_FOO": "new"}), "new")
+        self.assertEqual(
+            get_env("FOO", "def", environ={"HKS_FOO": "old", "HYPRDECK_FOO": "new"}),
+            "new",
+        )
+        self.assertTrue(get_env_flag("DBG", environ={"HKS_DBG": "1"}))
+        self.assertTrue(get_env_flag("DBG", environ={"HYPRDECK_DBG": "1"}))
+        self.assertFalse(get_env_flag("DBG", environ={"HKS_DBG": "1", "HYPRDECK_DBG": "0"}))
+
+    def test_resolvers_honor_old_only_new_only_and_precedence(self) -> None:
+        from backend.core.revert_guard import resolve_state_dir
+        from backend.describe.sidecar import resolve_sidecar_path
+        from backend.editor.backups import resolve_backup_dir
+        from backend.settings.keyboard.state import resolve_keyboard_paths
+
+        # Backups
+        self.assertEqual(resolve_backup_dir(env={"HKS_BACKUP_DIR": "/tmp/old_b"}), "/tmp/old_b")
+        self.assertEqual(resolve_backup_dir(env={"HYPRDECK_BACKUP_DIR": "/tmp/new_b"}), "/tmp/new_b")
+        self.assertEqual(
+            resolve_backup_dir(env={"HKS_BACKUP_DIR": "/tmp/old_b", "HYPRDECK_BACKUP_DIR": "/tmp/new_b"}),
+            "/tmp/new_b",
+        )
+        # Sidecar
+        self.assertEqual(resolve_sidecar_path(env={"HKS_SIDECAR_PATH": "/tmp/old_sc.json"}), "/tmp/old_sc.json")
+        self.assertEqual(resolve_sidecar_path(env={"HYPRDECK_SIDECAR_PATH": "/tmp/new_sc.json"}), "/tmp/new_sc.json")
+        self.assertEqual(
+            resolve_sidecar_path(env={"HKS_SIDECAR": "/tmp/old_sc.json", "HYPRDECK_SIDECAR": "/tmp/new_sc.json"}),
+            "/tmp/new_sc.json",
+        )
+        # State dir
+        self.assertEqual(resolve_state_dir(env={"HKS_STATE_DIR": "/tmp/old_st"}), "/tmp/old_st")
+        self.assertEqual(resolve_state_dir(env={"HYPRDECK_STATE_DIR": "/tmp/new_st"}), "/tmp/new_st")
+        self.assertEqual(
+            resolve_state_dir(env={"HKS_STATE_DIR": "/tmp/old_st", "HYPRDECK_STATE_DIR": "/tmp/new_st"}),
+            "/tmp/new_st",
+        )
+        # Window script
+        self.assertEqual(
+            resolve_keyboard_paths(env={"HKS_WINDOW_SCRIPT": "/tmp/old_w"})["script_path"],
+            "/tmp/old_w",
+        )
+        self.assertEqual(
+            resolve_keyboard_paths(env={"HYPRDECK_WINDOW_SCRIPT": "/tmp/new_w"})["script_path"],
+            "/tmp/new_w",
+        )
+        self.assertEqual(
+            resolve_keyboard_paths(env={"HKS_WINDOW_SCRIPT": "/tmp/old_w", "HYPRDECK_WINDOW_SCRIPT": "/tmp/new_w"})["script_path"],
+            "/tmp/new_w",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

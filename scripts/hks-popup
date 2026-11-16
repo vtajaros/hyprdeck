@@ -11,6 +11,8 @@ fi
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIR="$REPO_ROOT/frontend"
+# shellcheck source=scripts/lib-hyprdeck-env.sh
+source "$REPO_ROOT/scripts/lib-hyprdeck-env.sh"
 
 # Toggle: close if already open (graceful IPC dismissal with fallback)
 MATCH_PATTERN="[q]uickshell.*$FRONTEND_DIR"
@@ -39,17 +41,18 @@ if ! command -v python3 >/dev/null 2>&1; then
     exit 1
 fi
 
-export HKS_ROOT="$REPO_ROOT"
-export HYPRDECK_ROOT="${HYPRDECK_ROOT:-$REPO_ROOT}"
-export HKS_MODE="popup"
+hyprdeck_env_export_pair ROOT "$REPO_ROOT"
+hyprdeck_env_export_pair MODE "popup"
 export QML_XHR_ALLOW_FILE_READ=1
 
 # Pass through optional popup anchor margins if set
-if [[ -n "${HKS_POPUP_LEFT:-}" ]]; then
-    export HKS_POPUP_LEFT
+POPUP_LEFT_VAL="$(hyprdeck_env_get POPUP_LEFT "")"
+if [[ -n "$POPUP_LEFT_VAL" ]]; then
+    hyprdeck_env_export_pair POPUP_LEFT "$POPUP_LEFT_VAL"
 fi
-if [[ -n "${HKS_POPUP_TOP:-}" ]]; then
-    export HKS_POPUP_TOP
+POPUP_TOP_VAL="$(hyprdeck_env_get POPUP_TOP "")"
+if [[ -n "$POPUP_TOP_VAL" ]]; then
+    hyprdeck_env_export_pair POPUP_TOP "$POPUP_TOP_VAL"
 fi
 
 exec quickshell -p "$FRONTEND_DIR" "$@"

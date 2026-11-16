@@ -5,6 +5,7 @@ import "theme"
 import "services"
 import "components"
 import "pages"
+import "../theme"
 
 Item {
     id: root
@@ -13,14 +14,14 @@ Item {
     property bool isClosing: false
 
     readonly property int popupLeft: {
-        var raw = Quickshell.env("HKS_POPUP_LEFT");
+        var raw = Deck.env("POPUP_LEFT");
         if (!raw || raw.trim() === "") return 20;
         var val = parseInt(raw, 10);
         return isNaN(val) ? 20 : val;
     }
 
     readonly property int popupTop: {
-        var raw = Quickshell.env("HKS_POPUP_TOP");
+        var raw = Deck.env("POPUP_TOP");
         if (!raw || raw.trim() === "") return 64;
         var val = parseInt(raw, 10);
         return isNaN(val) ? 64 : val;

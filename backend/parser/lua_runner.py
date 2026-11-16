@@ -90,7 +90,9 @@ def run_lua_recorder(
     abs_config_dir = os.path.abspath(config_dir)
     clean_env = _build_sandbox_env(env)
 
-    limit_env = os.environ.get("HKS_INSTRUCTION_LIMIT")
+    from backend.core.env import get_env
+
+    limit_env = get_env("INSTRUCTION_LIMIT")
     effective_instruction_limit = (
         int(instruction_limit)
         if instruction_limit is not None

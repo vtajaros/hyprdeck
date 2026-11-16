@@ -52,7 +52,9 @@ def resolve_sidecar_path(
 
     src_env = env if env is not None else os.environ
     env_sidecar = (
-        src_env.get("HKS_SIDECAR", "").strip()
+        src_env.get("HYPRDECK_SIDECAR", "").strip()
+        or src_env.get("HYPRDECK_SIDECAR_PATH", "").strip()
+        or src_env.get("HKS_SIDECAR", "").strip()
         or src_env.get("HKS_SIDECAR_PATH", "").strip()
     )
     if env_sidecar:

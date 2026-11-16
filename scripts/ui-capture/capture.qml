@@ -13,7 +13,7 @@ Window {
     color: Deck.bg
 
     property int step: 0
-    readonly property string outDir: Quickshell.env("HKS_CAPTURE_DIR") || "scripts/ui-capture"
+    readonly property string outDir: Deck.env("CAPTURE_DIR") || "scripts/ui-capture"
 
     Loader {
         id: pageLoader
@@ -27,7 +27,7 @@ Window {
         z: 90
     }
 
-    readonly property string rootDir: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprdeck")
+    readonly property string rootDir: Deck.env("ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprdeck")
 
     Timer {
         id: stepTimer

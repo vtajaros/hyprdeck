@@ -266,8 +266,10 @@ def probe_monitors(
     timeout: float = 5.0,
 ) -> list[MonitorOutput]:
     """Query `hyprctl monitors all -j` (or read fixture JSON if specified)."""
+    from backend.core.env import get_env
+
     environ = env if env is not None else os.environ
-    eff_fixture = fixture_path or environ.get(ENV_SETTINGS_MONITORS_FIXTURE, "").strip()
+    eff_fixture = fixture_path or get_env("SETTINGS_MONITORS_FIXTURE", environ=environ)
     if eff_fixture:
         with open(os.path.expanduser(eff_fixture), "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -395,7 +397,9 @@ def get_display_state(
 
     outputs_error: str | None = None
     outputs: list[MonitorOutput] = []
-    if not no_live or monitors_runner is not None or fixture_path or environ.get(ENV_SETTINGS_MONITORS_FIXTURE):
+    from backend.core.env import get_env
+
+    if not no_live or monitors_runner is not None or fixture_path or get_env("SETTINGS_MONITORS_FIXTURE", environ=environ):
         try:
             outputs = probe_monitors(
                 runner=monitors_runner,

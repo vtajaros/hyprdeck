@@ -70,6 +70,10 @@ class HksWindowScriptTests(unittest.TestCase):
         self.script = os.path.join(self.repo, "scripts", "hks-window")
         shutil.copy(REAL_SCRIPT, self.script)
         os.chmod(self.script, 0o755)
+        env_lib_src = os.path.join(os.path.dirname(REAL_SCRIPT), "lib-hyprdeck-env.sh")
+        env_lib_dst = os.path.join(self.repo, "scripts", "lib-hyprdeck-env.sh")
+        shutil.copy(env_lib_src, env_lib_dst)
+        os.chmod(env_lib_dst, 0o755)
         for name, body in (("hyprctl", FAKE_HYPRCTL), ("quickshell", FAKE_QUICKSHELL)):
             p = os.path.join(self.fake, name)
             with open(p, "w") as f:

@@ -7,15 +7,15 @@ import os
 from pathlib import Path
 from typing import Any, Mapping
 
-from backend.core.constants import ENV_HKS_WINDOW_SCRIPT
+from backend.core.env import get_env
 from backend.core.live_cmd import (
     DEFAULT_LIVE_CMD_TIMEOUT_SECONDS,
     LiveRunner,
     run_live_cmd,
 )
 
-HKS_WINDOW_TITLE = "HyprDeck Keybind Studio"
-HKS_WINDOW_CLASS = "org.quickshell"
+HYPRDECK_WINDOW_TITLE = "HyprDeck Keybind Studio"
+HYPRDECK_WINDOW_CLASS = "org.quickshell"
 
 
 def resolve_keyboard_paths(
@@ -29,7 +29,7 @@ def resolve_keyboard_paths(
         raw_script = script_path.strip()
     else:
         env_map = os.environ if env is None else env
-        raw_script = env_map.get(ENV_HKS_WINDOW_SCRIPT, "").strip()
+        raw_script = get_env("WINDOW_SCRIPT", environ=env_map)
         if not raw_script:
             raw_script = str(Path(repo_root) / "scripts" / "hks-window")
 
@@ -68,8 +68,8 @@ def parse_hyprctl_clients_for_hks(raw: str) -> bool | None:
         if not isinstance(client, dict):
             continue
         if (
-            client.get("title") == HKS_WINDOW_TITLE
-            and client.get("class") == HKS_WINDOW_CLASS
+            client.get("title") == HYPRDECK_WINDOW_TITLE
+            and client.get("class") == HYPRDECK_WINDOW_CLASS
             and bool(client.get("mapped", True))
         ):
             return True

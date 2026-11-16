@@ -5,6 +5,7 @@ import "shared_components"
 import "components"
 import "pages"
 import "services"
+import "../theme"
 
 FloatingWindow {
     id: win
@@ -14,12 +15,12 @@ FloatingWindow {
     implicitHeight: 720
     minimumSize: Qt.size(Deck.minWindowWidth, Deck.minWindowHeight)
     color: Deck.bg
-    visible: Quickshell.env("HKS_START_HIDDEN") !== "1"
+    visible: Deck.env("START_HIDDEN") !== "1"
 
-    readonly property bool keepAlive: Quickshell.env("HKS_KEEP_ALIVE") === "1"
+    readonly property bool keepAlive: Deck.env("KEEP_ALIVE") === "1"
     property bool reopening: false
     property bool unsavedPromptOpen: false
-    property string currentPage: Quickshell.env("HKS_SETTINGS_PAGE") || "appearance"
+    property string currentPage: Deck.env("SETTINGS_PAGE") || "appearance"
     property alias inputPageRef: inputPage
     property alias globalSearchRef: globalSearch
     property alias rootSurfaceRef: rootSurface

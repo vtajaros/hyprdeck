@@ -2,16 +2,17 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../theme"
 
 Singleton {
     id: root
 
-    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprdeck")
-    readonly property bool debugMode: Quickshell.env("HKS_SETTINGS_DEBUG") === "1"
-    readonly property string debugConfigDir: debugMode ? (Quickshell.env("HKS_SETTINGS_CONFIG_DIR") || "") : ""
-    readonly property string debugReloadMode: debugMode ? (Quickshell.env("HKS_SETTINGS_RELOAD_MODE") || "") : ""
+    readonly property string rootPath: Deck.env("ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprdeck")
+    readonly property bool debugMode: Deck.env("SETTINGS_DEBUG") === "1"
+    readonly property string debugConfigDir: debugMode ? (Deck.env("SETTINGS_CONFIG_DIR") || "") : ""
+    readonly property string debugReloadMode: debugMode ? (Deck.env("SETTINGS_RELOAD_MODE") || "") : ""
     readonly property real debugTimeoutSeconds: {
-        var raw = debugMode ? (Quickshell.env("HKS_SETTINGS_DISPLAY_TIMEOUT") || "") : "";
+        var raw = debugMode ? (Deck.env("SETTINGS_DISPLAY_TIMEOUT") || "") : "";
         var parsed = raw ? Number(raw) : 15.0;
         return (!isNaN(parsed) && parsed > 0) ? parsed : 15.0;
     }

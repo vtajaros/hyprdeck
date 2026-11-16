@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../theme"
 
 Singleton {
     id: root
@@ -11,7 +12,7 @@ Singleton {
     property var catalog: []
     property var categories: []
 
-    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || "."
+    readonly property string rootPath: Deck.env("ROOT") || "."
 
     Process {
         id: proc
