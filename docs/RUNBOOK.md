@@ -11,11 +11,12 @@ Run the consolidated automated test runner:
 ./scripts/hks-check
 ```
 **Expected Results**:
-- `[1/3]` Backend unit test suite: 148 tests pass in < 5 seconds with zero errors or failures.
-- `[2/3]` Frontend QML unit tests: 19 tests pass in offscreen `qmltestrunner` (< 200ms).
-- `[3/5]` Frontend QML lint: `qmllint` passes with 0 errors and 0 warnings across all 34 QML files.
-- `[4/5]` HKS theme token guard (`./scripts/hks-token-check`): verifies every `HKS.<token>` used in `frontend/` and `settings/` QML is defined in `frontend/theme/HKS.qml`.
-- `[5/5]` Headless scene-warning guard (`./scripts/hks-scene-check`): visits Display and all Input tabs under `HKS_SETTINGS_DEBUG=1` and asserts 0 scene warnings in `InputPage`, `DisplayPage`, or `SettingRow` (set `HKS_SKIP_SCENE=1` on headless/CI hosts without a compositor/Quickshell).
+- `[1/6]` Backend unit test suite: 367 tests pass with zero errors or failures.
+- `[2/6]` Frontend & Settings QML unit tests: 38 frontend + 29 settings tests pass in offscreen `qmltestrunner`.
+- `[3/6]` QML static analysis: `qmllint` passes with 0 errors and 0 warnings across all 79 QML files.
+- `[4/6]` HKS theme token guard (`./scripts/hks-token-check`): verifies every `HKS.<token>` used in `frontend/` and `settings/` QML is defined in `frontend/theme/HKS.qml`.
+- `[5/6]` Headless scene-warning guard (`./scripts/hks-scene-check`): visits Display and all Input tabs under `HKS_SETTINGS_DEBUG=1` and asserts 0 scene warnings in `InputPage`, `DisplayPage`, or `SettingRow` (set `HKS_SKIP_SCENE=1` on headless/CI hosts without Quickshell).
+- `[6/6]` Headless responsive layout guard (`./scripts/hks-layout-check`): audits Settings across 10 window sizes (`3400x1380` down to `455x1130`) x 18 page/tab/expanded views under `QT_QPA_PLATFORM=offscreen` and asserts 0 layout violations or binding loops (pass `HKS_LAYOUT_QUICK=1` for the 5-size subset, `HKS_SKIP_LAYOUT=1` to skip in `hks-check`, or `--screenshots` to also render PNGs and ImageMagick contact sheets via `python3 scripts/ui-capture/capture_layout_matrix.py` into `build/layout-shots/`).
 - Exit code is `0`.
 
 ---

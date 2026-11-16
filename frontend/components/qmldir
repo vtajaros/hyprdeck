@@ -11,3 +11,8 @@ KeybindRecorder 1.0 KeybindRecorder.qml
 KeybindEditDialog 1.0 KeybindEditDialog.qml
 CloseGuard 1.0 CloseGuard.qml
 SectionCard 1.0 SectionCard.qml
+singleton ResponsiveLogic 1.0 ResponsiveLogic.qml
+PageViewport 1.0 PageViewport.qml
+PageHeader 1.0 PageHeader.qml
+DeviceCard 1.0 DeviceCard.qml
+ChipFlow 1.0 ChipFlow.qml

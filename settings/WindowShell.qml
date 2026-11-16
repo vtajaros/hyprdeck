@@ -12,6 +12,7 @@ FloatingWindow {
     title: AppInfo.windowTitle
     implicitWidth: 1040
     implicitHeight: 720
+    minimumSize: Qt.size(HKS.minWindowWidth, HKS.minWindowHeight)
     color: HKS.bg
     visible: Quickshell.env("HKS_START_HIDDEN") !== "1"
 
@@ -20,6 +21,60 @@ FloatingWindow {
     property bool unsavedPromptOpen: false
     property string currentPage: Quickshell.env("HKS_SETTINGS_PAGE") || "appearance"
     property alias inputPageRef: inputPage
+    property alias globalSearchRef: globalSearch
+    property alias rootSurfaceRef: rootSurface
+    property string lastGrabStatus: ""
+    property int lastGrabSeq: 0
+    property int debugOverrideWidth: 0
+    property int debugOverrideHeight: 0
+    readonly property real effectiveWinWidth: win.debugOverrideWidth > 0 ? win.debugOverrideWidth : win.width
+    readonly property real effectiveWinHeight: win.debugOverrideHeight > 0 ? win.debugOverrideHeight : win.height
+    readonly property string sidebarMode: ResponsiveLogic.sidebarModeForWindowWidth(win.effectiveWinWidth)
+    readonly property bool compactRail: win.sidebarMode === "rail"
+    property bool railSearchExpanded: false
+    property string railTipText: ""
+    property real railTipY: 0
+
+    function _updateRailTip(hovered, label, sourceItem) {
+        if (!win.compactRail || !hovered || !sourceItem) {
+            if (!hovered && win.railTipText === label) {
+                win.railTipText = "";
+            }
+            return;
+        }
+        var pt = sourceItem.mapToItem(rootSurface, 0, Math.round(sourceItem.height / 2));
+        win.railTipY = Math.max(8, Math.min(rootSurface.height - 34, pt.y - 13));
+        win.railTipText = label;
+    }
+
+    function activePageItem() {
+        if (globalSearch.text.trim().length > 0) return optionsPage;
+        if (win.currentPage === "appearance" || win.currentPage === "desktop") return optionsPage;
+        if (win.currentPage === "display") return displayPage;
+        if (win.currentPage === "input") return inputPage;
+        if (win.currentPage === "audio") return audioPage;
+        if (win.currentPage === "bluetooth") return bluetoothPage;
+        if (win.currentPage === "network") return networkPage;
+        if (win.currentPage === "themes") return themesPage;
+        if (win.currentPage === "power") return powerPage;
+        if (win.currentPage === "sysinfo") return systemPage;
+        if (win.currentPage === "keyboard") return keyboardPage;
+        return optionsPage;
+    }
+
+    function pageItemById(pageId) {
+        if (pageId === "appearance" || pageId === "desktop") return optionsPage;
+        if (pageId === "display") return displayPage;
+        if (pageId === "input") return inputPage;
+        if (pageId === "audio") return audioPage;
+        if (pageId === "bluetooth") return bluetoothPage;
+        if (pageId === "network") return networkPage;
+        if (pageId === "themes") return themesPage;
+        if (pageId === "power") return powerPage;
+        if (pageId === "sysinfo") return systemPage;
+        if (pageId === "keyboard") return keyboardPage;
+        return null;
+    }
 
     onClosed: {
         if (win.reopening) {
@@ -190,11 +245,17 @@ FloatingWindow {
 
     Rectangle {
         id: rootSurface
-        anchors.fill: parent
+        width: win.effectiveWinWidth
+        height: win.effectiveWinHeight
         color: HKS.bg
         focus: true
 
         Keys.onEscapePressed: function(event) {
+            if (win.compactRail && win.railSearchExpanded) {
+                win.railSearchExpanded = false;
+                event.accepted = true;
+                return;
+            }
             if (win.unsavedPromptOpen) {
                 win.unsavedPromptOpen = false;
                 event.accepted = true;
@@ -214,75 +275,149 @@ FloatingWindow {
 
             // Sidebar
             Rectangle {
-                width: 230
+                id: sidebarRect
+                width: ResponsiveLogic.sidebarWidthForMode(win.sidebarMode)
                 height: parent.height
                 color: HKS.surface
 
                 Column {
-                    anchors.fill: parent
+                    id: sidebarTopCol
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
                     anchors.margins: HKS.space12
                     spacing: HKS.space12
 
                     // Brand Header
                     Row {
+                        id: brandRow
                         spacing: 10
-                        anchors.left: parent.left
-                        anchors.leftMargin: 4
+                        width: parent.width
                         topPadding: 4
                         bottomPadding: 4
 
-                        Rectangle {
-                            width: 30
+                        Item {
+                            width: win.compactRail ? parent.width : 30
                             height: 30
-                            radius: 8
-                            color: HKS.alpha(HKS.accent, 0.15)
-                            border.width: 1
-                            border.color: HKS.accent
-                            Text {
-                                anchors.centerIn: parent
-                                text: ""
-                                font.family: HKS.fontFamily
-                                font.pixelSize: 14
-                                color: HKS.accent
+
+                            Rectangle {
+                                x: win.compactRail ? Math.round((parent.width - width) / 2) : 4
+                                width: 30
+                                height: 30
+                                radius: 8
+                                color: HKS.alpha(HKS.accent, 0.15)
+                                border.width: 1
+                                border.color: HKS.accent
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: ""
+                                    font.family: HKS.fontFamily
+                                    font.pixelSize: 14
+                                    color: HKS.accent
+                                }
                             }
                         }
 
                         Column {
+                            visible: !win.compactRail
+                            width: Math.max(0, parent.width - 44)
                             anchors.verticalCenter: parent.verticalCenter
+
                             Text {
+                                objectName: "elideOk"
+                                width: parent.width
                                 text: AppInfo.appDisplayName
                                 font.family: HKS.fontFamily
                                 font.pixelSize: HKS.fontSizeSmall
                                 font.weight: Font.Bold
                                 color: HKS.fg
+                                elide: Text.ElideRight
                             }
+
                             Text {
+                                objectName: "elideOk"
+                                width: parent.width
                                 text: AppInfo.subtitle
                                 font.family: HKS.fontFamily
                                 font.pixelSize: 10
                                 color: HKS.muted
+                                elide: Text.ElideRight
                             }
                         }
                     }
 
-                    SearchField {
-                        id: globalSearch
+                    // Slot reserving space for inline SearchField when expanded/narrow, or search toggle icon when rail
+                    Item {
+                        id: searchSlotBox
                         width: parent.width
                         height: 34
-                        placeholder: "Search settings..."
+
+                        Rectangle {
+                            visible: win.compactRail
+                            anchors.fill: parent
+                            radius: 6
+                            color: (win.railSearchExpanded || globalSearch.text.length > 0)
+                                ? HKS.alpha(HKS.accent, 0.18)
+                                : HKS.elevated
+                            border.width: 1
+                            border.color: (win.railSearchExpanded || globalSearch.text.length > 0)
+                                ? HKS.accent
+                                : HKS.alpha(HKS.muted, 0.25)
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "󰍉"
+                                font.family: HKS.fontFamily
+                                font.pixelSize: 15
+                                color: (win.railSearchExpanded || globalSearch.text.length > 0) ? HKS.accent : HKS.fg
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    win.railSearchExpanded = !win.railSearchExpanded;
+                                    if (win.railSearchExpanded) {
+                                        globalSearch.forceFocus();
+                                    }
+                                }
+                            }
+                        }
                     }
+                }
+
+                Flickable {
+                    id: sidebarNavFlick
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: sidebarTopCol.bottom
+                    anchors.topMargin: HKS.space12
+                    anchors.bottom: parent.bottom
+                    anchors.leftMargin: HKS.space12
+                    anchors.rightMargin: HKS.space12
+                    anchors.bottomMargin: HKS.space12
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    contentWidth: width
+                    contentHeight: navCol.implicitHeight
 
                     Column {
-                        width: parent.width
+                        id: navCol
+                        width: sidebarNavFlick.width
                         spacing: 4
 
                         SidebarItem {
                             width: parent.width
                             icon: "󰃟"
                             text: "Appearance"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "appearance" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "appearance";
                             }
                         }
@@ -291,9 +426,13 @@ FloatingWindow {
                             width: parent.width
                             icon: "󰖲"
                             text: "Desktop behavior"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "desktop" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "desktop";
                             }
                         }
@@ -302,9 +441,13 @@ FloatingWindow {
                             width: parent.width
                             icon: "󰍹"
                             text: "Display"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "display" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "display";
                             }
                         }
@@ -313,9 +456,13 @@ FloatingWindow {
                             width: parent.width
                             icon: "󰌌"
                             text: "Input"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "input" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "input";
                             }
                         }
@@ -324,9 +471,13 @@ FloatingWindow {
                             width: parent.width
                             icon: "󰕾"
                             text: "Audio"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "audio" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "audio";
                                 AudioService.reload(false);
                             }
@@ -336,9 +487,13 @@ FloatingWindow {
                             width: parent.width
                             icon: "󰂯"
                             text: "Bluetooth"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "bluetooth" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "bluetooth";
                                 BluetoothService.reload(false);
                             }
@@ -348,9 +503,13 @@ FloatingWindow {
                             width: parent.width
                             icon: "󰖩"
                             text: "Network"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "network" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "network";
                                 NetworkService.reload(false);
                             }
@@ -360,9 +519,13 @@ FloatingWindow {
                             width: parent.width
                             icon: "󰏘"
                             text: "Themes"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "themes" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "themes";
                                 ThemesService.reload(false);
                             }
@@ -372,9 +535,13 @@ FloatingWindow {
                             width: parent.width
                             icon: "󰁹"
                             text: "Power"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "power" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "power";
                                 PowerService.reload(false);
                             }
@@ -384,9 +551,13 @@ FloatingWindow {
                             width: parent.width
                             icon: "󰋼"
                             text: "System info"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "sysinfo" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "sysinfo";
                             }
                         }
@@ -395,9 +566,13 @@ FloatingWindow {
                             width: parent.width
                             icon: "󰌌"
                             text: "Keyboard shortcuts"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
                             active: win.currentPage === "keyboard" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
+                                win.railSearchExpanded = false;
                                 win.currentPage = "keyboard";
                                 KeyboardService.reload();
                             }
@@ -419,6 +594,8 @@ FloatingWindow {
                                 text: modelData.title
                                 badge: "soon"
                                 disabled: true
+                                compactRail: win.compactRail
+                                showRailTooltip: false
                                 active: win.currentPage === modelData.id
                             }
                         }
@@ -428,10 +605,12 @@ FloatingWindow {
 
             // Main Content
             Item {
-                width: parent.width - 230
+                id: mainContentItem
+                width: parent.width - sidebarRect.width
                 height: parent.height
 
                 OptionsPage {
+                    id: optionsPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length > 0 || win.currentPage === "appearance" || win.currentPage === "desktop"
                     section: win.currentPage === "desktop" ? "desktop" : "appearance"
@@ -440,6 +619,7 @@ FloatingWindow {
                 }
 
                 DisplayPage {
+                    id: displayPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "display"
                 }
@@ -451,36 +631,43 @@ FloatingWindow {
                 }
 
                 AudioPage {
+                    id: audioPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "audio"
                 }
 
                 BluetoothPage {
+                    id: bluetoothPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "bluetooth"
                 }
 
                 NetworkPage {
+                    id: networkPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "network"
                 }
 
                 ThemesPage {
+                    id: themesPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "themes"
                 }
 
                 PowerPage {
+                    id: powerPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "power"
                 }
 
                 SystemPage {
+                    id: systemPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "sysinfo"
                 }
 
                 KeyboardPage {
+                    id: keyboardPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "keyboard"
                 }
@@ -496,6 +683,43 @@ FloatingWindow {
             }
         }
 
+        // Single persistent SearchField (inline in full/narrow sidebar, floating overlay in compactRail mode)
+        SearchField {
+            id: globalSearch
+            z: 40
+            visible: !win.compactRail || win.railSearchExpanded || text.length > 0
+            x: win.compactRail ? (sidebarRect.width + HKS.space8) : (sidebarRect.x + HKS.space12)
+            y: HKS.space12 + brandRow.height + HKS.space12
+            width: win.compactRail
+                ? Math.min(280, Math.max(180, rootSurface.width - sidebarRect.width - HKS.space16))
+                : (sidebarRect.width - HKS.space12 * 2)
+            height: 34
+            placeholder: "Search settings..."
+        }
+
+        // Rail hover tooltip rendered above content outside Flickable clipping
+        Rectangle {
+            visible: win.compactRail && win.railTipText.length > 0
+            z: 45
+            x: sidebarRect.width + 8
+            y: win.railTipY
+            width: railOverlayTipTxt.implicitWidth + 16
+            height: 26
+            radius: 6
+            color: HKS.elevated
+            border.width: 1
+            border.color: HKS.alpha(HKS.accent, 0.5)
+
+            Text {
+                id: railOverlayTipTxt
+                anchors.centerIn: parent
+                text: win.railTipText
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSizeSmall
+                color: HKS.fg
+            }
+        }
+
         // Unsaved-changes bottom bar
         Rectangle {
             id: unsavedBar
@@ -503,35 +727,64 @@ FloatingWindow {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            height: 48
+            height: unsavedInner.implicitHeight + HKS.space16
             color: HKS.surface
             border.width: 1
             border.color: HKS.alpha(HKS.accent, 0.35)
 
-            Row {
-                anchors.fill: parent
+            Item {
+                id: unsavedInner
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
                 anchors.leftMargin: HKS.space16
                 anchors.rightMargin: HKS.space16
-                spacing: HKS.space12
+                anchors.topMargin: HKS.space8
+
+                readonly property real actionsNaturalW: SettingsService.hasUnsavedChanges ? (discardBtn.implicitWidth + HKS.space8 + saveBtn.implicitWidth) : 0
+                readonly property bool stacked: SettingsService.hasUnsavedChanges
+                    && (unsavedMsgMetrics.advanceWidth + HKS.space12 + actionsNaturalW > unsavedInner.width)
+
+                implicitHeight: stacked
+                    ? (unsavedTxt.implicitHeight + HKS.space8 + actionsRow.implicitHeight)
+                    : Math.max(unsavedTxt.implicitHeight, actionsRow.implicitHeight)
+                height: implicitHeight
+
+                TextMetrics {
+                    id: unsavedMsgMetrics
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSizeSmall
+                    text: unsavedTxt.text
+                }
 
                 Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - actionsRow.width - HKS.space12
+                    id: unsavedTxt
+                    x: 0
+                    y: unsavedInner.stacked ? 0 : Math.max(0, Math.round((unsavedInner.implicitHeight - height) / 2))
+                    width: unsavedInner.stacked
+                        ? unsavedInner.width
+                        : Math.max(0, unsavedInner.width - unsavedInner.actionsNaturalW - (unsavedInner.actionsNaturalW > 0 ? HKS.space12 : 0))
                     text: SettingsService.hasUnsavedChanges
                         ? "You have unsaved changes (live preview active)."
                         : SettingsService.statusMessage
                     font.family: HKS.fontFamily
                     font.pixelSize: HKS.fontSizeSmall
                     color: SettingsService.hasUnsavedChanges ? HKS.warning : HKS.accent
+                    wrapMode: Text.WordWrap
                 }
 
-                Row {
+                Flow {
                     id: actionsRow
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: HKS.space8
                     visible: SettingsService.hasUnsavedChanges
+                    x: unsavedInner.stacked ? 0 : Math.max(0, unsavedInner.width - width)
+                    y: unsavedInner.stacked
+                        ? (unsavedTxt.implicitHeight + HKS.space8)
+                        : Math.max(0, Math.round((unsavedInner.implicitHeight - height) / 2))
+                    width: unsavedInner.stacked ? unsavedInner.width : unsavedInner.actionsNaturalW
+                    spacing: HKS.space8
 
                     ActionButton {
+                        id: discardBtn
                         text: "Discard"
                         compact: true
                         enabled: !SettingsService.busy
@@ -539,6 +792,7 @@ FloatingWindow {
                     }
 
                     ActionButton {
+                        id: saveBtn
                         text: SettingsService.busy ? "Saving..." : "Save"
                         variant: "accent"
                         compact: true
@@ -560,7 +814,7 @@ FloatingWindow {
 
             Rectangle {
                 anchors.centerIn: parent
-                width: 420
+                width: Math.min(420, parent.width - HKS.space24)
                 height: promptCol.implicitHeight + 36
                 radius: HKS.radius
                 color: HKS.surface
@@ -574,11 +828,13 @@ FloatingWindow {
                     spacing: 12
 
                     Text {
+                        width: parent.width
                         text: "Unsaved Changes"
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeLarge
                         font.weight: Font.Bold
                         color: HKS.fg
+                        wrapMode: Text.WordWrap
                     }
 
                     Text {
@@ -590,21 +846,22 @@ FloatingWindow {
                         wrapMode: Text.WordWrap
                     }
 
-                    Row {
-                        anchors.right: parent.right
+                    Flow {
+                        width: parent.width
+                        layoutDirection: Qt.RightToLeft
                         spacing: 8
-
-                        ActionButton {
-                            text: "Keep Editing"
-                            compact: true
-                            onClicked: win.unsavedPromptOpen = false
-                        }
 
                         ActionButton {
                             text: "Discard & Close"
                             variant: "danger"
                             compact: true
                             onClicked: win.closeWindow(true)
+                        }
+
+                        ActionButton {
+                            text: "Keep Editing"
+                            compact: true
+                            onClicked: win.unsavedPromptOpen = false
                         }
                     }
                 }
@@ -625,7 +882,7 @@ FloatingWindow {
 
             Rectangle {
                 anchors.centerIn: parent
-                width: 440
+                width: Math.min(440, parent.width - HKS.space24)
                 height: displayConfirmCol.implicitHeight + 36
                 radius: HKS.radius
                 color: HKS.surface
@@ -639,11 +896,13 @@ FloatingWindow {
                     spacing: 12
 
                     Text {
+                        width: parent.width
                         text: parent.parent.parent.inputModal ? "Keep these input settings?" : "Keep these display settings?"
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeLarge
                         font.weight: Font.Bold
                         color: HKS.fg
+                        wrapMode: Text.WordWrap
                     }
 
                     Text {
@@ -655,23 +914,10 @@ FloatingWindow {
                         wrapMode: Text.WordWrap
                     }
 
-                    Row {
-                        anchors.right: parent.right
+                    Flow {
+                        width: parent.width
+                        layoutDirection: Qt.RightToLeft
                         spacing: 8
-
-                        ActionButton {
-                            text: "Revert now"
-                            variant: "danger"
-                            compact: true
-                            enabled: !parent.parent.parent.parent.modalBusy
-                            onClicked: {
-                                if (parent.parent.parent.parent.inputModal) {
-                                    InputService.revertChanges();
-                                } else {
-                                    DisplayService.revertChanges();
-                                }
-                            }
-                        }
 
                         ActionButton {
                             text: "Keep changes"
@@ -683,6 +929,20 @@ FloatingWindow {
                                     InputService.keepChanges();
                                 } else {
                                     DisplayService.keepChanges();
+                                }
+                            }
+                        }
+
+                        ActionButton {
+                            text: "Revert now"
+                            variant: "danger"
+                            compact: true
+                            enabled: !parent.parent.parent.parent.modalBusy
+                            onClicked: {
+                                if (parent.parent.parent.parent.inputModal) {
+                                    InputService.revertChanges();
+                                } else {
+                                    DisplayService.revertChanges();
                                 }
                             }
                         }

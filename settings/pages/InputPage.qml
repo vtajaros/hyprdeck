@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Layouts
 import "../theme"
 import "../shared_components"
 import "../components"
@@ -98,71 +97,46 @@ Item {
         return n;
     }
 
-    Column {
+    PageViewport {
+        id: viewport
         anchors.fill: parent
-        anchors.margins: HKS.space24
-        spacing: HKS.space12
 
-        // Header
-        Row {
-            width: parent.width
-            spacing: HKS.space12
+        header: PageHeader {
+            title: "Input"
+            subtitle: "Keyboard layouts, XKB options, mouse, touchpad, and per-device rules."
 
-            Column {
-                width: Math.max(200, parent.width - headerActions.width - HKS.space12)
-                spacing: 4
-
-                Text {
-                    text: "Input"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeTitle
-                    font.weight: Font.Bold
-                    color: HKS.fg
-                }
-
-                Text {
-                    text: "Keyboard layouts, XKB options, mouse, touchpad, and per-device rules."
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
-                }
+            ActionButton {
+                text: "Refresh"
+                compact: true
+                enabled: !InputService.busy && !InputService.countdownActive
+                onClicked: InputService.reload()
             }
 
-            Row {
-                id: headerActions
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: HKS.space8
+            ActionButton {
+                text: "Discard"
+                compact: true
+                visible: InputService.hasDraftChanges
+                enabled: !InputService.busy && !InputService.countdownActive
+                onClicked: InputService.discardDrafts()
+            }
 
-                ActionButton {
-                    text: "Refresh"
-                    compact: true
-                    enabled: !InputService.busy && !InputService.countdownActive
-                    onClicked: InputService.reload()
-                }
-
-                ActionButton {
-                    text: "Discard"
-                    compact: true
-                    visible: InputService.hasDraftChanges
-                    enabled: !InputService.busy && !InputService.countdownActive
-                    onClicked: InputService.discardDrafts()
-                }
-
-                ActionButton {
-                    text: InputService.busy ? "Applying..." : "Apply"
-                    variant: "accent"
-                    compact: true
-                    enabled: InputService.hasDraftChanges
-                        && !InputService.busy
-                        && !InputService.countdownActive
-                        && InputService.includeInstalled
-                    onClicked: InputService.applyChanges(null)
-                }
+            ActionButton {
+                text: InputService.busy ? "Applying..." : "Apply"
+                variant: "accent"
+                compact: true
+                enabled: InputService.hasDraftChanges
+                    && !InputService.busy
+                    && !InputService.countdownActive
+                    && InputService.includeInstalled
+                onClicked: InputService.applyChanges(null)
             }
         }
 
         // Sub-tabs
-        Row {
+        ChipFlow {
+            width: viewport.innerWidth
+            layoutClass: viewport.layoutClass
+            layoutShort: viewport.layoutShort
             spacing: HKS.space8
 
             Repeater {
@@ -176,7 +150,7 @@ Item {
                     required property var modelData
                     text: modelData.label
                     compact: true
-                    variant: root.activeTab === modelData.id ? "accent" : "secondary"
+                    variant: root.activeTab === modelData.id ? "accent" : "neutral"
                     onClicked: root.activeTab = modelData.id
                 }
             }
@@ -185,7 +159,7 @@ Item {
         // Include missing warning
         Rectangle {
             visible: !InputService.loading && !InputService.includeInstalled
-            width: parent.width
+            width: viewport.innerWidth
             height: incWarnTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.warning, 0.14)
@@ -207,7 +181,7 @@ Item {
         // Error banner
         Rectangle {
             visible: InputService.error.length > 0
-            width: parent.width
+            width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.critical, 0.14)
@@ -229,7 +203,7 @@ Item {
         // Non-blocking warnings banner
         Rectangle {
             visible: InputService.warningsText.length > 0
-            width: parent.width
+            width: viewport.innerWidth
             height: warnTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.warning, 0.14)
@@ -251,7 +225,7 @@ Item {
         // Status banner
         Rectangle {
             visible: InputService.statusMessage.length > 0 && InputService.error.length === 0
-            width: parent.width
+            width: viewport.innerWidth
             height: statusTxt.implicitHeight + 14
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.accent, 0.12)
@@ -270,454 +244,93 @@ Item {
             }
         }
 
-        // Scrollable content area
-        Flickable {
-            width: parent.width
-            height: Math.max(120, parent.height - y)
-            contentWidth: width
-            contentHeight: tabContentCol.implicitHeight + HKS.space16
-            clip: true
+        // KEYBOARD TAB
+        Column {
+            width: viewport.innerWidth
+            spacing: HKS.space12
+            visible: root.activeTab === "keyboard"
 
-            Column {
-                id: tabContentCol
+            // Layouts & Variants Card
+            Rectangle {
                 width: parent.width
-                spacing: HKS.space12
+                height: layoutCol.implicitHeight + 24
+                radius: HKS.radiusMedium
+                color: HKS.surface
+                border.width: 1
+                border.color: HKS.alpha(HKS.muted, 0.16)
 
-                // KEYBOARD TAB
                 Column {
-                    width: parent.width
-                    spacing: HKS.space12
-                    visible: root.activeTab === "keyboard"
+                    id: layoutCol
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 12
+                    spacing: HKS.space8
 
-                    // Layouts & Variants Card
-                    Rectangle {
+                    Text {
                         width: parent.width
-                        height: layoutCol.implicitHeight + 24
-                        radius: HKS.radiusMedium
-                        color: HKS.surface
-                        border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.16)
+                        text: "Keyboard Layouts & Variants"
+                        font.family: HKS.fontFamily
+                        font.pixelSize: HKS.fontSize
+                        font.weight: Font.Medium
+                        color: HKS.fg
+                        wrapMode: Text.WordWrap
+                    }
 
-                        Column {
-                            id: layoutCol
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.margins: 12
+                    Repeater {
+                        model: root._keyboardLayouts()
+                        delegate: Flow {
+                            required property string modelData
+                            required property int index
+                            readonly property real btnsWidth: 30 * 3 + 16
+                            readonly property bool stacked: layoutCol.width < 360
+                            readonly property real variantW: stacked
+                                ? Math.max(80, layoutCol.width - 22 - 64 - 16)
+                                : Math.max(80, layoutCol.width - 22 - 64 - btnsWidth - 32)
+
+                            width: layoutCol.width
                             spacing: HKS.space8
 
                             Text {
-                                text: "Keyboard Layouts & Variants"
+                                width: 22
+                                height: 28
+                                verticalAlignment: Text.AlignVCenter
+                                text: (index + 1) + "."
                                 font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSize
-                                font.weight: Font.Medium
-                                color: HKS.fg
+                                font.pixelSize: HKS.fontSizeSmall
+                                color: HKS.muted
                             }
 
-                            Repeater {
-                                model: root._keyboardLayouts()
-                                delegate: RowLayout {
-                                    required property string modelData
-                                    required property int index
-                                    width: parent.width
-                                    spacing: HKS.space8
-
-                                    Text {
-                                        Layout.preferredWidth: 22
-                                        Layout.alignment: Qt.AlignVCenter
-                                        text: (index + 1) + "."
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        color: HKS.muted
-                                    }
-
-                                    Rectangle {
-                                        Layout.preferredWidth: 72
-                                        Layout.preferredHeight: 28
-                                        Layout.alignment: Qt.AlignVCenter
-                                        radius: HKS.radiusSmall
-                                        color: HKS.elevated
-                                        border.width: 1
-                                        border.color: HKS.alpha(HKS.accent, 0.35)
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: modelData
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: HKS.fontSizeSmall
-                                            font.weight: Font.Medium
-                                            color: HKS.fg
-                                        }
-                                    }
-
-                                    TextField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 80
-                                        Layout.preferredHeight: 28
-                                        Layout.alignment: Qt.AlignVCenter
-                                        placeholderText: "variant (optional)"
-                                        placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
-                                        text: root._keyboardVariants()[index] || ""
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        color: HKS.fg
-                                        verticalAlignment: TextInput.AlignVCenter
-                                        selectByMouse: true
-                                        selectionColor: HKS.alpha(HKS.accent, 0.35)
-                                        selectedTextColor: HKS.fg
-                                        leftPadding: 8
-                                        rightPadding: 8
-                                        background: Rectangle {
-                                            radius: HKS.radiusSmall
-                                            color: HKS.bg
-                                            border.width: 1
-                                            border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
-                                        }
-                                        onEditingFinished: {
-                                            var ls = root._keyboardLayouts();
-                                            var vs = root._keyboardVariants();
-                                            vs[index] = text.trim();
-                                            root._setLayoutPair(ls, vs);
-                                        }
-                                    }
-
-                                    ActionButton {
-                                        text: "↑"
-                                        compact: true
-                                        implicitWidth: 30
-                                        Layout.preferredWidth: 30
-                                        Layout.alignment: Qt.AlignVCenter
-                                        enabled: index > 0
-                                        onClicked: {
-                                            var r = inputLogic.moveLayout(root._keyboardLayouts(), root._keyboardVariants(), index, -1);
-                                            root._setLayoutPair(r.layouts, r.variants);
-                                        }
-                                    }
-
-                                    ActionButton {
-                                        text: "↓"
-                                        compact: true
-                                        implicitWidth: 30
-                                        Layout.preferredWidth: 30
-                                        Layout.alignment: Qt.AlignVCenter
-                                        enabled: index < root._keyboardLayouts().length - 1
-                                        onClicked: {
-                                            var r = inputLogic.moveLayout(root._keyboardLayouts(), root._keyboardVariants(), index, 1);
-                                            root._setLayoutPair(r.layouts, r.variants);
-                                        }
-                                    }
-
-                                    ActionButton {
-                                        text: "✕"
-                                        compact: true
-                                        implicitWidth: 30
-                                        Layout.preferredWidth: 30
-                                        Layout.alignment: Qt.AlignVCenter
-                                        variant: "danger"
-                                        enabled: root._keyboardLayouts().length > 1
-                                        onClicked: {
-                                            var r = inputLogic.removeLayout(root._keyboardLayouts(), root._keyboardVariants(), index);
-                                            root._setLayoutPair(r.layouts, r.variants);
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Add layout row
-                            RowLayout {
-                                width: parent.width
-                                spacing: HKS.space8
-
-                                TextField {
-                                    id: addLayoutInput
-                                    Layout.fillWidth: true
-                                    Layout.minimumWidth: 90
-                                    Layout.preferredHeight: 28
-                                    Layout.alignment: Qt.AlignVCenter
-                                    placeholderText: "code (e.g. de)"
-                                    placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: HKS.fg
-                                    verticalAlignment: TextInput.AlignVCenter
-                                    selectByMouse: true
-                                    selectionColor: HKS.alpha(HKS.accent, 0.35)
-                                    selectedTextColor: HKS.fg
-                                    leftPadding: 8
-                                    rightPadding: 8
-                                    background: Rectangle {
-                                        radius: HKS.radiusSmall
-                                        color: HKS.bg
-                                        border.width: 1
-                                        border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
-                                    }
-                                }
-
-                                TextField {
-                                    id: addVariantInput
-                                    Layout.fillWidth: true
-                                    Layout.minimumWidth: 100
-                                    Layout.preferredHeight: 28
-                                    Layout.alignment: Qt.AlignVCenter
-                                    placeholderText: "variant (optional)"
-                                    placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: HKS.fg
-                                    verticalAlignment: TextInput.AlignVCenter
-                                    selectByMouse: true
-                                    selectionColor: HKS.alpha(HKS.accent, 0.35)
-                                    selectedTextColor: HKS.fg
-                                    leftPadding: 8
-                                    rightPadding: 8
-                                    background: Rectangle {
-                                        radius: HKS.radiusSmall
-                                        color: HKS.bg
-                                        border.width: 1
-                                        border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
-                                    }
-                                }
-
-                                ActionButton {
-                                    text: "Add layout"
-                                    compact: true
-                                    Layout.alignment: Qt.AlignVCenter
-                                    enabled: addLayoutInput.text.trim().length > 0
-                                    onClicked: {
-                                        var r = inputLogic.addLayout(
-                                            root._keyboardLayouts(),
-                                            root._keyboardVariants(),
-                                            addLayoutInput.text,
-                                            addVariantInput.text
-                                        );
-                                        root._setLayoutPair(r.layouts, r.variants);
-                                        addLayoutInput.text = "";
-                                        addVariantInput.text = "";
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Remaining Keyboard catalog options (repeat_rate, repeat_delay, numlock_by_default, resolve_binds_by_sym)
-                    Repeater {
-                        model: root._groupOptions(inputLogic.keyboardGroupName(), ["input.kb_layout", "input.kb_variant", "input.kb_options"])
-                        delegate: SettingRow {
-                            required property var modelData
-                            width: tabContentCol.width
-                            option: modelData
-                            currentValue: InputService.effectiveOptionValue(modelData.id)
-                            modified: InputService.draftOptions.hasOwnProperty(modelData.id)
-                            hasOverride: !!modelData.has_override
-                            onValueEdited: function(optionId, newValue) {
-                                InputService.setOptionDraft(optionId, newValue);
-                            }
-                            onResetRequested: function(optionId) {
-                                var o = InputService.findOption(optionId);
-                                if (o) {
-                                    var baseVal = o.live_value !== undefined ? o.live_value : o.effective_value;
-                                    if (baseVal !== undefined) InputService.setOptionDraft(optionId, baseVal);
-                                }
-                            }
-                        }
-                    }
-
-                    // Collapsed-by-default Advanced: XKB Options
-                    Rectangle {
-                        width: parent.width
-                        height: xkbCol.implicitHeight + 24
-                        radius: HKS.radiusMedium
-                        color: HKS.surface
-                        border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.16)
-                        visible: (InputService.xkb.option_groups || []).length > 0
-
-                        Column {
-                            id: xkbCol
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.margins: 12
-                            spacing: HKS.space8
-
-                            RowLayout {
-                                width: parent.width
-                                spacing: HKS.space8
+                            Rectangle {
+                                width: 64
+                                height: 28
+                                radius: HKS.radiusSmall
+                                color: HKS.elevated
+                                border.width: 1
+                                border.color: HKS.alpha(HKS.accent, 0.35)
 
                                 Text {
-                                    Layout.fillWidth: true
-                                    Layout.alignment: Qt.AlignVCenter
-                                    text: "Advanced: XKB options (" + root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "").length + " selected)"
+                                    objectName: "elideOk"
+                                    anchors.centerIn: parent
+                                    width: Math.min(implicitWidth, parent.width - 8)
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: modelData
                                     font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSize
+                                    font.pixelSize: HKS.fontSizeSmall
                                     font.weight: Font.Medium
                                     color: HKS.fg
                                     elide: Text.ElideRight
                                 }
-
-                                ActionButton {
-                                    text: root.xkbExpanded ? "Hide" : "Show"
-                                    compact: true
-                                    Layout.alignment: Qt.AlignVCenter
-                                    onClicked: root.xkbExpanded = !root.xkbExpanded
-                                }
-                            }
-
-                            Column {
-                                visible: root.xkbExpanded
-                                width: parent.width
-                                spacing: HKS.space8
-
-                                // Selected row
-                                Column {
-                                    width: parent.width
-                                    spacing: 4
-                                    visible: root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "").length > 0
-
-                                    Text {
-                                        text: "Selected"
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        font.weight: Font.Medium
-                                        color: HKS.accent
-                                    }
-
-                                    Flow {
-                                        width: parent.width
-                                        spacing: 6
-
-                                        Repeater {
-                                            model: root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "")
-                                            delegate: ActionButton {
-                                                required property string modelData
-                                                text: modelData + " ✕"
-                                                compact: true
-                                                variant: "accent"
-                                                onClicked: root._toggleXkbOption(modelData, [])
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Search + Common/All toggle
-                                RowLayout {
-                                    width: parent.width
-                                    spacing: HKS.space8
-
-                                    TextField {
-                                        id: xkbSearchField
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 28
-                                        Layout.alignment: Qt.AlignVCenter
-                                        placeholderText: "Search XKB options (e.g. caps, escape, grp)..."
-                                        placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        color: HKS.fg
-                                        verticalAlignment: TextInput.AlignVCenter
-                                        selectByMouse: true
-                                        selectionColor: HKS.alpha(HKS.accent, 0.35)
-                                        selectedTextColor: HKS.fg
-                                        leftPadding: 8
-                                        rightPadding: 8
-                                        text: root.xkbQuery
-                                        onTextChanged: root.xkbQuery = text
-                                        background: Rectangle {
-                                            radius: HKS.radiusSmall
-                                            color: HKS.bg
-                                            border.width: 1
-                                            border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
-                                        }
-                                    }
-
-                                    ActionButton {
-                                        visible: root.xkbQuery.trim().length === 0
-                                        text: root.xkbShowAllGroups ? "Common only" : "All groups"
-                                        compact: true
-                                        Layout.alignment: Qt.AlignVCenter
-                                        variant: root.xkbShowAllGroups ? "accent" : "neutral"
-                                        onClicked: root.xkbShowAllGroups = !root.xkbShowAllGroups
-                                    }
-                                }
-
-                                Repeater {
-                                    model: {
-                                        var groups = InputService.xkb.option_groups || [];
-                                        if (root.xkbQuery.trim().length > 0) {
-                                            return inputLogic.filterXkbOptionGroups(groups, root.xkbQuery);
-                                        }
-                                        return root.xkbShowAllGroups ? groups : inputLogic.commonXkbGroups(groups);
-                                    }
-                                    delegate: Column {
-                                        required property var modelData
-                                        width: parent.width
-                                        spacing: 4
-
-                                        Text {
-                                            text: modelData.description || modelData.group || ""
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: HKS.fontSizeSmall
-                                            font.weight: Font.Medium
-                                            color: HKS.accent
-                                        }
-
-                                        Flow {
-                                            id: xkbFlow
-                                            width: parent.width
-                                            spacing: 6
-
-                                            Repeater {
-                                                model: modelData.options || []
-                                                delegate: ActionButton {
-                                                    required property var modelData
-                                                    readonly property string optCode: String(modelData.code || "")
-                                                    readonly property string optLabel: String(modelData.description || modelData.code || "")
-                                                    text: optLabel
-                                                    compact: true
-                                                    width: Math.min(implicitWidth, xkbFlow.width)
-                                                    variant: root._hasXkbOption(optCode) ? "accent" : "neutral"
-                                                    onClicked: root._toggleXkbOption(optCode, [])
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Test box
-                    Rectangle {
-                        width: parent.width
-                        height: testCol.implicitHeight + 20
-                        radius: HKS.radiusMedium
-                        color: HKS.surface
-                        border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.16)
-
-                        Column {
-                            id: testCol
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.margins: 10
-                            spacing: 6
-
-                            Text {
-                                text: "Keyboard Test Area"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                font.weight: Font.Medium
-                                color: HKS.muted
                             }
 
                             TextField {
-                                width: parent.width
-                                height: 32
-                                placeholderText: "Type here to test layout, repeat rate, and delay..."
+                                width: parent.variantW
+                                height: 28
+                                placeholderText: "variant (optional)"
                                 placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
+                                text: root._keyboardVariants()[index] || ""
                                 font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSize
+                                font.pixelSize: HKS.fontSizeSmall
                                 color: HKS.fg
                                 verticalAlignment: TextInput.AlignVCenter
                                 selectByMouse: true
@@ -731,188 +344,530 @@ Item {
                                     border.width: 1
                                     border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
                                 }
+                                onEditingFinished: {
+                                    var ls = root._keyboardLayouts();
+                                    var vs = root._keyboardVariants();
+                                    vs[index] = text.trim();
+                                    root._setLayoutPair(ls, vs);
+                                }
+                            }
+
+                            ActionButton {
+                                text: "↑"
+                                compact: true
+                                implicitWidth: 30
+                                enabled: index > 0
+                                onClicked: {
+                                    var r = inputLogic.moveLayout(root._keyboardLayouts(), root._keyboardVariants(), index, -1);
+                                    root._setLayoutPair(r.layouts, r.variants);
+                                }
+                            }
+
+                            ActionButton {
+                                text: "↓"
+                                compact: true
+                                implicitWidth: 30
+                                enabled: index < root._keyboardLayouts().length - 1
+                                onClicked: {
+                                    var r = inputLogic.moveLayout(root._keyboardLayouts(), root._keyboardVariants(), index, 1);
+                                    root._setLayoutPair(r.layouts, r.variants);
+                                }
+                            }
+
+                            ActionButton {
+                                text: "✕"
+                                compact: true
+                                implicitWidth: 30
+                                variant: "danger"
+                                enabled: root._keyboardLayouts().length > 1
+                                onClicked: {
+                                    var r = inputLogic.removeLayout(root._keyboardLayouts(), root._keyboardVariants(), index);
+                                    root._setLayoutPair(r.layouts, r.variants);
+                                }
                             }
                         }
                     }
-                }
 
-                // MOUSE TAB
-                Column {
-                    width: parent.width
-                    spacing: HKS.space8
-                    visible: root.activeTab === "mouse"
+                    // Add layout row
+                    Flow {
+                        readonly property bool stackedBtn: layoutCol.width < 420
+                        readonly property real fieldPairWidth: stackedBtn
+                            ? layoutCol.width
+                            : Math.max(200, layoutCol.width - addLayoutBtn.width - HKS.space8)
+                        readonly property real eachInputW: Math.max(90, Math.floor((fieldPairWidth - HKS.space8) / 2))
 
-                    EmptyState {
-                        visible: !InputService.loading && root._groupOptions(inputLogic.mouseGroupName(), []).length === 0
-                        width: parent.width
-                        height: 180
-                        icon: "󰍽"
-                        title: "Mouse options unavailable"
-                        message: "No capable mouse options were detected for this session."
-                    }
+                        width: layoutCol.width
+                        spacing: HKS.space8
 
-                    Repeater {
-                        model: root._groupOptions(inputLogic.mouseGroupName(), [])
-                        delegate: SettingRow {
-                            required property var modelData
-                            width: tabContentCol.width
-                            option: modelData
-                            currentValue: InputService.effectiveOptionValue(modelData.id)
-                            modified: InputService.draftOptions.hasOwnProperty(modelData.id)
-                            hasOverride: !!modelData.has_override
-                            onValueEdited: function(optionId, newValue) {
-                                InputService.setOptionDraft(optionId, newValue);
-                            }
-                            onResetRequested: function(optionId) {
-                                var o = InputService.findOption(optionId);
-                                if (o) InputService.setOptionDraft(optionId, o.default);
-                            }
-                        }
-                    }
-                }
-
-                // TOUCHPAD TAB
-                Column {
-                    width: parent.width
-                    spacing: HKS.space8
-                    visible: root.activeTab === "touchpad"
-
-                    EmptyState {
-                        visible: !InputService.loading && root._groupOptions(inputLogic.touchpadGroupName(), []).length === 0
-                        width: parent.width
-                        height: 180
-                        icon: "󰟸"
-                        title: "Touchpad options unavailable"
-                        message: "No capable touchpad options were detected for this session."
-                    }
-
-                    Repeater {
-                        model: root._groupOptions(inputLogic.touchpadGroupName(), [])
-                        delegate: SettingRow {
-                            required property var modelData
-                            width: tabContentCol.width
-                            option: modelData
-                            currentValue: InputService.effectiveOptionValue(modelData.id)
-                            modified: InputService.draftOptions.hasOwnProperty(modelData.id)
-                            hasOverride: !!modelData.has_override
-                            onValueEdited: function(optionId, newValue) {
-                                InputService.setOptionDraft(optionId, newValue);
-                            }
-                            onResetRequested: function(optionId) {
-                                var o = InputService.findOption(optionId);
-                                if (o) InputService.setOptionDraft(optionId, o.default);
+                        TextField {
+                            id: addLayoutInput
+                            width: parent.eachInputW
+                            height: 28
+                            placeholderText: "code (e.g. de)"
+                            placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
+                            font.family: HKS.fontFamily
+                            font.pixelSize: HKS.fontSizeSmall
+                            color: HKS.fg
+                            verticalAlignment: TextInput.AlignVCenter
+                            selectByMouse: true
+                            selectionColor: HKS.alpha(HKS.accent, 0.35)
+                            selectedTextColor: HKS.fg
+                            leftPadding: 8
+                            rightPadding: 8
+                            background: Rectangle {
+                                radius: HKS.radiusSmall
+                                color: HKS.bg
+                                border.width: 1
+                                border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
                             }
                         }
-                    }
-                }
 
-                // DEVICES TAB
-                Column {
-                    width: parent.width
-                    spacing: HKS.space8
-                    visible: root.activeTab === "devices"
-
-                    Row {
-                        visible: root._hiddenVirtualCount() > 0 || root.showVirtualDevices
-                        width: parent.width
-                        spacing: HKS.space12
+                        TextField {
+                            id: addVariantInput
+                            width: parent.eachInputW
+                            height: 28
+                            placeholderText: "variant (optional)"
+                            placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
+                            font.family: HKS.fontFamily
+                            font.pixelSize: HKS.fontSizeSmall
+                            color: HKS.fg
+                            verticalAlignment: TextInput.AlignVCenter
+                            selectByMouse: true
+                            selectionColor: HKS.alpha(HKS.accent, 0.35)
+                            selectedTextColor: HKS.fg
+                            leftPadding: 8
+                            rightPadding: 8
+                            background: Rectangle {
+                                radius: HKS.radiusSmall
+                                color: HKS.bg
+                                border.width: 1
+                                border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                            }
+                        }
 
                         ActionButton {
-                            text: root.showVirtualDevices
-                                ? "Hide virtual devices"
-                                : ("Show virtual devices (" + root._hiddenVirtualCount() + " hidden)")
+                            id: addLayoutBtn
+                            text: "Add layout"
                             compact: true
-                            variant: root.showVirtualDevices ? "accent" : "neutral"
-                            onClicked: root.showVirtualDevices = !root.showVirtualDevices
+                            enabled: addLayoutInput.text.trim().length > 0
+                            onClicked: {
+                                var r = inputLogic.addLayout(
+                                    root._keyboardLayouts(),
+                                    root._keyboardVariants(),
+                                    addLayoutInput.text,
+                                    addVariantInput.text
+                                );
+                                root._setLayoutPair(r.layouts, r.variants);
+                                addLayoutInput.text = "";
+                                addVariantInput.text = "";
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Remaining Keyboard catalog options
+            Repeater {
+                model: root._groupOptions(inputLogic.keyboardGroupName(), ["input.kb_layout", "input.kb_variant", "input.kb_options"])
+                delegate: SettingRow {
+                    required property var modelData
+                    width: viewport.innerWidth
+                    option: modelData
+                    currentValue: InputService.effectiveOptionValue(modelData.id)
+                    modified: InputService.draftOptions.hasOwnProperty(modelData.id)
+                    hasOverride: !!modelData.has_override
+                    onValueEdited: function(optionId, newValue) {
+                        InputService.setOptionDraft(optionId, newValue);
+                    }
+                    onResetRequested: function(optionId) {
+                        var o = InputService.findOption(optionId);
+                        if (o) {
+                            var baseVal = o.live_value !== undefined ? o.live_value : o.effective_value;
+                            if (baseVal !== undefined) InputService.setOptionDraft(optionId, baseVal);
+                        }
+                    }
+                }
+            }
+
+            // Collapsed-by-default Advanced: XKB Options
+            Rectangle {
+                width: parent.width
+                height: xkbCol.implicitHeight + 24
+                radius: HKS.radiusMedium
+                color: HKS.surface
+                border.width: 1
+                border.color: HKS.alpha(HKS.muted, 0.16)
+                visible: (InputService.xkb.option_groups || []).length > 0
+
+                Column {
+                    id: xkbCol
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 12
+                    spacing: HKS.space8
+
+                    Item {
+                        id: xkbHdrBox
+                        width: parent.width
+                        readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
+                            xkbHdrBox.width, xkbHdrMetrics.advanceWidth, xkbToggleBtn.implicitWidth, HKS.space8
+                        )
+                        implicitHeight: wrapped
+                            ? (xkbHdrTxt.implicitHeight + HKS.space8 + xkbToggleBtn.height)
+                            : Math.max(xkbHdrTxt.implicitHeight, xkbToggleBtn.height)
+                        height: implicitHeight
+
+                        TextMetrics {
+                            id: xkbHdrMetrics
+                            font.family: HKS.fontFamily
+                            font.pixelSize: HKS.fontSize
+                            font.weight: Font.Medium
+                            text: xkbHdrTxt.text
+                        }
+
+                        Text {
+                            id: xkbHdrTxt
+                            x: 0
+                            y: xkbHdrBox.wrapped ? 0 : Math.max(0, Math.round((xkbHdrBox.height - height) / 2))
+                            width: xkbHdrBox.wrapped
+                                ? xkbHdrBox.width
+                                : Math.max(0, xkbHdrBox.width - xkbToggleBtn.width - HKS.space8)
+                            text: "Advanced: XKB options (" + root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "").length + " selected)"
+                            font.family: HKS.fontFamily
+                            font.pixelSize: HKS.fontSize
+                            font.weight: Font.Medium
+                            color: HKS.fg
+                            wrapMode: Text.WordWrap
+                        }
+
+                        ActionButton {
+                            id: xkbToggleBtn
+                            x: xkbHdrBox.wrapped ? 0 : Math.max(0, xkbHdrBox.width - width)
+                            y: xkbHdrBox.wrapped
+                                ? (xkbHdrTxt.implicitHeight + HKS.space8)
+                                : Math.max(0, Math.round((xkbHdrBox.height - height) / 2))
+                            text: root.xkbExpanded ? "Hide" : "Show"
+                            compact: true
+                            onClicked: root.xkbExpanded = !root.xkbExpanded
                         }
                     }
 
-                    Repeater {
-                        model: inputLogic.filterDevices(InputService.devices, root.showVirtualDevices)
-                        delegate: Rectangle {
-                            required property var modelData
-                            width: tabContentCol.width
-                            height: devRow.implicitHeight + 16
-                            radius: HKS.radiusMedium
-                            color: InputService.draftDevices.hasOwnProperty(modelData.name)
-                                ? HKS.alpha(HKS.accent, 0.08) : HKS.surface
-                            border.width: 1
-                            border.color: InputService.draftDevices.hasOwnProperty(modelData.name)
-                                ? HKS.alpha(HKS.accent, 0.45) : HKS.alpha(HKS.muted, 0.16)
+                    Column {
+                        visible: root.xkbExpanded
+                        width: parent.width
+                        spacing: HKS.space8
 
-                            RowLayout {
-                                id: devRow
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                anchors.leftMargin: 12
-                                anchors.rightMargin: 12
-                                spacing: HKS.space12
+                        // Selected row
+                        Column {
+                            width: parent.width
+                            spacing: 4
+                            visible: root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "").length > 0
 
-                                Row {
-                                    Layout.fillWidth: true
-                                    Layout.alignment: Qt.AlignVCenter
-                                    spacing: HKS.space8
+                            Text {
+                                text: "Selected"
+                                font.family: HKS.fontFamily
+                                font.pixelSize: HKS.fontSizeSmall
+                                font.weight: Font.Medium
+                                color: HKS.accent
+                            }
 
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: modelData.name
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSize
-                                        font.weight: Font.Medium
-                                        color: HKS.fg
-                                    }
+                            ChipFlow {
+                                width: parent.width
+                                layoutClass: viewport.layoutClass
+                                layoutShort: viewport.layoutShort
+                                spacing: 6
 
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "[" + (modelData.category || "other") + (modelData.virtual ? ", virtual" : "") + "]"
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        color: HKS.muted
+                                Repeater {
+                                    model: root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "")
+                                    delegate: ActionButton {
+                                        required property string modelData
+                                        text: modelData + " ✕"
+                                        compact: true
+                                        width: Math.min(implicitWidth, xkbCol.width)
+                                        variant: "accent"
+                                        onClicked: root._toggleXkbOption(modelData, [])
                                     }
                                 }
+                            }
+                        }
 
-                                Item {
-                                    Layout.preferredWidth: 270
-                                    Layout.preferredHeight: devBtns.implicitHeight
-                                    Layout.alignment: Qt.AlignVCenter
+                        // Search + Common/All toggle
+                        Flow {
+                            readonly property bool stacked: xkbCol.width < 380
+                            width: xkbCol.width
+                            spacing: HKS.space8
 
-                                    Row {
-                                        id: devBtns
-                                        anchors.right: parent.right
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        spacing: HKS.space8
+                            TextField {
+                                id: xkbSearchField
+                                width: (parent.stacked || !xkbAllBtn.visible)
+                                    ? xkbCol.width
+                                    : Math.max(120, xkbCol.width - xkbAllBtn.width - HKS.space8)
+                                height: 28
+                                placeholderText: "Search XKB options..."
+                                placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
+                                font.family: HKS.fontFamily
+                                font.pixelSize: HKS.fontSizeSmall
+                                color: HKS.fg
+                                verticalAlignment: TextInput.AlignVCenter
+                                selectByMouse: true
+                                selectionColor: HKS.alpha(HKS.accent, 0.35)
+                                selectedTextColor: HKS.fg
+                                leftPadding: 8
+                                rightPadding: 8
+                                text: root.xkbQuery
+                                onTextChanged: root.xkbQuery = text
+                                background: Rectangle {
+                                    radius: HKS.radiusSmall
+                                    color: HKS.bg
+                                    border.width: 1
+                                    border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                }
+                            }
 
-                                        ActionButton {
-                                            visible: InputService.draftDevices.hasOwnProperty(modelData.name)
-                                            text: "Discard"
+                            ActionButton {
+                                id: xkbAllBtn
+                                visible: root.xkbQuery.trim().length === 0
+                                text: root.xkbShowAllGroups ? "Common only" : "All groups"
+                                compact: true
+                                variant: root.xkbShowAllGroups ? "accent" : "neutral"
+                                onClicked: root.xkbShowAllGroups = !root.xkbShowAllGroups
+                            }
+                        }
+
+                        Repeater {
+                            model: {
+                                var groups = InputService.xkb.option_groups || [];
+                                if (root.xkbQuery.trim().length > 0) {
+                                    return inputLogic.filterXkbOptionGroups(groups, root.xkbQuery);
+                                }
+                                return root.xkbShowAllGroups ? groups : inputLogic.commonXkbGroups(groups);
+                            }
+                            delegate: Column {
+                                required property var modelData
+                                width: xkbCol.width
+                                spacing: 4
+
+                                Text {
+                                    width: parent.width
+                                    text: modelData.description || modelData.group || ""
+                                    font.family: HKS.fontFamily
+                                    font.pixelSize: HKS.fontSizeSmall
+                                    font.weight: Font.Medium
+                                    color: HKS.accent
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                ChipFlow {
+                                    id: xkbFlow
+                                    width: parent.width
+                                    layoutClass: viewport.layoutClass
+                                    layoutShort: viewport.layoutShort
+                                    spacing: 6
+
+                                    Repeater {
+                                        model: modelData.options || []
+                                        delegate: ActionButton {
+                                            required property var modelData
+                                            readonly property string optCode: String(modelData.code || "")
+                                            readonly property string optLabel: String(modelData.description || modelData.code || "")
+                                            text: optLabel
                                             compact: true
-                                            onClicked: InputService.clearDeviceDraft(modelData.name)
-                                        }
-
-                                        ActionButton {
-                                            property bool curNat: !!InputService.effectiveDeviceField(modelData, "natural_scroll")
-                                            visible: modelData.category === "mouse" || modelData.category === "touchpad"
-                                            text: "Natural scroll: " + (curNat ? "On" : "Off")
-                                            compact: true
-                                            variant: curNat ? "accent" : "neutral"
-                                            onClicked: InputService.setDeviceDraft(modelData.name, "natural_scroll", !curNat)
-                                        }
-
-                                        ActionButton {
-                                            property bool curEnabled: InputService.effectiveDeviceField(modelData, "enabled") !== false
-                                            property bool canDisable: inputLogic.canDisableDevice(InputService.devices, InputService.draftDevices, modelData.name)
-                                            text: curEnabled ? "Enabled" : "Disabled"
-                                            compact: true
-                                            variant: curEnabled ? "accent" : "danger"
-                                            enabled: !curEnabled || canDisable
-                                            onClicked: InputService.setDeviceDraft(modelData.name, "enabled", !curEnabled)
+                                            width: Math.min(implicitWidth, xkbFlow.width)
+                                            variant: root._hasXkbOption(optCode) ? "accent" : "neutral"
+                                            onClicked: root._toggleXkbOption(optCode, [])
                                         }
                                     }
                                 }
                             }
                         }
                     }
+                }
+            }
+
+            // Test box
+            Rectangle {
+                width: parent.width
+                height: testCol.implicitHeight + 20
+                radius: HKS.radiusMedium
+                color: HKS.surface
+                border.width: 1
+                border.color: HKS.alpha(HKS.muted, 0.16)
+
+                Column {
+                    id: testCol
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 10
+                    spacing: 6
+
+                    Text {
+                        width: parent.width
+                        text: "Keyboard Test Area"
+                        font.family: HKS.fontFamily
+                        font.pixelSize: HKS.fontSizeSmall
+                        font.weight: Font.Medium
+                        color: HKS.muted
+                    }
+
+                    TextField {
+                        width: parent.width
+                        height: 32
+                        placeholderText: "Type here to test layout..."
+                        placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
+                        font.family: HKS.fontFamily
+                        font.pixelSize: HKS.fontSize
+                        color: HKS.fg
+                        verticalAlignment: TextInput.AlignVCenter
+                        selectByMouse: true
+                        selectionColor: HKS.alpha(HKS.accent, 0.35)
+                        selectedTextColor: HKS.fg
+                        leftPadding: 8
+                        rightPadding: 8
+                        background: Rectangle {
+                            radius: HKS.radiusSmall
+                            color: HKS.bg
+                            border.width: 1
+                            border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                        }
+                    }
+                }
+            }
+        }
+
+        // MOUSE TAB
+        Column {
+            width: viewport.innerWidth
+            spacing: HKS.space8
+            visible: root.activeTab === "mouse"
+
+            EmptyState {
+                visible: !InputService.loading && root._groupOptions(inputLogic.mouseGroupName(), []).length === 0
+                width: parent.width
+                height: 180
+                icon: "󰍽"
+                title: "Mouse options unavailable"
+                message: "No capable mouse options were detected for this session."
+            }
+
+            Repeater {
+                model: root._groupOptions(inputLogic.mouseGroupName(), [])
+                delegate: SettingRow {
+                    required property var modelData
+                    width: viewport.innerWidth
+                    option: modelData
+                    currentValue: InputService.effectiveOptionValue(modelData.id)
+                    modified: InputService.draftOptions.hasOwnProperty(modelData.id)
+                    hasOverride: !!modelData.has_override
+                    onValueEdited: function(optionId, newValue) {
+                        InputService.setOptionDraft(optionId, newValue);
+                    }
+                    onResetRequested: function(optionId) {
+                        var o = InputService.findOption(optionId);
+                        if (o) InputService.setOptionDraft(optionId, o.default);
+                    }
+                }
+            }
+        }
+
+        // TOUCHPAD TAB
+        Column {
+            width: viewport.innerWidth
+            spacing: HKS.space8
+            visible: root.activeTab === "touchpad"
+
+            EmptyState {
+                visible: !InputService.loading && root._groupOptions(inputLogic.touchpadGroupName(), []).length === 0
+                width: parent.width
+                height: 180
+                icon: "󰟸"
+                title: "Touchpad options unavailable"
+                message: "No capable touchpad options were detected for this session."
+            }
+
+            Repeater {
+                model: root._groupOptions(inputLogic.touchpadGroupName(), [])
+                delegate: SettingRow {
+                    required property var modelData
+                    width: viewport.innerWidth
+                    option: modelData
+                    currentValue: InputService.effectiveOptionValue(modelData.id)
+                    modified: InputService.draftOptions.hasOwnProperty(modelData.id)
+                    hasOverride: !!modelData.has_override
+                    onValueEdited: function(optionId, newValue) {
+                        InputService.setOptionDraft(optionId, newValue);
+                    }
+                    onResetRequested: function(optionId) {
+                        var o = InputService.findOption(optionId);
+                        if (o) InputService.setOptionDraft(optionId, o.default);
+                    }
+                }
+            }
+        }
+
+        // DEVICES TAB
+        Column {
+            width: viewport.innerWidth
+            spacing: HKS.space8
+            visible: root.activeTab === "devices"
+
+            Flow {
+                visible: root._hiddenVirtualCount() > 0 || root.showVirtualDevices
+                width: parent.width
+                spacing: HKS.space12
+
+                ActionButton {
+                    text: root.showVirtualDevices
+                        ? "Hide virtual devices"
+                        : ("Show virtual devices (" + root._hiddenVirtualCount() + " hidden)")
+                    compact: true
+                    variant: root.showVirtualDevices ? "accent" : "neutral"
+                    onClicked: root.showVirtualDevices = !root.showVirtualDevices
+                }
+            }
+
+            Repeater {
+                model: inputLogic.filterDevices(InputService.devices, root.showVirtualDevices)
+                delegate: DeviceCard {
+                    required property var modelData
+                    width: viewport.innerWidth
+                    cardPadding: viewport.cardPadding
+                    highlighted: InputService.draftDevices.hasOwnProperty(modelData.name)
+                    title: String(modelData.name || "")
+                    badges: [
+                        {
+                            text: "[" + (modelData.category || "other") + (modelData.virtual ? ", virtual" : "") + "]",
+                            textColor: HKS.muted,
+                            bgColor: HKS.elevated
+                        }
+                    ]
+
+                    actions: [
+                        ActionButton {
+                            visible: InputService.draftDevices.hasOwnProperty(modelData.name)
+                            text: "Discard"
+                            compact: true
+                            onClicked: InputService.clearDeviceDraft(modelData.name)
+                        },
+                        ActionButton {
+                            property bool curNat: !!InputService.effectiveDeviceField(modelData, "natural_scroll")
+                            visible: modelData.category === "mouse" || modelData.category === "touchpad"
+                            text: "Natural scroll: " + (curNat ? "On" : "Off")
+                            compact: true
+                            variant: curNat ? "accent" : "neutral"
+                            onClicked: InputService.setDeviceDraft(modelData.name, "natural_scroll", !curNat)
+                        },
+                        ActionButton {
+                            property bool curEnabled: InputService.effectiveDeviceField(modelData, "enabled") !== false
+                            property bool canDisable: inputLogic.canDisableDevice(InputService.devices, InputService.draftDevices, modelData.name)
+                            text: curEnabled ? "Enabled" : "Disabled"
+                            compact: true
+                            variant: curEnabled ? "accent" : "danger"
+                            enabled: !curEnabled || canDisable
+                            onClicked: InputService.setDeviceDraft(modelData.name, "enabled", !curEnabled)
+                        }
+                    ]
                 }
             }
         }

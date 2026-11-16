@@ -11,10 +11,18 @@ Rectangle {
     signal clicked()
 
     readonly property real horizontalPadding: compact ? 10 : 14
-    readonly property real contentSpacing: (iconText.length > 0 && text.length > 0) ? 8 : 0
+    readonly property real contentSpacing: (iconLabel.visible && textLabel.visible) ? 8 : 0
+
+    TextMetrics {
+        id: textMetrics
+        font.family: HKS.fontFamily
+        font.pixelSize: HKS.fontSizeSmall
+        font.weight: Font.DemiBold
+        text: root.text
+    }
 
     implicitHeight: compact ? 28 : 32
-    implicitWidth: Math.max(84, (iconLabel.visible ? iconLabel.implicitWidth : 0) + contentSpacing + (textLabel.visible ? textLabel.implicitWidth : 0) + (2 * horizontalPadding))
+    implicitWidth: Math.max(84, (iconLabel.visible ? iconLabel.implicitWidth : 0) + contentSpacing + (root.text.length > 0 ? Math.ceil(textMetrics.advanceWidth) : 0) + (2 * horizontalPadding))
     width: implicitWidth
     height: implicitHeight
 
@@ -88,14 +96,19 @@ Rectangle {
 
         Text {
             id: textLabel
+            objectName: "elideOk"
             anchors.verticalCenter: parent.verticalCenter
             visible: root.text.length > 0
+            width: {
+                var maxW = Math.max(0, root.width - (2 * root.horizontalPadding) - (iconLabel.visible ? iconLabel.implicitWidth + root.contentSpacing : 0));
+                return Math.min(Math.ceil(textMetrics.advanceWidth) + 2, maxW);
+            }
             text: root.text
             font.family: HKS.fontFamily
             font.pixelSize: HKS.fontSizeSmall
             font.weight: Font.DemiBold
             color: root.contentColor
-            elide: Text.ElideNone
+            elide: Text.ElideRight
         }
     }
 

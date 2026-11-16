@@ -28,41 +28,20 @@ Item {
         return out;
     }
 
-    Column {
+    PageViewport {
+        id: viewport
         anchors.fill: parent
-        anchors.margins: HKS.space24
-        spacing: HKS.space12
+        allowTwoColumns: true
 
-        // Header
-        Row {
-            width: parent.width
-            spacing: HKS.space12
-
-            Column {
-                width: parent.width - resetSectionBtn.width - HKS.space12
-                spacing: 4
-
-                Text {
-                    text: root.searchQuery.trim().length > 0
-                        ? ("Search Results (" + root.filteredOptions.length + ")")
-                        : root.pageTitle
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeTitle
-                    font.weight: Font.Bold
-                    color: HKS.fg
-                }
-
-                Text {
-                    text: root.searchQuery.trim().length > 0
-                        ? "Matching options across all Hyprland settings."
-                        : (root.section === "appearance"
-                            ? "Gaps, borders, rounding, blur, shadows, and animations."
-                            : "Tiling layouts, dwindle/master behavior, misc flags, and cursor.")
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
-                }
-            }
+        header: PageHeader {
+            title: root.searchQuery.trim().length > 0
+                ? ("Search Results (" + root.filteredOptions.length + ")")
+                : root.pageTitle
+            subtitle: root.searchQuery.trim().length > 0
+                ? "Matching options across all Hyprland settings."
+                : (root.section === "appearance"
+                    ? "Gaps, borders, rounding, blur, shadows, and animations."
+                    : "Tiling layouts, dwindle/master behavior, misc flags, and cursor.")
 
             ActionButton {
                 id: resetSectionBtn
@@ -78,7 +57,7 @@ Item {
         // Inline include-missing warning
         Rectangle {
             visible: !SettingsService.loading && !SettingsService.includeInstalled
-            width: parent.width
+            width: viewport.innerWidth
             height: incWarnTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.warning, 0.14)
@@ -100,7 +79,7 @@ Item {
         // Inline backend error banner
         Rectangle {
             visible: SettingsService.error.length > 0
-            width: parent.width
+            width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.critical, 0.14)
@@ -119,35 +98,36 @@ Item {
             }
         }
 
-        // Scrollable list of options
-        ListView {
-            id: listView
-            width: parent.width
-            height: Math.max(100, parent.height - y)
-            clip: true
-            spacing: HKS.space8
-            model: root.filteredOptions
+        EmptyState {
+            visible: !SettingsService.loading && root.filteredOptions.length === 0
+            width: viewport.innerWidth
+            height: 220
+            title: "No matching options"
+            message: "Try a different search query."
+        }
 
-            delegate: SettingRow {
-                required property var modelData
-                width: listView.width
-                option: modelData
-                currentValue: SettingsService.effectiveValue(modelData)
-                modified: SettingsService.isOptionModified(modelData)
-                hasOverride: SettingsService.hasOverride(modelData)
-                onValueEdited: function(optionId, newValue) {
-                    SettingsService.setDraft(optionId, newValue);
-                }
-                onResetRequested: function(optionId) {
-                    SettingsService.markReset(optionId);
-                }
-            }
+        // Two columns at >= 1200px viewport width; single column below
+        Flow {
+            visible: root.filteredOptions.length > 0
+            width: viewport.innerWidth
+            spacing: viewport.columnSpacing
 
-            EmptyState {
-                anchors.centerIn: parent
-                visible: !SettingsService.loading && listView.count === 0
-                title: "No matching options"
-                message: "Try a different search query."
+            Repeater {
+                model: root.filteredOptions
+                delegate: SettingRow {
+                    required property var modelData
+                    width: viewport.twoColumnCardWidth
+                    option: modelData
+                    currentValue: SettingsService.effectiveValue(modelData)
+                    modified: SettingsService.isOptionModified(modelData)
+                    hasOverride: SettingsService.hasOverride(modelData)
+                    onValueEdited: function(optionId, newValue) {
+                        SettingsService.setDraft(optionId, newValue);
+                    }
+                    onResetRequested: function(optionId) {
+                        SettingsService.markReset(optionId);
+                    }
+                }
             }
         }
     }

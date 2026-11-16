@@ -9,9 +9,15 @@ Rectangle {
     property string badge: ""
     property bool active: false
     property bool disabled: false
+    property bool compactRail: false
+    property bool showRailTooltip: true
+    readonly property bool itemHovered: mouseArea.containsMouse && !root.disabled
     signal clicked()
+    signal railHoverState(bool hovered, string label, Item sourceItem)
 
-    implicitWidth: 180
+    onItemHoveredChanged: root.railHoverState(root.itemHovered, root.text, root)
+
+    implicitWidth: compactRail ? 40 : 180
     implicitHeight: 36
     radius: 6
     color: active
@@ -22,37 +28,37 @@ Rectangle {
 
     opacity: disabled ? 0.45 : 1.0
 
-    Row {
-        id: row
-        anchors.left: parent.left
-        anchors.leftMargin: 12
+    Text {
+        id: iconTxt
+        x: root.compactRail ? Math.round((parent.width - width) / 2) : 12
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 10
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.icon
-            font.family: HKS.fontFamily
-            font.pixelSize: 14
-            color: root.active ? HKS.accent : (root.disabled ? HKS.muted : HKS.fg)
-        }
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.text
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeSmall
-            font.weight: root.active ? Font.DemiBold : Font.Normal
-            color: root.active ? HKS.accent : (root.disabled ? HKS.muted : HKS.fg)
-        }
+        text: root.icon
+        font.family: HKS.fontFamily
+        font.pixelSize: 14
+        color: root.active ? HKS.accent : (root.disabled ? HKS.muted : HKS.fg)
     }
 
-    // Optional right-aligned badge
-    Rectangle {
-        anchors.right: parent.right
-        anchors.rightMargin: 10
+    Text {
+        id: labelTxt
+        objectName: "elideOk"
+        visible: !root.compactRail
+        x: iconTxt.x + iconTxt.width + 10
+        width: Math.max(0, (badgeBox.visible ? badgeBox.x - 8 : parent.width - 10) - x)
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.badge.length > 0
+        text: root.text
+        font.family: HKS.fontFamily
+        font.pixelSize: HKS.fontSizeSmall
+        font.weight: root.active ? Font.DemiBold : Font.Normal
+        color: root.active ? HKS.accent : (root.disabled ? HKS.muted : HKS.fg)
+        elide: Text.ElideRight
+    }
+
+    // Optional right-aligned badge (or corner indicator dot in compactRail mode)
+    Rectangle {
+        id: badgeBox
+        x: parent.width - width - 10
+        anchors.verticalCenter: parent.verticalCenter
+        visible: !root.compactRail && root.badge.length > 0
         width: badgeText.implicitWidth + 8
         height: 16
         radius: 4
@@ -69,10 +75,45 @@ Rectangle {
         }
     }
 
+    Rectangle {
+        visible: root.compactRail && root.badge.length > 0
+        width: 7
+        height: 7
+        radius: 3.5
+        anchors.right: parent.right
+        anchors.rightMargin: 6
+        anchors.top: parent.top
+        anchors.topMargin: 6
+        color: root.disabled ? HKS.muted : HKS.accent
+    }
+
+    // Floating tooltip when used in compactRail outside clipping parents
+    Rectangle {
+        visible: root.showRailTooltip && root.compactRail && root.itemHovered && root.text.length > 0
+        z: 100
+        x: root.width + 8
+        y: Math.round((root.height - height) / 2)
+        width: railTipTxt.implicitWidth + 16
+        height: 26
+        radius: 6
+        color: HKS.elevated
+        border.width: 1
+        border.color: HKS.alpha(HKS.accent, 0.5)
+
+        Text {
+            id: railTipTxt
+            anchors.centerIn: parent
+            text: root.text
+            font.family: HKS.fontFamily
+            font.pixelSize: HKS.fontSizeSmall
+            color: HKS.fg
+        }
+    }
+
     MouseArea {
         id: mouseArea
         anchors.fill: parent
-        hoverEnabled: !root.disabled
+        hoverEnabled: true
         cursorShape: root.disabled ? Qt.ArrowCursor : Qt.PointingHandCursor
         onClicked: {
             if (!root.disabled) {

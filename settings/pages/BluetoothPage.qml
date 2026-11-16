@@ -16,72 +16,44 @@ Item {
     readonly property bool ctrlPowered: !!(BluetoothService.controller && BluetoothService.controller.powered)
     readonly property bool ctrlPairable: !!(BluetoothService.controller && BluetoothService.controller.pairable)
 
-    Column {
+    PageViewport {
+        id: viewport
         anchors.fill: parent
-        anchors.margins: HKS.space24
-        spacing: HKS.space12
 
-        // Header
-        Row {
-            width: parent.width
-            spacing: HKS.space12
+        header: PageHeader {
+            title: "Bluetooth"
+            subtitle: BluetoothService.controller
+                ? ("Adapter: " + (BluetoothService.controller.alias || "hci0") + " (" + (BluetoothService.controller.address || "") + ")")
+                : "Bluetooth controller, paired devices, and scanning."
 
-            Column {
-                width: Math.max(200, parent.width - headerActions.width - HKS.space12)
-                spacing: 4
-
-                Text {
-                    text: "Bluetooth"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeTitle
-                    font.weight: Font.Bold
-                    color: HKS.fg
-                }
-
-                Text {
-                    text: BluetoothService.controller
-                        ? ("Adapter: " + (BluetoothService.controller.alias || "hci0") + " (" + (BluetoothService.controller.address || "") + ")")
-                        : "Bluetooth controller, paired devices, and scanning."
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
-                }
+            ActionButton {
+                text: root.ctrlPowered ? "Power: On" : "Power: Off"
+                variant: root.ctrlPowered ? "accent" : "neutral"
+                compact: true
+                enabled: BluetoothService.available && !BluetoothService.busy && !BluetoothService.rfkill.hard_blocked
+                onClicked: BluetoothService.requestPower(!root.ctrlPowered)
             }
 
-            Row {
-                id: headerActions
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: HKS.space8
+            ActionButton {
+                text: root.ctrlPairable ? "Pairable: On" : "Pairable: Off"
+                variant: root.ctrlPairable ? "accent" : "neutral"
+                compact: true
+                enabled: BluetoothService.available && root.ctrlPowered && !BluetoothService.busy
+                onClicked: BluetoothService.setPairable(!root.ctrlPairable)
+            }
 
-                ActionButton {
-                    text: root.ctrlPowered ? "Power: On" : "Power: Off"
-                    variant: root.ctrlPowered ? "accent" : "secondary"
-                    compact: true
-                    enabled: BluetoothService.available && !BluetoothService.busy && !BluetoothService.rfkill.hard_blocked
-                    onClicked: BluetoothService.requestPower(!root.ctrlPowered)
-                }
-
-                ActionButton {
-                    text: root.ctrlPairable ? "Pairable: On" : "Pairable: Off"
-                    variant: root.ctrlPairable ? "accent" : "secondary"
-                    compact: true
-                    enabled: BluetoothService.available && root.ctrlPowered && !BluetoothService.busy
-                    onClicked: BluetoothService.setPairable(!root.ctrlPairable)
-                }
-
-                ActionButton {
-                    text: BluetoothService.busy ? "Working..." : "Refresh"
-                    compact: true
-                    enabled: !BluetoothService.busy
-                    onClicked: BluetoothService.reload(false)
-                }
+            ActionButton {
+                text: BluetoothService.busy ? "Working..." : "Refresh"
+                compact: true
+                enabled: !BluetoothService.busy
+                onClicked: BluetoothService.reload(false)
             }
         }
 
         // rfkill blocked banner
         Rectangle {
             visible: !BluetoothService.loading && (BluetoothService.rfkill.hard_blocked || BluetoothService.rfkill.soft_blocked)
-            width: parent.width
+            width: viewport.innerWidth
             height: rfTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.warning, 0.14)
@@ -105,7 +77,7 @@ Item {
         // Error / daemon absent banner
         Rectangle {
             visible: !BluetoothService.loading && !BluetoothService.noController && (!BluetoothService.available || BluetoothService.error.length > 0)
-            width: parent.width
+            width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.critical, 0.14)
@@ -127,291 +99,209 @@ Item {
         }
 
         // Manual pairing (blueman-manager) fallback banner
-        Rectangle {
+        DeviceCard {
             visible: BluetoothService.needsManualPairing
-            width: parent.width
-            height: Math.max(manualTxt.implicitHeight + 16, 40)
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.accent, 0.12)
-            border.width: 1
-            border.color: HKS.alpha(HKS.accent, 0.45)
-
-            Row {
-                anchors.fill: parent
-                anchors.margins: 8
-                spacing: HKS.space12
-
-                Text {
-                    id: manualTxt
-                    width: parent.width - bluemanBtn.width - HKS.space12
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "This device requires passkey or PIN confirmation."
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.fg
-                    wrapMode: Text.WordWrap
-                }
-
+            width: viewport.innerWidth
+            cardPadding: HKS.space12
+            highlighted: true
+            subtitle: "This device requires passkey or PIN confirmation."
+            actions: [
                 ActionButton {
-                    id: bluemanBtn
                     text: "Open Blueman Manager"
                     variant: "accent"
                     compact: true
                     onClicked: BluetoothService.launchBlueman()
                 }
-            }
+            ]
         }
 
         // Empty state: no controller
         EmptyState {
             visible: !BluetoothService.loading && BluetoothService.noController
-            width: parent.width
+            width: viewport.innerWidth
             height: 220
             icon: "󰂲"
             title: "No Bluetooth controller found"
             message: "Ensure a Bluetooth adapter is attached and bluetoothd is running."
         }
 
-        // Scrollable content
-        Flickable {
-            id: flick
+        // Paired Devices
+        Column {
             visible: BluetoothService.available && !BluetoothService.noController
-            width: parent.width
-            height: Math.max(120, parent.height - y)
-            clip: true
-            contentWidth: width
-            contentHeight: contentCol.implicitHeight
-            boundsBehavior: Flickable.StopAtBounds
+            width: viewport.innerWidth
+            spacing: HKS.space8
 
-            Column {
-                id: contentCol
-                width: flick.width
-                spacing: HKS.space16
+            Text {
+                width: parent.width
+                text: "Paired Devices (" + root.pairedList.length + ")"
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSize
+                font.weight: Font.Bold
+                color: HKS.fg
+                wrapMode: Text.WordWrap
+            }
 
-                // Paired Devices
-                Column {
-                    width: parent.width
-                    spacing: HKS.space8
+            Text {
+                visible: root.pairedList.length === 0
+                width: parent.width
+                text: "No paired devices."
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSizeSmall
+                color: HKS.muted
+                wrapMode: Text.WordWrap
+            }
 
-                    Text {
-                        text: "Paired Devices (" + root.pairedList.length + ")"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
-                        font.weight: Font.Bold
-                        color: HKS.fg
-                    }
-
-                    Text {
-                        visible: root.pairedList.length === 0
-                        text: "No paired devices."
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.muted
-                    }
-
-                    Repeater {
-                        model: root.pairedList
-                        delegate: Rectangle {
-                            id: pairedCard
-                            required property var modelData
-                            width: contentCol.width
-                            height: pairedRow.implicitHeight + 24
-                            radius: HKS.radiusMedium
-                            color: HKS.surface
-                            border.width: 1
-                            border.color: modelData.connected ? HKS.accent : HKS.alpha(HKS.muted, 0.18)
-
-                            Row {
-                                id: pairedRow
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                anchors.margins: HKS.space12
-                                spacing: HKS.space12
-
-                                Column {
-                                    width: Math.max(180, parent.width - pairedActions.width - HKS.space12)
-                                    spacing: 2
-
-                                    Row {
-                                        spacing: 8
-                                        Text {
-                                            text: String(pairedCard.modelData.alias || pairedCard.modelData.name || pairedCard.modelData.address)
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: HKS.fontSize
-                                            font.weight: Font.DemiBold
-                                            color: HKS.fg
-                                        }
-                                        Rectangle {
-                                            visible: !!pairedCard.modelData.connected
-                                            width: connBadge.implicitWidth + 10
-                                            height: 18
-                                            radius: 4
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            color: HKS.alpha(HKS.accent, 0.18)
-                                            Text {
-                                                id: connBadge
-                                                anchors.centerIn: parent
-                                                text: pairedCard.modelData.is_default_sink ? "Connected · Default Audio" : "Connected"
-                                                font.family: HKS.fontFamily
-                                                font.pixelSize: 10
-                                                color: HKS.accent
-                                            }
-                                        }
-                                        Text {
-                                            visible: !!pairedCard.modelData.trusted
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: "Trusted"
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: 10
-                                            color: HKS.muted
-                                        }
-                                    }
-
-                                    Text {
-                                        text: String(pairedCard.modelData.address || "") + (pairedCard.modelData.is_audio ? " · Audio" : "")
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: 11
-                                        color: HKS.muted
-                                    }
-                                }
-
-                                Row {
-                                    id: pairedActions
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: HKS.space8
-
-                                    ActionButton {
-                                        text: pairedCard.modelData.connected ? "Disconnect" : "Connect"
-                                        variant: pairedCard.modelData.connected ? "secondary" : "accent"
-                                        compact: true
-                                        enabled: root.ctrlPowered && !BluetoothService.busy
-                                        onClicked: {
-                                            if (pairedCard.modelData.connected) {
-                                                BluetoothService.requestDisconnect(pairedCard.modelData);
-                                            } else {
-                                                BluetoothService.connect(pairedCard.modelData.address);
-                                            }
-                                        }
-                                    }
-
-                                    ActionButton {
-                                        text: pairedCard.modelData.trusted ? "Untrust" : "Trust"
-                                        compact: true
-                                        enabled: !BluetoothService.busy
-                                        onClicked: BluetoothService.setTrusted(pairedCard.modelData.address, !pairedCard.modelData.trusted)
-                                    }
-
-                                    ActionButton {
-                                        text: "Remove"
-                                        variant: "danger"
-                                        compact: true
-                                        enabled: !BluetoothService.busy
-                                        onClicked: BluetoothService.requestRemove(pairedCard.modelData)
-                                    }
-                                }
-                            }
+            Repeater {
+                model: root.pairedList
+                delegate: DeviceCard {
+                    id: pairedCard
+                    required property var modelData
+                    width: viewport.innerWidth
+                    cardPadding: viewport.cardPadding
+                    highlighted: !!pairedCard.modelData.connected
+                    title: String(pairedCard.modelData.alias || pairedCard.modelData.name || pairedCard.modelData.address)
+                    badges: {
+                        var b = [];
+                        if (pairedCard.modelData.connected) {
+                            b.push({
+                                text: pairedCard.modelData.is_default_sink ? "Connected · Default Audio" : "Connected",
+                                textColor: HKS.accent,
+                                bgColor: HKS.alpha(HKS.accent, 0.18),
+                                borderColor: HKS.alpha(HKS.accent, 0.4)
+                            });
                         }
-                    }
-                }
-
-                // Scan & Discovered Devices
-                Column {
-                    width: parent.width
-                    spacing: HKS.space8
-
-                    Row {
-                        width: parent.width
-                        spacing: HKS.space12
-
-                        Text {
-                            width: Math.max(160, parent.width - scanBtn.width - HKS.space12)
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Nearby Devices (" + root.discoveredList.length + ")" + (BluetoothService.scanning ? " — Scanning..." : "")
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSize
-                            font.weight: Font.Bold
-                            color: HKS.fg
+                        if (pairedCard.modelData.trusted) {
+                            b.push({
+                                text: "Trusted",
+                                textColor: HKS.muted,
+                                bgColor: HKS.elevated
+                            });
                         }
+                        return b;
+                    }
+                    subtitle: String(pairedCard.modelData.address || "") + (pairedCard.modelData.is_audio ? " · Audio" : "")
 
+                    actions: [
                         ActionButton {
-                            id: scanBtn
-                            text: BluetoothService.scanning ? "Stop Scan" : "Scan"
-                            variant: BluetoothService.scanning ? "secondary" : "accent"
+                            text: pairedCard.modelData.connected ? "Disconnect" : "Connect"
+                            variant: pairedCard.modelData.connected ? "neutral" : "accent"
                             compact: true
                             enabled: root.ctrlPowered && !BluetoothService.busy
                             onClicked: {
-                                if (BluetoothService.scanning) {
-                                    BluetoothService.stopScan();
+                                if (pairedCard.modelData.connected) {
+                                    BluetoothService.requestDisconnect(pairedCard.modelData);
                                 } else {
-                                    BluetoothService.startScan();
+                                    BluetoothService.connect(pairedCard.modelData.address);
                                 }
                             }
+                        },
+                        ActionButton {
+                            text: pairedCard.modelData.trusted ? "Untrust" : "Trust"
+                            compact: true
+                            enabled: !BluetoothService.busy
+                            onClicked: BluetoothService.setTrusted(pairedCard.modelData.address, !pairedCard.modelData.trusted)
+                        },
+                        ActionButton {
+                            text: "Remove"
+                            variant: "danger"
+                            compact: true
+                            enabled: !BluetoothService.busy
+                            onClicked: BluetoothService.requestRemove(pairedCard.modelData)
+                        }
+                    ]
+                }
+            }
+        }
+
+        // Scan & Discovered Devices
+        Column {
+            visible: BluetoothService.available && !BluetoothService.noController
+            width: viewport.innerWidth
+            spacing: HKS.space8
+
+            Item {
+                id: scanHdrBox
+                width: parent.width
+                readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
+                    scanHdrBox.width, scanLblMetrics.advanceWidth, scanBtn.implicitWidth, HKS.space12
+                )
+                implicitHeight: wrapped
+                    ? (scanLbl.implicitHeight + HKS.space8 + scanBtn.height)
+                    : Math.max(scanLbl.implicitHeight, scanBtn.height)
+                height: implicitHeight
+
+                TextMetrics {
+                    id: scanLblMetrics
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSize
+                    font.weight: Font.Bold
+                    text: scanLbl.text
+                }
+
+                Text {
+                    id: scanLbl
+                    x: 0
+                    y: scanHdrBox.wrapped ? 0 : Math.max(0, Math.round((scanHdrBox.height - height) / 2))
+                    width: scanHdrBox.wrapped ? scanHdrBox.width : Math.max(0, scanHdrBox.width - scanBtn.width - HKS.space12)
+                    text: "Nearby Devices (" + root.discoveredList.length + ")" + (BluetoothService.scanning ? " — Scanning..." : "")
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSize
+                    font.weight: Font.Bold
+                    color: HKS.fg
+                    wrapMode: Text.WordWrap
+                }
+
+                ActionButton {
+                    id: scanBtn
+                    x: scanHdrBox.wrapped ? 0 : Math.max(0, scanHdrBox.width - width)
+                    y: scanHdrBox.wrapped ? (scanLbl.implicitHeight + HKS.space8) : Math.max(0, Math.round((scanHdrBox.height - height) / 2))
+                    text: BluetoothService.scanning ? "Stop Scan" : "Scan"
+                    variant: BluetoothService.scanning ? "neutral" : "accent"
+                    compact: true
+                    enabled: root.ctrlPowered && !BluetoothService.busy
+                    onClicked: {
+                        if (BluetoothService.scanning) {
+                            BluetoothService.stopScan();
+                        } else {
+                            BluetoothService.startScan();
                         }
                     }
+                }
+            }
 
-                    Text {
-                        visible: root.discoveredList.length === 0
-                        text: BluetoothService.scanning
-                            ? "Listening for nearby Bluetooth devices..."
-                            : "Click Scan to discover nearby unpaired devices."
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.muted
+            Text {
+                visible: root.discoveredList.length === 0
+                width: parent.width
+                text: BluetoothService.scanning
+                    ? "Listening for nearby Bluetooth devices..."
+                    : "Click Scan to discover nearby unpaired devices."
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSizeSmall
+                color: HKS.muted
+                wrapMode: Text.WordWrap
+            }
+
+            Repeater {
+                model: root.discoveredList
+                delegate: DeviceCard {
+                    id: discCard
+                    required property var modelData
+                    width: viewport.innerWidth
+                    cardPadding: viewport.cardPadding
+                    title: String(discCard.modelData.alias || discCard.modelData.name || discCard.modelData.address)
+                    subtitle: {
+                        var rssiTxt = btLogic.rssiLabel(discCard.modelData.rssi);
+                        return String(discCard.modelData.address || "") + (rssiTxt.length > 0 ? (" · " + rssiTxt) : "");
                     }
-
-                    Repeater {
-                        model: root.discoveredList
-                        delegate: Rectangle {
-                            id: discCard
-                            required property var modelData
-                            width: contentCol.width
-                            height: discRow.implicitHeight + 20
-                            radius: HKS.radiusSmall
-                            color: HKS.surface
-                            border.width: 1
-                            border.color: HKS.alpha(HKS.muted, 0.14)
-
-                            Row {
-                                id: discRow
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                anchors.margins: HKS.space12
-                                spacing: HKS.space12
-
-                                Column {
-                                    width: Math.max(160, parent.width - pairBtn.width - HKS.space12)
-                                    spacing: 2
-
-                                    Text {
-                                        text: String(discCard.modelData.alias || discCard.modelData.name || discCard.modelData.address)
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        font.weight: Font.DemiBold
-                                        color: HKS.fg
-                                    }
-
-                                    Text {
-                                        readonly property string rssiTxt: btLogic.rssiLabel(discCard.modelData.rssi)
-                                        text: String(discCard.modelData.address || "") + (rssiTxt.length > 0 ? (" · " + rssiTxt) : "")
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: 11
-                                        color: HKS.muted
-                                    }
-                                }
-
-                                ActionButton {
-                                    id: pairBtn
-                                    text: "Pair"
-                                    variant: "accent"
-                                    compact: true
-                                    enabled: root.ctrlPowered && !BluetoothService.busy
-                                    onClicked: BluetoothService.pair(discCard.modelData.address)
-                                }
-                            }
+                    actions: [
+                        ActionButton {
+                            text: "Pair"
+                            variant: "accent"
+                            compact: true
+                            enabled: root.ctrlPowered && !BluetoothService.busy
+                            onClicked: BluetoothService.pair(discCard.modelData.address)
                         }
-                    }
+                    ]
                 }
             }
         }
@@ -428,7 +318,7 @@ Item {
 
         Rectangle {
             anchors.centerIn: parent
-            width: 440
+            width: Math.min(440, parent.width - HKS.space24)
             height: modalCol.implicitHeight + 36
             radius: HKS.radius
             color: HKS.surface
@@ -460,21 +350,22 @@ Item {
                     wrapMode: Text.WordWrap
                 }
 
-                Row {
-                    anchors.right: parent.right
+                Flow {
+                    width: parent.width
+                    layoutDirection: Qt.RightToLeft
                     spacing: HKS.space8
-
-                    ActionButton {
-                        text: "Cancel"
-                        compact: true
-                        onClicked: BluetoothService.cancelPending()
-                    }
 
                     ActionButton {
                         text: "Confirm"
                         variant: "danger"
                         compact: true
                         onClicked: BluetoothService.confirmPending()
+                    }
+
+                    ActionButton {
+                        text: "Cancel"
+                        compact: true
+                        onClicked: BluetoothService.cancelPending()
                     }
                 }
             }

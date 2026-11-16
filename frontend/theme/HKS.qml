@@ -64,6 +64,18 @@ Singleton {
     readonly property int space16: 16
     readonly property int space24: 24
 
+    // Responsive layout thresholds & sizes
+    readonly property int contentMaxWidth: 1100
+    readonly property int twoColumnThreshold: 1200
+    readonly property int minContentScrollWidth: 320
+    readonly property int minWindowWidth: 360
+    readonly property int minWindowHeight: 320
+    readonly property int sidebarFullThreshold: 1100
+    readonly property int sidebarCompactThreshold: 760
+    readonly property int sidebarFullWidth: 230
+    readonly property int sidebarNarrowWidth: 196
+    readonly property int sidebarRailWidth: 64
+
     // Typography
     readonly property var fontFamilies: [
         "JetBrainsMono Nerd Font",
@@ -75,6 +87,21 @@ Singleton {
     function alpha(c, opacity) {
         var col = Qt.color(c);
         return Qt.rgba(col.r, col.g, col.b, opacity);
+    }
+
+    function densityMultiplier(layoutClass) {
+        if (layoutClass === "compact")
+            return 0.75;
+        if (layoutClass === "medium")
+            return 0.85;
+        return 1.0;
+    }
+
+    function scaledSpace(basePx, layoutClass, layoutShort) {
+        var mult = densityMultiplier(layoutClass);
+        if (layoutShort)
+            mult *= 0.8;
+        return Math.max(2, Math.round(basePx * mult));
     }
 
     function _applyPalette(p) {

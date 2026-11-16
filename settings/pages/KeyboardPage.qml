@@ -11,54 +11,26 @@ Item {
         id: kbLogic
     }
 
-    Column {
+    PageViewport {
+        id: viewport
         anchors.fill: parent
-        anchors.margins: HKS.space24
-        spacing: HKS.space12
 
-        // Header
-        Row {
-            width: parent.width
-            spacing: HKS.space12
+        header: PageHeader {
+            title: "Keyboard shortcuts"
+            subtitle: "Inspect, search, record, and edit Hyprland keybindings in Keybind Studio."
 
-            Column {
-                width: Math.max(200, parent.width - headerActions.width - HKS.space12)
-                spacing: 4
-
-                Text {
-                    text: "Keyboard shortcuts"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeTitle
-                    font.weight: Font.Bold
-                    color: HKS.fg
-                }
-
-                Text {
-                    text: "Inspect, search, record, and edit Hyprland keybindings in Keybind Studio."
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
-                }
-            }
-
-            Row {
-                id: headerActions
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: HKS.space8
-
-                ActionButton {
-                    text: "Refresh"
-                    compact: true
-                    enabled: !KeyboardService.loading && !KeyboardService.busy
-                    onClicked: KeyboardService.reload()
-                }
+            ActionButton {
+                text: "Refresh"
+                compact: true
+                enabled: !KeyboardService.loading && !KeyboardService.busy
+                onClicked: KeyboardService.reload()
             }
         }
 
         // Error banner (only when script is available and an action failed; missing script uses EmptyState)
         Rectangle {
             visible: !KeyboardService.loading && KeyboardService.available && KeyboardService.error.length > 0
-            width: parent.width
+            width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.critical, 0.14)
@@ -80,7 +52,7 @@ Item {
         // Status banner
         Rectangle {
             visible: KeyboardService.statusMessage.length > 0 && KeyboardService.error.length === 0
-            width: parent.width
+            width: viewport.innerWidth
             height: stTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.accent, 0.14)
@@ -101,7 +73,7 @@ Item {
 
         EmptyState {
             visible: !KeyboardService.loading && !KeyboardService.available
-            width: parent.width
+            width: viewport.innerWidth
             height: 220
             icon: "󰌌"
             title: "Keybind Studio unavailable"
@@ -111,24 +83,36 @@ Item {
         // Launcher card
         SectionCard {
             visible: KeyboardService.loading || KeyboardService.available
-            width: parent.width
+            width: viewport.innerWidth
             cardPadding: HKS.space16
             spacing: HKS.space12
 
-            Row {
+            Item {
+                id: cardHdrBox
                 width: parent.width
-                spacing: HKS.space12
+                readonly property bool badgeWrapped: (180 + HKS.space12 + badgeRect.width) > cardHdrBox.width
+                implicitHeight: badgeWrapped
+                    ? (cardTitleCol.implicitHeight + HKS.space8 + badgeRect.height)
+                    : Math.max(cardTitleCol.implicitHeight, badgeRect.height)
+                height: implicitHeight
 
                 Column {
-                    width: Math.max(200, parent.width - badgeRect.width - HKS.space12)
+                    id: cardTitleCol
+                    x: 0
+                    y: 0
+                    width: cardHdrBox.badgeWrapped
+                        ? cardHdrBox.width
+                        : Math.max(0, cardHdrBox.width - badgeRect.width - HKS.space12)
                     spacing: 4
 
                     Text {
+                        width: parent.width
                         text: "HyprDeck Keybind Studio"
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSize
                         font.weight: Font.DemiBold
                         color: HKS.fg
+                        wrapMode: Text.WordWrap
                     }
 
                     Text {
@@ -141,10 +125,21 @@ Item {
                     }
                 }
 
+                TextMetrics {
+                    id: badgeMetrics
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSizeSmall
+                    font.weight: Font.DemiBold
+                    text: KeyboardService.loading
+                        ? "Checking..."
+                        : kbLogic.windowStateBadge(KeyboardService.hksRunning, KeyboardService.hksWindowOpen)
+                }
+
                 Rectangle {
                     id: badgeRect
-                    anchors.top: parent.top
-                    width: badgeText.implicitWidth + 16
+                    x: cardHdrBox.badgeWrapped ? 0 : Math.max(0, cardHdrBox.width - width)
+                    y: cardHdrBox.badgeWrapped ? (cardTitleCol.implicitHeight + HKS.space8) : 0
+                    width: Math.min(Math.ceil(badgeMetrics.advanceWidth) + 16, Math.max(40, cardHdrBox.width))
                     height: badgeText.implicitHeight + 8
                     radius: HKS.radiusSmall
                     color: KeyboardService.hksWindowOpen === true
@@ -157,14 +152,17 @@ Item {
 
                     Text {
                         id: badgeText
-                        anchors.centerIn: parent
-                        text: KeyboardService.loading
-                            ? "Checking..."
-                            : kbLogic.windowStateBadge(KeyboardService.hksRunning, KeyboardService.hksWindowOpen)
+                        objectName: "elideOk"
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        verticalAlignment: Text.AlignVCenter
+                        text: badgeMetrics.text
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeSmall
                         font.weight: Font.DemiBold
                         color: KeyboardService.hksWindowOpen === true ? HKS.accent : HKS.fg
+                        elide: Text.ElideRight
                     }
                 }
             }
@@ -193,10 +191,11 @@ Item {
                 font.family: HKS.fontFamily
                 font.pixelSize: HKS.fontSizeSmall
                 color: HKS.muted
-                elide: Text.ElideMiddle
+                wrapMode: Text.WrapAnywhere
             }
 
-            Row {
+            Flow {
+                width: parent.width
                 spacing: HKS.space12
 
                 ActionButton {

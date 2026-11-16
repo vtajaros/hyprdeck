@@ -19,6 +19,13 @@ Item {
         visible: false
     }
 
+    Timer {
+        id: copyResetTimer
+        interval: 2000
+        repeat: false
+        onTriggered: root.copiedNotice = false
+    }
+
     readonly property var infoRows: {
         var inf = SystemService.info || ({});
         var rows = [];
@@ -45,131 +52,99 @@ Item {
         return rows;
     }
 
-    Column {
+    PageViewport {
+        id: viewport
         anchors.fill: parent
-        anchors.margins: HKS.space24
-        spacing: HKS.space12
 
-        Row {
-            width: parent.width
-            spacing: HKS.space12
+        header: PageHeader {
+            title: "System info"
+            subtitle: "Hardware, OS, and compositor summary (privacy-safe; IDs omitted)."
 
-            Column {
-                width: Math.max(200, parent.width - headerActions.width - HKS.space12)
-                spacing: 4
-
-                Text {
-                    text: "System info"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeTitle
-                    font.weight: Font.Bold
-                    color: HKS.fg
-                }
-
-                Text {
-                    text: "Hardware, OS, and compositor summary (privacy-safe; IDs omitted)."
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
+            ActionButton {
+                text: root.copiedNotice ? "Copied" : "Copy all"
+                variant: "accent"
+                compact: true
+                enabled: SystemService.available && root.infoRows.length > 0
+                onClicked: {
+                    copyBuffer.text = pwrLogic.formatCopyAllText(SystemService.info);
+                    copyBuffer.selectAll();
+                    copyBuffer.copy();
+                    root.copiedNotice = true;
+                    copyResetTimer.restart();
                 }
             }
 
-            Row {
-                id: headerActions
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: HKS.space8
-
-                ActionButton {
-                    text: root.copiedNotice ? "Copied" : "Copy all"
-                    variant: "accent"
-                    compact: true
-                    enabled: SystemService.available && root.infoRows.length > 0
-                    onClicked: {
-                        copyBuffer.text = pwrLogic.formatCopyAllText(SystemService.info);
-                        copyBuffer.selectAll();
-                        copyBuffer.copy();
-                        root.copiedNotice = true;
-                        copyResetTimer.restart();
-                    }
-                }
-
-                ActionButton {
-                    text: "Refresh"
-                    compact: true
-                    enabled: !SystemService.loading
-                    onClicked: SystemService.reload()
-                }
+            ActionButton {
+                text: "Refresh"
+                compact: true
+                enabled: !SystemService.loading
+                onClicked: SystemService.reload()
             }
-        }
-
-        Timer {
-            id: copyResetTimer
-            interval: 2000
-            repeat: false
-            onTriggered: root.copiedNotice = false
         }
 
         EmptyState {
             visible: !SystemService.loading && !SystemService.available
-            width: parent.width
+            width: viewport.innerWidth
             height: 220
             icon: "󰋼"
             title: "System info unavailable"
             message: SystemService.error || "Unable to read system information."
         }
 
-        Flickable {
-            id: flick
+        Column {
             visible: SystemService.available
-            width: parent.width
-            height: Math.max(120, parent.height - y)
-            clip: true
-            contentWidth: width
-            contentHeight: listCol.implicitHeight
-            boundsBehavior: Flickable.StopAtBounds
+            width: viewport.innerWidth
+            spacing: 6
 
-            Column {
-                id: listCol
-                width: flick.width
-                spacing: 6
+            Repeater {
+                model: root.infoRows
+                delegate: Rectangle {
+                    id: infoCard
+                    required property var modelData
+                    readonly property real innerW: Math.max(0, width - 20)
+                    readonly property bool stacked: innerW < 440
 
-                Repeater {
-                    model: root.infoRows
-                    delegate: Rectangle {
-                        id: infoCard
-                        required property var modelData
-                        width: listCol.width
-                        height: rowContent.implicitHeight + 16
-                        radius: HKS.radiusSmall
-                        color: HKS.surface
-                        border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.14)
+                    width: viewport.innerWidth
+                    height: rowContent.implicitHeight + 20
+                    radius: HKS.radiusSmall
+                    color: HKS.surface
+                    border.width: 1
+                    border.color: HKS.alpha(HKS.muted, 0.14)
 
-                        Row {
-                            id: rowContent
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.margins: 10
-                            spacing: HKS.space12
+                    Item {
+                        id: rowContent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 10
+                        implicitHeight: infoCard.stacked
+                            ? (lblTxt.implicitHeight + 4 + valTxt.implicitHeight)
+                            : Math.max(lblTxt.implicitHeight, valTxt.implicitHeight)
+                        height: implicitHeight
 
-                            Text {
-                                width: 170
-                                text: String(infoCard.modelData.label || "")
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                font.weight: Font.DemiBold
-                                color: HKS.muted
-                            }
+                        Text {
+                            id: lblTxt
+                            x: 0
+                            y: 0
+                            width: infoCard.stacked ? infoCard.innerW : 160
+                            text: String(infoCard.modelData.label || "")
+                            font.family: HKS.fontFamily
+                            font.pixelSize: HKS.fontSizeSmall
+                            font.weight: Font.DemiBold
+                            color: HKS.muted
+                            wrapMode: Text.WordWrap
+                        }
 
-                            Text {
-                                width: Math.max(160, parent.width - 182)
-                                text: String(infoCard.modelData.value || "")
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.fg
-                                wrapMode: Text.WordWrap
-                            }
+                        Text {
+                            id: valTxt
+                            x: infoCard.stacked ? 0 : 172
+                            y: infoCard.stacked ? (lblTxt.implicitHeight + 4) : 0
+                            width: infoCard.stacked ? infoCard.innerW : Math.max(0, infoCard.innerW - 172)
+                            text: String(infoCard.modelData.value || "")
+                            font.family: HKS.fontFamily
+                            font.pixelSize: HKS.fontSizeSmall
+                            color: HKS.fg
+                            wrapMode: Text.WrapAnywhere
                         }
                     }
                 }

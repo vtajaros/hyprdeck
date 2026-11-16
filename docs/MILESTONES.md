@@ -159,3 +159,15 @@
 | Fix `ReferenceError: selected is not defined` on Mirror "None" chip | `settings/pages/DisplayPage.qml` | [x] Complete |
 | Fix `Unable to assign [undefined] to int` (`HKS.fontSizeBody` -> `HKS.fontSize`) | `settings/pages/InputPage.qml` | [x] Complete |
 | Add headless scene-warning regression guard & wire into `hks-check` | `scripts/hks-scene-check`, `scripts/hks-check`, `settings/WindowShell.qml`, `settings/shell.qml`, `docs/RUNBOOK.md` | [x] Complete |
+
+---
+
+## Milestone S15 (Responsive Layout System — Settings)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Responsive layout tokens, hysteresis breakpoints (`ResponsiveLogic`), and 3 unit tests | `frontend/theme/HKS.qml`, `frontend/components/ResponsiveLogic.qml`, `settings/tests/tst_settings_controls.qml` | [x] Complete |
+| Shared adaptive UI components & elision/wrap hardening | `frontend/components/{PageViewport,PageHeader,DeviceCard,ChipFlow}.qml`, `SidebarItem.qml`, `ActionButton.qml` | [x] Complete |
+| Adaptive window shell (`full`/`narrow`/`rail` sidebar, overlay search, min size) & `SettingRow` stacking | `settings/WindowShell.qml`, `settings/components/SettingRow.qml` | [x] Complete |
+| Retrofit all 10 Settings pages for `360px`..`3400px` widths & 2-col wide `OptionsPage` | `settings/pages/*.qml` | [x] Complete |
+| Headless 10-size x 18-view layout audit (`0` violations) & offscreen PNG/contact-sheet generator | `scripts/hks-layout-check`, `scripts/ui-capture/capture_layout_matrix.py`, `scripts/hks-check` (`[6/6]`) | [x] Complete |

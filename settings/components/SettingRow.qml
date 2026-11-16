@@ -15,7 +15,9 @@ Rectangle {
 
     readonly property string optType: option && option.type ? option.type : "string"
     visible: !!(option && option.capable)
-    implicitHeight: visible ? rowLayout.implicitHeight + 24 : 0
+    width: parent ? parent.width : implicitWidth
+    implicitHeight: visible ? (inner.implicitHeight + HKS.space12 * 2) : 0
+    height: implicitHeight
     radius: HKS.radiusMedium
     color: root.modified ? HKS.alpha(HKS.accent, 0.08) : HKS.surface
     border.width: 1
@@ -30,36 +32,98 @@ Rectangle {
         stepValue: root.option && root.option.step !== undefined ? Number(root.option.step) : 1
     }
 
-    Row {
-        id: rowLayout
+    Item {
+        id: inner
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.top: parent.top
         anchors.margins: HKS.space12
-        spacing: HKS.space12
 
-        // Left: label + description
+        readonly property real enumNaturalWidth: {
+            var total = 0;
+            var count = 0;
+            var kids = enumFlow.children;
+            for (var i = 0; i < kids.length; i++) {
+                var c = kids[i];
+                if (c && c.visible && c.implicitWidth > 0) {
+                    if (count > 0) total += enumFlow.spacing;
+                    total += c.implicitWidth;
+                    count++;
+                }
+            }
+            return total;
+        }
+
+        readonly property real controlsNaturalWidth: {
+            var resetW = 84;
+            if (root.optType === "bool") {
+                return 44 + HKS.space8 + resetW;
+            }
+            if (root.optType === "int" || root.optType === "float") {
+                // 130 slider + 28 '-' + 56 box + 28 '+' + 3*6 spacing = 260
+                return 260 + HKS.space8 + resetW;
+            }
+            if (root.optType === "enum") {
+                return enumNaturalWidth + HKS.space8 + resetW;
+            }
+            var swatchW = root.optType === "color" ? 30 : 0;
+            return swatchW + 130 + HKS.space8 + resetW;
+        }
+
+        readonly property bool stacked: ResponsiveLogic.shouldStackSettingRow(
+            inner.width, 200, inner.controlsNaturalWidth, HKS.space12
+        )
+        readonly property real controlsColWidth: stacked
+            ? inner.width
+            : Math.min(inner.controlsNaturalWidth, Math.max(0, inner.width))
+        readonly property real inlineRowHeight: Math.max(leftCol.implicitHeight, controlsFlow.implicitHeight)
+
+        implicitHeight: stacked
+            ? (leftCol.implicitHeight + HKS.space8 + controlsFlow.implicitHeight)
+            : inlineRowHeight
+        height: implicitHeight
+
+        // Left: label + override badge + description
         Column {
-            width: Math.max(180, parent.width - controlsRow.width - HKS.space12)
-            anchors.verticalCenter: parent.verticalCenter
+            id: leftCol
+            x: 0
+            y: inner.stacked ? 0 : Math.max(0, Math.round((inner.inlineRowHeight - height) / 2))
+            width: inner.stacked
+                ? inner.width
+                : Math.max(0, inner.width - inner.controlsColWidth - HKS.space12)
             spacing: 3
 
-            Row {
+            TextMetrics {
+                id: labelMetrics
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSize
+                font.weight: Font.DemiBold
+                text: root.option && root.option.label ? root.option.label : ""
+            }
+
+            Flow {
+                width: parent.width
                 spacing: 8
+
                 Text {
+                    id: optLabelTxt
+                    objectName: "elideOk"
+                    width: Math.min(Math.ceil(labelMetrics.advanceWidth) + 2, Math.max(40, leftCol.width))
                     text: root.option && root.option.label ? root.option.label : ""
                     font.family: HKS.fontFamily
                     font.pixelSize: HKS.fontSize
                     font.weight: Font.DemiBold
                     color: HKS.fg
+                    elide: Text.ElideRight
                 }
+
                 Rectangle {
                     visible: root.hasOverride || root.modified
-                    anchors.verticalCenter: parent.verticalCenter
                     width: badgeTxt.implicitWidth + 10
                     height: 16
                     radius: 4
                     color: root.modified ? HKS.alpha(HKS.warning, 0.22) : HKS.alpha(HKS.accent, 0.18)
+
                     Text {
                         id: badgeTxt
                         anchors.centerIn: parent
@@ -81,10 +145,14 @@ Rectangle {
             }
         }
 
-        // Right: generic type control + per-option reset
-        Row {
-            id: controlsRow
-            anchors.verticalCenter: parent.verticalCenter
+        // Right / bottom: generic type control + per-option reset
+        Flow {
+            id: controlsFlow
+            x: inner.stacked ? 0 : Math.max(0, inner.width - width)
+            y: inner.stacked
+                ? (leftCol.implicitHeight + HKS.space8)
+                : Math.max(0, Math.round((inner.inlineRowHeight - height) / 2))
+            width: inner.controlsColWidth
             spacing: HKS.space8
 
             // BOOL: Switch
@@ -93,7 +161,6 @@ Rectangle {
                 width: 44
                 height: 24
                 radius: 12
-                anchors.verticalCenter: parent.verticalCenter
                 color: !!root.currentValue ? HKS.accent : HKS.elevated
                 border.width: 1
                 border.color: !!root.currentValue ? HKS.accent : HKS.alpha(HKS.muted, 0.4)
@@ -118,12 +185,13 @@ Rectangle {
             // INT / FLOAT: Slider track + stepper + numeric readout
             Row {
                 visible: root.optType === "int" || root.optType === "float"
-                anchors.verticalCenter: parent.verticalCenter
                 spacing: 6
 
                 Rectangle {
                     id: track
-                    width: 130
+                    width: inner.stacked
+                        ? Math.min(130, Math.max(76, inner.width - 224))
+                        : 130
                     height: 6
                     radius: 3
                     anchors.verticalCenter: parent.verticalCenter
@@ -185,6 +253,7 @@ Rectangle {
                     color: HKS.bg
                     border.width: 1
                     border.color: HKS.alpha(HKS.muted, 0.3)
+
                     Text {
                         anchors.centerIn: parent
                         text: logic.formatDisplay(root.currentValue)
@@ -202,10 +271,13 @@ Rectangle {
                 }
             }
 
-            // ENUM: Pill selector
-            Row {
+            // ENUM: Pill selector (wraps cleanly when narrow)
+            Flow {
+                id: enumFlow
                 visible: root.optType === "enum"
-                anchors.verticalCenter: parent.verticalCenter
+                width: inner.stacked
+                    ? Math.min(inner.enumNaturalWidth, inner.width)
+                    : inner.enumNaturalWidth
                 spacing: 4
 
                 Repeater {
@@ -213,7 +285,16 @@ Rectangle {
                     delegate: Rectangle {
                         required property string modelData
                         readonly property bool selected: String(root.currentValue) === modelData
-                        width: enumTxt.implicitWidth + 16
+
+                        TextMetrics {
+                            id: enumMetrics
+                            font.family: HKS.fontFamily
+                            font.pixelSize: HKS.fontSizeSmall
+                            text: logic.enumOptionLabel(modelData)
+                        }
+
+                        implicitWidth: Math.ceil(enumMetrics.advanceWidth) + 16
+                        width: Math.min(implicitWidth, Math.max(48, inner.width))
                         height: 28
                         radius: HKS.radiusSmall
                         color: selected ? HKS.alpha(HKS.accent, 0.22) : HKS.elevated
@@ -222,12 +303,19 @@ Rectangle {
 
                         Text {
                             id: enumTxt
-                            anchors.centerIn: parent
+                            objectName: "elideOk"
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
                             text: logic.enumOptionLabel(modelData)
                             font.family: HKS.fontFamily
                             font.pixelSize: HKS.fontSizeSmall
                             color: selected ? HKS.accent : HKS.fg
+                            elide: Text.ElideRight
                         }
+
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
@@ -240,7 +328,6 @@ Rectangle {
             // COLOR / STRING: Hex input + swatch
             Row {
                 visible: root.optType === "color" || root.optType === "string"
-                anchors.verticalCenter: parent.verticalCenter
                 spacing: 6
 
                 Rectangle {
@@ -262,7 +349,9 @@ Rectangle {
                 }
 
                 Rectangle {
-                    width: 130
+                    width: inner.stacked
+                        ? Math.min(130, Math.max(84, inner.width - 130))
+                        : 130
                     height: 28
                     radius: HKS.radiusSmall
                     color: HKS.bg
@@ -290,6 +379,7 @@ Rectangle {
 
             // Per-option Reset button
             ActionButton {
+                id: resetBtn
                 text: "Reset"
                 compact: true
                 enabled: root.hasOverride || root.modified

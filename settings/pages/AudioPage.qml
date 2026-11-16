@@ -17,61 +17,33 @@ Item {
     readonly property var outputParts: audioLogic.partitionDevices(AudioService.outputs)
     readonly property var inputParts: audioLogic.partitionDevices(AudioService.inputs)
 
-    Column {
+    PageViewport {
+        id: viewport
         anchors.fill: parent
-        anchors.margins: HKS.space24
-        spacing: HKS.space12
 
-        // Header
-        Row {
-            width: parent.width
-            spacing: HKS.space12
+        header: PageHeader {
+            title: "Audio"
+            subtitle: "Output sinks, input sources, default routing, and active playback streams."
 
-            Column {
-                width: Math.max(200, parent.width - headerActions.width - HKS.space12)
-                spacing: 4
-
-                Text {
-                    text: "Audio"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeTitle
-                    font.weight: Font.Bold
-                    color: HKS.fg
-                }
-
-                Text {
-                    text: "Output sinks, input sources, default routing, and active playback streams."
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
-                }
+            ActionButton {
+                text: root.showDetails ? "Details: On" : "Details"
+                compact: true
+                variant: root.showDetails ? "accent" : "neutral"
+                onClicked: root.showDetails = !root.showDetails
             }
 
-            Row {
-                id: headerActions
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: HKS.space8
-
-                ActionButton {
-                    text: root.showDetails ? "Details: On" : "Details"
-                    compact: true
-                    variant: root.showDetails ? "accent" : "neutral"
-                    onClicked: root.showDetails = !root.showDetails
-                }
-
-                ActionButton {
-                    text: AudioService.busy ? "Applying..." : "Refresh"
-                    compact: true
-                    enabled: !AudioService.busy
-                    onClicked: AudioService.reload(false)
-                }
+            ActionButton {
+                text: AudioService.busy ? "Applying..." : "Refresh"
+                compact: true
+                enabled: !AudioService.busy
+                onClicked: AudioService.reload(false)
             }
         }
 
         // Error / daemon absent banner
         Rectangle {
             visible: !AudioService.loading && (!AudioService.available || AudioService.error.length > 0)
-            width: parent.width
+            width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.critical, 0.14)
@@ -96,505 +68,377 @@ Item {
         EmptyState {
             visible: !AudioService.loading && AudioService.available
                 && AudioService.outputs.length === 0 && AudioService.inputs.length === 0
-            width: parent.width
+            width: viewport.innerWidth
             height: 220
             icon: "󰕾"
             title: "No audio devices found"
             message: "Connect an output or input device and click Refresh."
         }
 
-        // Scrollable content
-        Flickable {
-            id: flick
+        // Output Sinks
+        Column {
             visible: AudioService.outputs.length > 0 || AudioService.inputs.length > 0 || AudioService.streams.length > 0
-            width: parent.width
-            height: Math.max(120, parent.height - y)
-            clip: true
-            contentWidth: width
-            contentHeight: contentCol.implicitHeight
-            boundsBehavior: Flickable.StopAtBounds
+            width: viewport.innerWidth
+            spacing: HKS.space8
 
-            Column {
-                id: contentCol
-                width: flick.width
-                spacing: HKS.space16
+            Text {
+                width: parent.width
+                text: "Output Devices (" + AudioService.outputs.length + ")"
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSize
+                font.weight: Font.Bold
+                color: HKS.fg
+                wrapMode: Text.WordWrap
+            }
 
-                // Output Sinks
-                Column {
-                    width: parent.width
-                    spacing: HKS.space8
+            Repeater {
+                model: root.showInactiveOutputs ? AudioService.outputs : root.outputParts.active
+                delegate: DeviceCard {
+                    id: outCard
+                    required property var modelData
+                    width: viewport.innerWidth
+                    cardPadding: viewport.cardPadding
+                    highlighted: !!outCard.modelData.is_default
+                    title: String(outCard.modelData.description || outCard.modelData.name || "Output")
+                    badges: [
+                        {
+                            text: audioLogic.kindLabel(outCard.modelData.kind),
+                            textColor: HKS.accent,
+                            bgColor: HKS.alpha(HKS.accent, 0.15),
+                            borderColor: HKS.alpha(HKS.accent, 0.35)
+                        },
+                        {
+                            text: String(outCard.modelData.running_state || ""),
+                            textColor: HKS.muted,
+                            bgColor: HKS.elevated
+                        }
+                    ]
+                    detailText: root.showDetails ? String(outCard.modelData.name || "") : ""
 
-                    Text {
-                        text: "Output Devices (" + AudioService.outputs.length + ")"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
-                        font.weight: Font.Bold
-                        color: HKS.fg
-                    }
+                    actions: [
+                        ActionButton {
+                            text: outCard.modelData.is_default ? "Default" : "Set Default"
+                            variant: outCard.modelData.is_default ? "accent" : "neutral"
+                            compact: true
+                            enabled: !outCard.modelData.is_default && !AudioService.busy
+                            onClicked: AudioService.setDefault("sink", outCard.modelData.name)
+                        },
+                        ActionButton {
+                            text: audioLogic.muteLabel(!!outCard.modelData.mute)
+                            variant: outCard.modelData.mute ? "danger" : "neutral"
+                            compact: true
+                            enabled: !AudioService.busy
+                            onClicked: AudioService.setMute("sink", outCard.modelData.name, "toggle")
+                        }
+                    ]
 
-                    Repeater {
-                        model: root.showInactiveOutputs ? AudioService.outputs : root.outputParts.active
-                        delegate: Rectangle {
-                            id: outCard
-                            required property var modelData
-                            width: contentCol.width
-                            height: outCol.implicitHeight + 24
-                            radius: HKS.radiusMedium
-                            color: HKS.surface
-                            border.width: 1
-                            border.color: modelData.is_default ? HKS.accent : HKS.alpha(HKS.muted, 0.18)
+                    extraContent: [
+                        Item {
+                            width: parent.width
+                            height: 22
 
-                            Column {
-                                id: outCol
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.top: parent.top
-                                anchors.margins: HKS.space12
-                                spacing: HKS.space8
+                            Rectangle {
+                                id: outTrack
+                                x: 0
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.max(80, parent.width - 56 - HKS.space8)
+                                height: 6
+                                radius: 3
+                                color: HKS.elevated
 
-                                Row {
-                                    width: parent.width
-                                    spacing: HKS.space12
+                                readonly property int pct: audioLogic.clampVolume(outCard.modelData.volume_percent, 100)
+                                readonly property real ratio: Math.max(0, Math.min(1, pct / 100.0))
 
-                                    Column {
-                                        width: Math.max(180, parent.width - outActions.width - HKS.space12)
-                                        spacing: 2
-
-                                        Row {
-                                            spacing: 8
-                                            Text {
-                                                text: String(outCard.modelData.description || outCard.modelData.name || "Output")
-                                                font.family: HKS.fontFamily
-                                                font.pixelSize: HKS.fontSize
-                                                font.weight: Font.DemiBold
-                                                color: HKS.fg
-                                            }
-                                            Rectangle {
-                                                width: kindOutTxt.implicitWidth + 10
-                                                height: 18
-                                                radius: 4
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                color: HKS.alpha(HKS.accent, 0.15)
-                                                Text {
-                                                    id: kindOutTxt
-                                                    anchors.centerIn: parent
-                                                    text: audioLogic.kindLabel(outCard.modelData.kind)
-                                                    font.family: HKS.fontFamily
-                                                    font.pixelSize: 10
-                                                    color: HKS.accent
-                                                }
-                                            }
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: String(outCard.modelData.running_state || "")
-                                                font.family: HKS.fontFamily
-                                                font.pixelSize: 10
-                                                color: HKS.muted
-                                            }
-                                        }
-
-                                        Text {
-                                            visible: root.showDetails
-                                            text: String(outCard.modelData.name || "")
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: 11
-                                            color: HKS.muted
-                                            elide: Text.ElideMiddle
-                                            width: parent.width
-                                        }
-                                    }
-
-                                    Row {
-                                        id: outActions
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        spacing: HKS.space8
-
-                                        ActionButton {
-                                            text: outCard.modelData.is_default ? "Default" : "Set Default"
-                                            variant: outCard.modelData.is_default ? "accent" : "secondary"
-                                            compact: true
-                                            enabled: !outCard.modelData.is_default && !AudioService.busy
-                                            onClicked: AudioService.setDefault("sink", outCard.modelData.name)
-                                        }
-
-                                        ActionButton {
-                                            text: audioLogic.muteLabel(!!outCard.modelData.mute)
-                                            variant: outCard.modelData.mute ? "danger" : "secondary"
-                                            compact: true
-                                            enabled: !AudioService.busy
-                                            onClicked: AudioService.setMute("sink", outCard.modelData.name, "toggle")
-                                        }
-                                    }
+                                Rectangle {
+                                    width: parent.width * parent.ratio
+                                    height: parent.height
+                                    radius: 3
+                                    color: outCard.modelData.mute ? HKS.muted : HKS.accent
                                 }
 
-                                // Volume Slider Row
-                                Row {
-                                    width: parent.width
-                                    spacing: HKS.space12
+                                Rectangle {
+                                    width: 14
+                                    height: 14
+                                    radius: 7
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    x: Math.max(0, Math.min(parent.width - width, parent.width * parent.ratio - width / 2))
+                                    color: HKS.fg
+                                    border.width: 1
+                                    border.color: outCard.modelData.mute ? HKS.muted : HKS.accent
+                                }
 
-                                    Rectangle {
-                                        id: outTrack
-                                        width: Math.max(160, parent.width - 140)
-                                        height: 6
-                                        radius: 3
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: HKS.elevated
-
-                                        readonly property int pct: audioLogic.clampVolume(outCard.modelData.volume_percent, 100)
-                                        readonly property real ratio: Math.max(0, Math.min(1, pct / 100.0))
-
-                                        Rectangle {
-                                            width: parent.width * parent.ratio
-                                            height: parent.height
-                                            radius: 3
-                                            color: outCard.modelData.mute ? HKS.muted : HKS.accent
-                                        }
-
-                                        Rectangle {
-                                            width: 14
-                                            height: 14
-                                            radius: 7
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            x: Math.max(0, Math.min(parent.width - width, parent.width * parent.ratio - width / 2))
-                                            color: HKS.fg
-                                            border.width: 1
-                                            border.color: outCard.modelData.mute ? HKS.muted : HKS.accent
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            anchors.margins: -6
-                                            enabled: !AudioService.busy
-                                            cursorShape: Qt.PointingHandCursor
-                                            onPressed: function(mouse) {
-                                                var r = Math.max(0, Math.min(1, mouse.x / outTrack.width));
-                                                var val = audioLogic.clampVolume(r * 100, 100);
-                                                AudioService.setVolume("sink", outCard.modelData.name, val);
-                                            }
-                                        }
-                                    }
-
-                                    Text {
-                                        width: 44
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: audioLogic.clampVolume(outCard.modelData.volume_percent, 150) + "%"
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        color: HKS.fg
-                                    }
-
-                                    Text {
-                                        visible: Number(outCard.modelData.balance_diff || 0) > 0
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: audioLogic.balanceWarningText(outCard.modelData.balance_diff)
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: 11
-                                        color: HKS.warning
+                                MouseArea {
+                                    anchors.fill: parent
+                                    anchors.margins: -6
+                                    enabled: !AudioService.busy
+                                    cursorShape: Qt.PointingHandCursor
+                                    onPressed: function(mouse) {
+                                        var r = Math.max(0, Math.min(1, mouse.x / outTrack.width));
+                                        var val = audioLogic.clampVolume(r * 100, 100);
+                                        AudioService.setVolume("sink", outCard.modelData.name, val);
                                     }
                                 }
                             }
-                        }
-                    }
-
-                    SectionCard {
-                        visible: root.outputParts.inactive.length > 0
-                        width: contentCol.width
-
-                        Row {
-                            width: parent.width
-                            spacing: HKS.space12
 
                             Text {
-                                width: Math.max(160, parent.width - outInactiveBtn.width - HKS.space12)
+                                x: parent.width - width
+                                width: 48
+                                horizontalAlignment: Text.AlignRight
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: root.outputParts.inactive.length + (root.outputParts.inactive.length === 1 ? " inactive output" : " inactive outputs")
+                                text: audioLogic.clampVolume(outCard.modelData.volume_percent, 150) + "%"
                                 font.family: HKS.fontFamily
                                 font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.muted
+                                color: HKS.fg
                             }
-
-                            ActionButton {
-                                id: outInactiveBtn
-                                text: root.showInactiveOutputs ? "Hide" : "Show"
-                                compact: true
-                                variant: root.showInactiveOutputs ? "accent" : "neutral"
-                                onClicked: root.showInactiveOutputs = !root.showInactiveOutputs
-                            }
-                        }
-                    }
-                }
-
-                // Input Sources
-                Column {
-                    width: parent.width
-                    spacing: HKS.space8
-
-                    Text {
-                        text: "Input Devices (" + AudioService.inputs.length + ")"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
-                        font.weight: Font.Bold
-                        color: HKS.fg
-                    }
-
-                    Repeater {
-                        model: root.showInactiveInputs ? AudioService.inputs : root.inputParts.active
-                        delegate: Rectangle {
-                            id: inCard
-                            required property var modelData
-                            width: contentCol.width
-                            height: inCol.implicitHeight + 24
-                            radius: HKS.radiusMedium
-                            color: HKS.surface
-                            border.width: 1
-                            border.color: modelData.is_default ? HKS.accent : HKS.alpha(HKS.muted, 0.18)
-
-                            Column {
-                                id: inCol
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.top: parent.top
-                                anchors.margins: HKS.space12
-                                spacing: HKS.space8
-
-                                Row {
-                                    width: parent.width
-                                    spacing: HKS.space12
-
-                                    Column {
-                                        width: Math.max(180, parent.width - inActions.width - HKS.space12)
-                                        spacing: 2
-
-                                        Row {
-                                            spacing: 8
-                                            Text {
-                                                text: String(inCard.modelData.description || inCard.modelData.name || "Input")
-                                                font.family: HKS.fontFamily
-                                                font.pixelSize: HKS.fontSize
-                                                font.weight: Font.DemiBold
-                                                color: HKS.fg
-                                            }
-                                            Rectangle {
-                                                width: kindInTxt.implicitWidth + 10
-                                                height: 18
-                                                radius: 4
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                color: HKS.alpha(HKS.accent, 0.15)
-                                                Text {
-                                                    id: kindInTxt
-                                                    anchors.centerIn: parent
-                                                    text: audioLogic.kindLabel(inCard.modelData.kind)
-                                                    font.family: HKS.fontFamily
-                                                    font.pixelSize: 10
-                                                    color: HKS.accent
-                                                }
-                                            }
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: String(inCard.modelData.running_state || "")
-                                                font.family: HKS.fontFamily
-                                                font.pixelSize: 10
-                                                color: HKS.muted
-                                            }
-                                        }
-
-                                        Text {
-                                            visible: root.showDetails
-                                            text: String(inCard.modelData.name || "")
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: 11
-                                            color: HKS.muted
-                                            elide: Text.ElideMiddle
-                                            width: parent.width
-                                        }
-                                    }
-
-                                    Row {
-                                        id: inActions
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        spacing: HKS.space8
-
-                                        ActionButton {
-                                            text: inCard.modelData.is_default ? "Default" : "Set Default"
-                                            variant: inCard.modelData.is_default ? "accent" : "secondary"
-                                            compact: true
-                                            enabled: !inCard.modelData.is_default && !AudioService.busy
-                                            onClicked: AudioService.setDefault("source", inCard.modelData.name)
-                                        }
-
-                                        ActionButton {
-                                            text: audioLogic.muteLabel(!!inCard.modelData.mute)
-                                            variant: inCard.modelData.mute ? "danger" : "secondary"
-                                            compact: true
-                                            enabled: !AudioService.busy
-                                            onClicked: AudioService.setMute("source", inCard.modelData.name, "toggle")
-                                        }
-                                    }
-                                }
-
-                                // Volume Slider Row
-                                Row {
-                                    width: parent.width
-                                    spacing: HKS.space12
-
-                                    Rectangle {
-                                        id: inTrack
-                                        width: Math.max(160, parent.width - 140)
-                                        height: 6
-                                        radius: 3
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: HKS.elevated
-
-                                        readonly property int pct: audioLogic.clampVolume(inCard.modelData.volume_percent, 100)
-                                        readonly property real ratio: Math.max(0, Math.min(1, pct / 100.0))
-
-                                        Rectangle {
-                                            width: parent.width * parent.ratio
-                                            height: parent.height
-                                            radius: 3
-                                            color: inCard.modelData.mute ? HKS.muted : HKS.accent
-                                        }
-
-                                        Rectangle {
-                                            width: 14
-                                            height: 14
-                                            radius: 7
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            x: Math.max(0, Math.min(parent.width - width, parent.width * parent.ratio - width / 2))
-                                            color: HKS.fg
-                                            border.width: 1
-                                            border.color: inCard.modelData.mute ? HKS.muted : HKS.accent
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            anchors.margins: -6
-                                            enabled: !AudioService.busy
-                                            cursorShape: Qt.PointingHandCursor
-                                            onPressed: function(mouse) {
-                                                var r = Math.max(0, Math.min(1, mouse.x / inTrack.width));
-                                                var val = audioLogic.clampVolume(r * 100, 100);
-                                                AudioService.setVolume("source", inCard.modelData.name, val);
-                                            }
-                                        }
-                                    }
-
-                                    Text {
-                                        width: 44
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: audioLogic.clampVolume(inCard.modelData.volume_percent, 150) + "%"
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        color: HKS.fg
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    SectionCard {
-                        visible: root.inputParts.inactive.length > 0
-                        width: contentCol.width
-
-                        Row {
+                        },
+                        Text {
+                            visible: Number(outCard.modelData.balance_diff || 0) > 0
                             width: parent.width
-                            spacing: HKS.space12
-
-                            Text {
-                                width: Math.max(160, parent.width - inInactiveBtn.width - HKS.space12)
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: root.inputParts.inactive.length + (root.inputParts.inactive.length === 1 ? " inactive input" : " inactive inputs")
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.muted
-                            }
-
-                            ActionButton {
-                                id: inInactiveBtn
-                                text: root.showInactiveInputs ? "Hide" : "Show"
-                                compact: true
-                                variant: root.showInactiveInputs ? "accent" : "neutral"
-                                onClicked: root.showInactiveInputs = !root.showInactiveInputs
-                            }
+                            text: audioLogic.balanceWarningText(outCard.modelData.balance_diff)
+                            font.family: HKS.fontFamily
+                            font.pixelSize: HKS.fontSizeSmall
+                            color: HKS.warning
+                            wrapMode: Text.WordWrap
                         }
-                    }
+                    ]
                 }
+            }
 
-                // Playback Streams (Read-Only)
-                Column {
+            SectionCard {
+                visible: root.outputParts.inactive.length > 0
+                width: viewport.innerWidth
+                cardPadding: viewport.cardPadding
+
+                Item {
+                    id: outInactBox
                     width: parent.width
-                    spacing: HKS.space8
+                    implicitHeight: Math.max(outInactTxt.implicitHeight, outInactiveBtn.height)
+                    height: implicitHeight
 
                     Text {
-                        text: "Playback Streams (" + AudioService.streams.length + ")"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
-                        font.weight: Font.Bold
-                        color: HKS.fg
-                    }
-
-                    Text {
-                        visible: AudioService.streams.length === 0
-                        text: "No active playback streams."
+                        id: outInactTxt
+                        x: 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.max(0, outInactBox.width - outInactiveBtn.width - HKS.space12)
+                        text: root.outputParts.inactive.length + (root.outputParts.inactive.length === 1 ? " inactive output" : " inactive outputs")
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSizeSmall
                         color: HKS.muted
+                        wrapMode: Text.WordWrap
                     }
 
-                    Repeater {
-                        model: AudioService.streams
-                        delegate: Rectangle {
-                            id: streamRow
-                            required property var modelData
-                            width: contentCol.width
-                            height: streamCol.implicitHeight + 16
-                            radius: HKS.radiusSmall
-                            color: HKS.surface
-                            border.width: 1
-                            border.color: HKS.alpha(HKS.muted, 0.14)
+                    ActionButton {
+                        id: outInactiveBtn
+                        x: outInactBox.width - width
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.showInactiveOutputs ? "Hide" : "Show"
+                        compact: true
+                        variant: root.showInactiveOutputs ? "accent" : "neutral"
+                        onClicked: root.showInactiveOutputs = !root.showInactiveOutputs
+                    }
+                }
+            }
+        }
 
-                            Row {
-                                id: streamCol
-                                anchors.left: parent.left
-                                anchors.right: parent.right
+        // Input Sources
+        Column {
+            visible: AudioService.outputs.length > 0 || AudioService.inputs.length > 0 || AudioService.streams.length > 0
+            width: viewport.innerWidth
+            spacing: HKS.space8
+
+            Text {
+                width: parent.width
+                text: "Input Devices (" + AudioService.inputs.length + ")"
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSize
+                font.weight: Font.Bold
+                color: HKS.fg
+                wrapMode: Text.WordWrap
+            }
+
+            Repeater {
+                model: root.showInactiveInputs ? AudioService.inputs : root.inputParts.active
+                delegate: DeviceCard {
+                    id: inCard
+                    required property var modelData
+                    width: viewport.innerWidth
+                    cardPadding: viewport.cardPadding
+                    highlighted: !!inCard.modelData.is_default
+                    title: String(inCard.modelData.description || inCard.modelData.name || "Input")
+                    badges: [
+                        {
+                            text: audioLogic.kindLabel(inCard.modelData.kind),
+                            textColor: HKS.accent,
+                            bgColor: HKS.alpha(HKS.accent, 0.15),
+                            borderColor: HKS.alpha(HKS.accent, 0.35)
+                        },
+                        {
+                            text: String(inCard.modelData.running_state || ""),
+                            textColor: HKS.muted,
+                            bgColor: HKS.elevated
+                        }
+                    ]
+                    detailText: root.showDetails ? String(inCard.modelData.name || "") : ""
+
+                    actions: [
+                        ActionButton {
+                            text: inCard.modelData.is_default ? "Default" : "Set Default"
+                            variant: inCard.modelData.is_default ? "accent" : "neutral"
+                            compact: true
+                            enabled: !inCard.modelData.is_default && !AudioService.busy
+                            onClicked: AudioService.setDefault("source", inCard.modelData.name)
+                        },
+                        ActionButton {
+                            text: audioLogic.muteLabel(!!inCard.modelData.mute)
+                            variant: inCard.modelData.mute ? "danger" : "neutral"
+                            compact: true
+                            enabled: !AudioService.busy
+                            onClicked: AudioService.setMute("source", inCard.modelData.name, "toggle")
+                        }
+                    ]
+
+                    extraContent: [
+                        Item {
+                            width: parent.width
+                            height: 22
+
+                            Rectangle {
+                                id: inTrack
+                                x: 0
                                 anchors.verticalCenter: parent.verticalCenter
-                                anchors.margins: HKS.space12
-                                spacing: HKS.space12
+                                width: Math.max(80, parent.width - 56 - HKS.space8)
+                                height: 6
+                                radius: 3
+                                color: HKS.elevated
 
-                                Column {
-                                    width: Math.max(160, parent.width - 140)
-                                    spacing: 2
+                                readonly property int pct: audioLogic.clampVolume(inCard.modelData.volume_percent, 100)
+                                readonly property real ratio: Math.max(0, Math.min(1, pct / 100.0))
 
-                                    Text {
-                                        text: String(streamRow.modelData.app || "Application") + (streamRow.modelData.name ? (" — " + streamRow.modelData.name) : "")
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        font.weight: Font.DemiBold
-                                        color: HKS.fg
-                                        elide: Text.ElideRight
-                                        width: parent.width
-                                    }
-
-                                    Text {
-                                        text: "Sink: " + String(streamRow.modelData.sink || "unknown")
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: 11
-                                        color: HKS.muted
-                                        elide: Text.ElideMiddle
-                                        width: parent.width
-                                    }
+                                Rectangle {
+                                    width: parent.width * parent.ratio
+                                    height: parent.height
+                                    radius: 3
+                                    color: inCard.modelData.mute ? HKS.muted : HKS.accent
                                 }
 
-                                Text {
+                                Rectangle {
+                                    width: 14
+                                    height: 14
+                                    radius: 7
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: (streamRow.modelData.mute ? "Muted · " : "") + String(streamRow.modelData.volume || 0) + "%"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: streamRow.modelData.mute ? HKS.warning : HKS.muted
+                                    x: Math.max(0, Math.min(parent.width - width, parent.width * parent.ratio - width / 2))
+                                    color: HKS.fg
+                                    border.width: 1
+                                    border.color: inCard.modelData.mute ? HKS.muted : HKS.accent
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    anchors.margins: -6
+                                    enabled: !AudioService.busy
+                                    cursorShape: Qt.PointingHandCursor
+                                    onPressed: function(mouse) {
+                                        var r = Math.max(0, Math.min(1, mouse.x / inTrack.width));
+                                        var val = audioLogic.clampVolume(r * 100, 100);
+                                        AudioService.setVolume("source", inCard.modelData.name, val);
+                                    }
                                 }
                             }
+
+                            Text {
+                                x: parent.width - width
+                                width: 48
+                                horizontalAlignment: Text.AlignRight
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: audioLogic.clampVolume(inCard.modelData.volume_percent, 150) + "%"
+                                font.family: HKS.fontFamily
+                                font.pixelSize: HKS.fontSizeSmall
+                                color: HKS.fg
+                            }
                         }
+                    ]
+                }
+            }
+
+            SectionCard {
+                visible: root.inputParts.inactive.length > 0
+                width: viewport.innerWidth
+                cardPadding: viewport.cardPadding
+
+                Item {
+                    id: inInactBox
+                    width: parent.width
+                    implicitHeight: Math.max(inInactTxt.implicitHeight, inInactiveBtn.height)
+                    height: implicitHeight
+
+                    Text {
+                        id: inInactTxt
+                        x: 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.max(0, inInactBox.width - inInactiveBtn.width - HKS.space12)
+                        text: root.inputParts.inactive.length + (root.inputParts.inactive.length === 1 ? " inactive input" : " inactive inputs")
+                        font.family: HKS.fontFamily
+                        font.pixelSize: HKS.fontSizeSmall
+                        color: HKS.muted
+                        wrapMode: Text.WordWrap
                     }
+
+                    ActionButton {
+                        id: inInactiveBtn
+                        x: inInactBox.width - width
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.showInactiveInputs ? "Hide" : "Show"
+                        compact: true
+                        variant: root.showInactiveInputs ? "accent" : "neutral"
+                        onClicked: root.showInactiveInputs = !root.showInactiveInputs
+                    }
+                }
+            }
+        }
+
+        // Playback Streams (Read-Only)
+        Column {
+            visible: AudioService.outputs.length > 0 || AudioService.inputs.length > 0 || AudioService.streams.length > 0
+            width: viewport.innerWidth
+            spacing: HKS.space8
+
+            Text {
+                width: parent.width
+                text: "Playback Streams (" + AudioService.streams.length + ")"
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSize
+                font.weight: Font.Bold
+                color: HKS.fg
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                visible: AudioService.streams.length === 0
+                width: parent.width
+                text: "No active playback streams."
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSizeSmall
+                color: HKS.muted
+                wrapMode: Text.WordWrap
+            }
+
+            Repeater {
+                model: AudioService.streams
+                delegate: DeviceCard {
+                    id: streamRow
+                    required property var modelData
+                    width: viewport.innerWidth
+                    cardPadding: viewport.cardPadding
+                    title: String(streamRow.modelData.app || "Application")
+                        + (streamRow.modelData.name ? (" — " + streamRow.modelData.name) : "")
+                    subtitle: "Sink: " + String(streamRow.modelData.sink || "unknown")
+                    badges: [
+                        {
+                            text: (streamRow.modelData.mute ? "Muted · " : "") + String(streamRow.modelData.volume || 0) + "%",
+                            textColor: streamRow.modelData.mute ? HKS.warning : HKS.muted,
+                            bgColor: HKS.elevated
+                        }
+                    ]
                 }
             }
         }

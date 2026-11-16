@@ -416,4 +416,64 @@ TestCase {
         var expanded = themesLogic.visibleThemeChips(items, "CurTheme", true, 8);
         compare(expanded.length, 11);
     }
+
+    function test_responsive_layout_class_boundaries_and_hysteresis() {
+        compare(ResponsiveLogic.computeLayoutClass(350, ""), "compact");
+        compare(ResponsiveLogic.computeLayoutClass(439, ""), "compact");
+        compare(ResponsiveLogic.computeLayoutClass(440, ""), "medium");
+        compare(ResponsiveLogic.computeLayoutClass(679, ""), "medium");
+        compare(ResponsiveLogic.computeLayoutClass(680, ""), "wide");
+        compare(ResponsiveLogic.computeLayoutClass(999, ""), "wide");
+        compare(ResponsiveLogic.computeLayoutClass(1000, ""), "expanded");
+
+        // +/- 24px hysteresis around 440, 680, 1000
+        compare(ResponsiveLogic.computeLayoutClass(455, "compact"), "compact");
+        compare(ResponsiveLogic.computeLayoutClass(464, "compact"), "medium");
+        compare(ResponsiveLogic.computeLayoutClass(425, "medium"), "medium");
+        compare(ResponsiveLogic.computeLayoutClass(415, "medium"), "compact");
+
+        compare(ResponsiveLogic.computeLayoutClass(695, "medium"), "medium");
+        compare(ResponsiveLogic.computeLayoutClass(704, "medium"), "wide");
+        compare(ResponsiveLogic.computeLayoutClass(660, "wide"), "wide");
+        compare(ResponsiveLogic.computeLayoutClass(655, "wide"), "medium");
+
+        compare(ResponsiveLogic.computeLayoutClass(1015, "wide"), "wide");
+        compare(ResponsiveLogic.computeLayoutClass(1024, "wide"), "expanded");
+        compare(ResponsiveLogic.computeLayoutClass(980, "expanded"), "expanded");
+        compare(ResponsiveLogic.computeLayoutClass(975, "expanded"), "wide");
+    }
+
+    function test_responsive_sidebar_modes_and_short_viewport() {
+        compare(ResponsiveLogic.sidebarModeForWindowWidth(1880), "full");
+        compare(ResponsiveLogic.sidebarModeForWindowWidth(1100), "full");
+        compare(ResponsiveLogic.sidebarModeForWindowWidth(1099), "narrow");
+        compare(ResponsiveLogic.sidebarModeForWindowWidth(930), "narrow");
+        compare(ResponsiveLogic.sidebarModeForWindowWidth(760), "narrow");
+        compare(ResponsiveLogic.sidebarModeForWindowWidth(759), "rail");
+        compare(ResponsiveLogic.sidebarModeForWindowWidth(455), "rail");
+
+        compare(ResponsiveLogic.sidebarWidthForMode("full"), 230);
+        compare(ResponsiveLogic.sidebarWidthForMode("narrow"), 196);
+        compare(ResponsiveLogic.sidebarWidthForMode("rail"), 64);
+
+        compare(ResponsiveLogic.isLayoutShort(560), true);
+        compare(ResponsiveLogic.isLayoutShort(639), true);
+        compare(ResponsiveLogic.isLayoutShort(640), false);
+        compare(ResponsiveLogic.isLayoutShort(738), false);
+    }
+
+    function test_responsive_header_and_setting_row_wrap_decisions() {
+        // Header actions wrap when min(title, 180) + spacing + actions exceeds availableWidth
+        compare(ResponsiveLogic.shouldWrapHeaderActions(700, 120, 220, 12), false);
+        compare(ResponsiveLogic.shouldWrapHeaderActions(400, 120, 220, 12), true);
+        compare(ResponsiveLogic.shouldWrapHeaderActions(500, 120, 0, 12), false);
+
+        // SettingRow stacking
+        compare(ResponsiveLogic.shouldStackSettingRow(680, 220, 352, 12), false);
+        compare(ResponsiveLogic.shouldStackSettingRow(500, 220, 352, 12), true);
+
+        // DeviceCard actions wrap
+        compare(ResponsiveLogic.shouldWrapDeviceActions(680, 240, 210, 12), false);
+        compare(ResponsiveLogic.shouldWrapDeviceActions(420, 240, 210, 12), true);
+    }
 }

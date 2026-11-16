@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import "../theme"
 import "../shared_components"
 import "../components"
@@ -46,49 +45,21 @@ Item {
 
     Component.onCompleted: root.syncDraftsFromState()
 
-    Column {
+    PageViewport {
+        id: viewport
         anchors.fill: parent
-        anchors.margins: HKS.space24
-        spacing: HKS.space12
 
-        // Header
-        Row {
-            width: parent.width
-            spacing: HKS.space12
+        header: PageHeader {
+            title: "Power"
+            subtitle: "Battery health, CPU performance profile, screen idle, and sleep info."
 
-            Column {
-                width: Math.max(200, parent.width - headerActions.width - HKS.space12)
-                spacing: 4
-
-                Text {
-                    text: "Power"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeTitle
-                    font.weight: Font.Bold
-                    color: HKS.fg
-                }
-
-                Text {
-                    text: "Battery health, CPU performance profile, screen idle, and sleep info."
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
-                }
-            }
-
-            Row {
-                id: headerActions
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: HKS.space8
-
-                ActionButton {
-                    text: PowerService.busy ? "Applying..." : "Refresh"
-                    compact: true
-                    enabled: !PowerService.busy
-                    onClicked: {
-                        root.draftsDirty = false;
-                        PowerService.reload(false);
-                    }
+            ActionButton {
+                text: PowerService.busy ? "Applying..." : "Refresh"
+                compact: true
+                enabled: !PowerService.busy
+                onClicked: {
+                    root.draftsDirty = false;
+                    PowerService.reload(false);
                 }
             }
         }
@@ -96,7 +67,7 @@ Item {
         // Error banner
         Rectangle {
             visible: !PowerService.loading && PowerService.error.length > 0
-            width: parent.width
+            width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.critical, 0.14)
@@ -118,7 +89,7 @@ Item {
         // Status banner
         Rectangle {
             visible: PowerService.statusMessage.length > 0 && PowerService.error.length === 0
-            width: parent.width
+            width: viewport.innerWidth
             height: stTxt.implicitHeight + 16
             radius: HKS.radiusSmall
             color: HKS.alpha(HKS.accent, 0.14)
@@ -139,432 +110,470 @@ Item {
 
         EmptyState {
             visible: !PowerService.loading && !PowerService.available
-            width: parent.width
+            width: viewport.innerWidth
             height: 220
             icon: "󰁹"
             title: "Power controls unavailable"
             message: "No battery, CPU cpufreq, or hypridle backend detected."
         }
 
-        Flickable {
-            id: flick
-            visible: PowerService.available
-            width: parent.width
-            height: Math.max(120, parent.height - y)
-            clip: true
-            contentWidth: width
-            contentHeight: contentCol.implicitHeight
-            boundsBehavior: Flickable.StopAtBounds
+        // Battery Card
+        SectionCard {
+            visible: PowerService.available && !!PowerService.capabilities.has_battery
+            width: viewport.innerWidth
+            cardPadding: viewport.cardPadding
+            spacing: 6
 
-            Column {
-                id: contentCol
-                width: flick.width
-                spacing: HKS.space16
+            Text {
+                width: parent.width
+                text: "Battery (" + String(PowerService.battery.name || "BAT1") + ") — "
+                    + String(PowerService.battery.percentage !== undefined && PowerService.battery.percentage !== null ? PowerService.battery.percentage : "?") + "% · "
+                    + String(PowerService.battery.state || "unknown")
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSize
+                font.weight: Font.DemiBold
+                color: HKS.fg
+                wrapMode: Text.WordWrap
+            }
 
-                // Battery Card
-                Rectangle {
-                    visible: !!PowerService.capabilities.has_battery
-                    width: parent.width
-                    height: batCol.implicitHeight + 24
-                    radius: HKS.radiusMedium
-                    color: HKS.surface
-                    border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.18)
+            Text {
+                width: parent.width
+                text: "Health: " + (PowerService.battery.health_percent !== null && PowerService.battery.health_percent !== undefined ? (PowerService.battery.health_percent + "%") : "Unknown")
+                    + " · Rate: " + (PowerService.battery.energy_rate_w !== null && PowerService.battery.energy_rate_w !== undefined ? (PowerService.battery.energy_rate_w + " W") : "0 W")
+                    + (PowerService.battery.ac_online !== null && PowerService.battery.ac_online !== undefined ? (" · AC: " + (PowerService.battery.ac_online ? "Online" : "Battery")) : "")
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSizeSmall
+                color: HKS.muted
+                wrapMode: Text.WordWrap
+            }
 
-                    Column {
-                        id: batCol
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: HKS.space12
-                        spacing: 6
+            Text {
+                visible: !!(PowerService.battery.time_to_empty || PowerService.battery.time_to_full)
+                width: parent.width
+                text: PowerService.battery.time_to_empty
+                    ? ("Time to empty: " + PowerService.battery.time_to_empty)
+                    : ("Time to full: " + (PowerService.battery.time_to_full || ""))
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSizeSmall
+                color: HKS.muted
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                visible: PowerService.battery.charge_cycles !== null && PowerService.battery.charge_cycles !== undefined
+                width: parent.width
+                text: "Charge cycles: " + String(PowerService.battery.charge_cycles || "")
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSizeSmall
+                color: HKS.muted
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                visible: PowerService.battery.charge_end_threshold !== null && PowerService.battery.charge_end_threshold !== undefined
+                width: parent.width
+                text: "Charge threshold: " + String(PowerService.battery.charge_end_threshold || "") + "%"
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSizeSmall
+                color: HKS.muted
+                wrapMode: Text.WordWrap
+            }
+        }
+
+        // Performance Card (EPP + Turbo)
+        SectionCard {
+            visible: PowerService.available && !!PowerService.cpu.available
+            width: viewport.innerWidth
+            cardPadding: viewport.cardPadding
+
+            Text {
+                width: parent.width
+                text: "Performance (" + String(PowerService.cpu.driver || "cpu") + ", " + String(PowerService.cpu.cpu_count || 0) + " threads)"
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSize
+                font.weight: Font.DemiBold
+                color: HKS.fg
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                width: parent.width
+                text: "Session only, resets on reboot, asks for your password."
+                font.family: HKS.fontFamily
+                font.pixelSize: 11
+                color: HKS.muted
+                wrapMode: Text.WordWrap
+            }
+
+            ChipFlow {
+                visible: !!PowerService.capabilities.can_write_epp
+                width: parent.width
+                layoutClass: viewport.layoutClass
+                layoutShort: viewport.layoutShort
+                spacing: 6
+
+                Repeater {
+                    model: PowerService.cpu.epp_available || []
+                    delegate: ActionButton {
+                        required property string modelData
+                        text: pwrLogic.eppLabel(modelData)
+                        variant: PowerService.cpu.epp_current === modelData ? "accent" : "neutral"
+                        compact: true
+                        enabled: !PowerService.busy
+                        onClicked: PowerService.setEpp(modelData)
+                    }
+                }
+            }
+
+            Item {
+                id: turboRowBox
+                visible: !!PowerService.capabilities.can_write_turbo
+                width: parent.width
+                readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
+                    turboRowBox.width, turboLblMetrics.advanceWidth, turboBtn.implicitWidth, HKS.space12
+                )
+                implicitHeight: wrapped
+                    ? (turboLbl.implicitHeight + HKS.space8 + turboBtn.height)
+                    : Math.max(turboLbl.implicitHeight, turboBtn.height)
+                height: implicitHeight
+
+                TextMetrics {
+                    id: turboLblMetrics
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSizeSmall
+                    text: turboLbl.text
+                }
+
+                Text {
+                    id: turboLbl
+                    x: 0
+                    y: turboRowBox.wrapped ? 0 : Math.max(0, Math.round((turboRowBox.height - height) / 2))
+                    width: turboRowBox.wrapped
+                        ? turboRowBox.width
+                        : Math.max(0, turboRowBox.width - turboBtn.width - HKS.space12)
+                    text: "Intel Turbo Boost: " + (PowerService.cpu.turbo_enabled ? "Enabled" : "Disabled")
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSizeSmall
+                    color: HKS.fg
+                    wrapMode: Text.WordWrap
+                }
+
+                ActionButton {
+                    id: turboBtn
+                    x: turboRowBox.wrapped ? 0 : Math.max(0, turboRowBox.width - width)
+                    y: turboRowBox.wrapped
+                        ? (turboLbl.implicitHeight + HKS.space8)
+                        : Math.max(0, Math.round((turboRowBox.height - height) / 2))
+                    text: PowerService.cpu.turbo_enabled ? "Disable Turbo" : "Enable Turbo"
+                    variant: PowerService.cpu.turbo_enabled ? "neutral" : "accent"
+                    compact: true
+                    enabled: !PowerService.busy
+                    onClicked: PowerService.requestTurbo(!PowerService.cpu.turbo_enabled)
+                }
+            }
+        }
+
+        // Screen Idle Card (hypridle)
+        SectionCard {
+            visible: PowerService.available && !!PowerService.capabilities.hypridle_present
+            width: viewport.innerWidth
+            cardPadding: viewport.cardPadding
+
+            Item {
+                id: idleHdrBox
+                width: parent.width
+                readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
+                    idleHdrBox.width, idleLblMetrics.advanceWidth, idleActions.implicitWidth, HKS.space8
+                )
+                implicitHeight: wrapped
+                    ? (idleLbl.implicitHeight + HKS.space8 + idleActions.height)
+                    : Math.max(idleLbl.implicitHeight, idleActions.height)
+                height: implicitHeight
+
+                TextMetrics {
+                    id: idleLblMetrics
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSize
+                    font.weight: Font.DemiBold
+                    text: idleLbl.text
+                }
+
+                Text {
+                    id: idleLbl
+                    x: 0
+                    y: idleHdrBox.wrapped ? 0 : Math.max(0, Math.round((idleHdrBox.height - height) / 2))
+                    width: idleHdrBox.wrapped
+                        ? idleHdrBox.width
+                        : Math.max(0, idleHdrBox.width - idleActions.width - HKS.space8)
+                    text: "Screen Idle (hypridle: " + (PowerService.hypridle.running ? "running" : "stopped") + ")"
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSize
+                    font.weight: Font.DemiBold
+                    color: HKS.fg
+                    wrapMode: Text.WordWrap
+                }
+
+                Row {
+                    id: idleActions
+                    x: idleHdrBox.wrapped ? 0 : Math.max(0, idleHdrBox.width - width)
+                    y: idleHdrBox.wrapped
+                        ? (idleLbl.implicitHeight + HKS.space8)
+                        : Math.max(0, Math.round((idleHdrBox.height - height) / 2))
+                    spacing: HKS.space8
+
+                    ActionButton {
+                        text: "Revert"
+                        compact: true
+                        enabled: root.draftsDirty && !PowerService.busy
+                        onClicked: root.syncDraftsFromState()
+                    }
+
+                    ActionButton {
+                        text: "Apply"
+                        variant: "accent"
+                        compact: true
+                        enabled: root.draftsDirty && root.idleValidationErr.length === 0 && !PowerService.busy
+                        onClicked: {
+                            root.draftsDirty = false;
+                            PowerService.setIdleTimeouts(
+                                pwrLogic.minToSec(root.draftDimMin),
+                                pwrLogic.minToSec(root.draftLockMin),
+                                pwrLogic.minToSec(root.draftDpmsMin)
+                            );
+                        }
+                    }
+                }
+            }
+
+            // Dim stepper
+            Item {
+                id: dimRowBox
+                width: parent.width
+                implicitHeight: Math.max(dimLbl.implicitHeight, dimCtrls.height)
+                height: implicitHeight
+
+                Text {
+                    id: dimLbl
+                    objectName: "elideOk"
+                    x: 0
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.max(80, dimRowBox.width - dimCtrls.width - HKS.space8)
+                    text: "Dim screen"
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSizeSmall
+                    color: HKS.fg
+                    elide: Text.ElideRight
+                }
+
+                Row {
+                    id: dimCtrls
+                    x: dimRowBox.width - width
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: HKS.space8
+
+                    ActionButton {
+                        text: "-"
+                        compact: true
+                        implicitWidth: 30
+                        enabled: root.draftDimMin > 1
+                        onClicked: { root.draftDimMin--; root.draftsDirty = true; }
+                    }
+
+                    Rectangle {
+                        width: 68
+                        height: 28
+                        radius: HKS.radiusSmall
+                        color: HKS.bg
+                        border.width: 1
+                        border.color: HKS.alpha(HKS.muted, 0.3)
 
                         Text {
-                            text: "Battery (" + String(PowerService.battery.name || "BAT1") + ") — "
-                                + String(PowerService.battery.percentage !== undefined && PowerService.battery.percentage !== null ? PowerService.battery.percentage : "?") + "% · "
-                                + String(PowerService.battery.state || "unknown")
+                            anchors.centerIn: parent
+                            text: root.draftDimMin + " min"
                             font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSize
-                            font.weight: Font.DemiBold
+                            font.pixelSize: HKS.fontSizeSmall
                             color: HKS.fg
                         }
+                    }
 
-                        Text {
-                            text: "Health: " + (PowerService.battery.health_percent !== null && PowerService.battery.health_percent !== undefined ? (PowerService.battery.health_percent + "%") : "Unknown")
-                                + " · Rate: " + (PowerService.battery.energy_rate_w !== null && PowerService.battery.energy_rate_w !== undefined ? (PowerService.battery.energy_rate_w + " W") : "0 W")
-                                + (PowerService.battery.ac_online !== null && PowerService.battery.ac_online !== undefined ? (" · AC: " + (PowerService.battery.ac_online ? "Online" : "Battery")) : "")
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.muted
-                        }
-
-                        Text {
-                            visible: !!(PowerService.battery.time_to_empty || PowerService.battery.time_to_full)
-                            text: PowerService.battery.time_to_empty
-                                ? ("Time to empty: " + PowerService.battery.time_to_empty)
-                                : ("Time to full: " + (PowerService.battery.time_to_full || ""))
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.muted
-                        }
-
-                        Text {
-                            visible: PowerService.battery.charge_cycles !== null && PowerService.battery.charge_cycles !== undefined
-                            text: "Charge cycles: " + String(PowerService.battery.charge_cycles || "")
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.muted
-                        }
-
-                        Text {
-                            visible: PowerService.battery.charge_end_threshold !== null && PowerService.battery.charge_end_threshold !== undefined
-                            text: "Charge threshold: " + String(PowerService.battery.charge_end_threshold || "") + "%"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.muted
-                        }
+                    ActionButton {
+                        text: "+"
+                        compact: true
+                        implicitWidth: 30
+                        enabled: root.draftDimMin < 1440
+                        onClicked: { root.draftDimMin++; root.draftsDirty = true; }
                     }
                 }
+            }
 
-                // Performance Card (EPP + Turbo)
-                Rectangle {
-                    visible: !!PowerService.cpu.available
-                    width: parent.width
-                    height: perfCol.implicitHeight + 24
-                    radius: HKS.radiusMedium
-                    color: HKS.surface
-                    border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.18)
+            // Lock stepper
+            Item {
+                id: lockRowBox
+                width: parent.width
+                implicitHeight: Math.max(lockLbl.implicitHeight, lockCtrls.height)
+                height: implicitHeight
 
-                    Column {
-                        id: perfCol
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: HKS.space12
-                        spacing: HKS.space8
+                Text {
+                    id: lockLbl
+                    objectName: "elideOk"
+                    x: 0
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.max(80, lockRowBox.width - lockCtrls.width - HKS.space8)
+                    text: "Lock session"
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSizeSmall
+                    color: HKS.fg
+                    elide: Text.ElideRight
+                }
+
+                Row {
+                    id: lockCtrls
+                    x: lockRowBox.width - width
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: HKS.space8
+
+                    ActionButton {
+                        text: "-"
+                        compact: true
+                        implicitWidth: 30
+                        enabled: root.draftLockMin > 1
+                        onClicked: { root.draftLockMin--; root.draftsDirty = true; }
+                    }
+
+                    Rectangle {
+                        width: 68
+                        height: 28
+                        radius: HKS.radiusSmall
+                        color: HKS.bg
+                        border.width: 1
+                        border.color: HKS.alpha(HKS.muted, 0.3)
 
                         Text {
-                            text: "Performance (" + String(PowerService.cpu.driver || "cpu") + ", " + String(PowerService.cpu.cpu_count || 0) + " threads)"
+                            anchors.centerIn: parent
+                            text: root.draftLockMin + " min"
                             font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSize
-                            font.weight: Font.DemiBold
+                            font.pixelSize: HKS.fontSizeSmall
                             color: HKS.fg
                         }
+                    }
 
-                        Text {
-                            text: "Session only, resets on reboot, asks for your password."
-                            font.family: HKS.fontFamily
-                            font.pixelSize: 11
-                            color: HKS.muted
-                        }
-
-                        Flow {
-                            visible: !!PowerService.capabilities.can_write_epp
-                            width: parent.width
-                            spacing: 6
-
-                            Repeater {
-                                model: PowerService.cpu.epp_available || []
-                                delegate: ActionButton {
-                                    required property string modelData
-                                    text: pwrLogic.eppLabel(modelData)
-                                    variant: PowerService.cpu.epp_current === modelData ? "accent" : "secondary"
-                                    compact: true
-                                    enabled: !PowerService.busy
-                                    onClicked: PowerService.setEpp(modelData)
-                                }
-                            }
-                        }
-
-                        Row {
-                            visible: !!PowerService.capabilities.can_write_turbo
-                            width: parent.width
-                            spacing: HKS.space12
-
-                            Text {
-                                width: Math.max(160, parent.width - turboBtn.width - HKS.space12)
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Intel Turbo Boost: " + (PowerService.cpu.turbo_enabled ? "Enabled" : "Disabled")
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.fg
-                            }
-
-                            ActionButton {
-                                id: turboBtn
-                                text: PowerService.cpu.turbo_enabled ? "Disable Turbo" : "Enable Turbo"
-                                variant: PowerService.cpu.turbo_enabled ? "secondary" : "accent"
-                                compact: true
-                                enabled: !PowerService.busy
-                                onClicked: PowerService.requestTurbo(!PowerService.cpu.turbo_enabled)
-                            }
-                        }
+                    ActionButton {
+                        text: "+"
+                        compact: true
+                        implicitWidth: 30
+                        enabled: root.draftLockMin < 1440
+                        onClicked: { root.draftLockMin++; root.draftsDirty = true; }
                     }
                 }
+            }
 
-                // Screen Idle Card (hypridle)
-                Rectangle {
-                    visible: !!PowerService.capabilities.hypridle_present
-                    width: parent.width
-                    height: idleCol.implicitHeight + 24
-                    radius: HKS.radiusMedium
-                    color: HKS.surface
-                    border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.18)
+            // DPMS off stepper
+            Item {
+                id: dpmsRowBox
+                width: parent.width
+                implicitHeight: Math.max(dpmsLbl.implicitHeight, dpmsCtrls.height)
+                height: implicitHeight
 
-                    Column {
-                        id: idleCol
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: HKS.space12
-                        spacing: HKS.space8
-
-                        Row {
-                            width: parent.width
-                            spacing: HKS.space8
-
-                            Text {
-                                width: Math.max(160, parent.width - idleActions.width - HKS.space8)
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Screen Idle (hypridle: " + (PowerService.hypridle.running ? "running" : "stopped") + ")"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSize
-                                font.weight: Font.DemiBold
-                                color: HKS.fg
-                            }
-
-                            Row {
-                                id: idleActions
-                                spacing: HKS.space8
-
-                                ActionButton {
-                                    text: "Revert"
-                                    compact: true
-                                    enabled: root.draftsDirty && !PowerService.busy
-                                    onClicked: root.syncDraftsFromState()
-                                }
-
-                                ActionButton {
-                                    text: "Apply"
-                                    variant: "accent"
-                                    compact: true
-                                    enabled: root.draftsDirty && root.idleValidationErr.length === 0 && !PowerService.busy
-                                    onClicked: {
-                                        root.draftsDirty = false;
-                                        PowerService.setIdleTimeouts(
-                                            pwrLogic.minToSec(root.draftDimMin),
-                                            pwrLogic.minToSec(root.draftLockMin),
-                                            pwrLogic.minToSec(root.draftDpmsMin)
-                                        );
-                                    }
-                                }
-                            }
-                        }
-
-                        // Dim stepper
-                        RowLayout {
-                            width: parent.width
-                            spacing: HKS.space8
-                            Text {
-                                Layout.fillWidth: true
-                                Layout.alignment: Qt.AlignVCenter
-                                text: "Dim screen"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.fg
-                                elide: Text.ElideRight
-                            }
-                            ActionButton {
-                                text: "-"
-                                compact: true
-                                implicitWidth: 30
-                                Layout.preferredWidth: 30
-                                Layout.alignment: Qt.AlignVCenter
-                                enabled: root.draftDimMin > 1
-                                onClicked: { root.draftDimMin--; root.draftsDirty = true; }
-                            }
-                            Rectangle {
-                                Layout.preferredWidth: 68
-                                Layout.preferredHeight: 28
-                                Layout.alignment: Qt.AlignVCenter
-                                radius: HKS.radiusSmall
-                                color: HKS.bg
-                                border.width: 1
-                                border.color: HKS.alpha(HKS.muted, 0.3)
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.draftDimMin + " min"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: HKS.fg
-                                }
-                            }
-                            ActionButton {
-                                text: "+"
-                                compact: true
-                                implicitWidth: 30
-                                Layout.preferredWidth: 30
-                                Layout.alignment: Qt.AlignVCenter
-                                enabled: root.draftDimMin < 1440
-                                onClicked: { root.draftDimMin++; root.draftsDirty = true; }
-                            }
-                        }
-
-                        // Lock stepper
-                        RowLayout {
-                            width: parent.width
-                            spacing: HKS.space8
-                            Text {
-                                Layout.fillWidth: true
-                                Layout.alignment: Qt.AlignVCenter
-                                text: "Lock session"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.fg
-                                elide: Text.ElideRight
-                            }
-                            ActionButton {
-                                text: "-"
-                                compact: true
-                                implicitWidth: 30
-                                Layout.preferredWidth: 30
-                                Layout.alignment: Qt.AlignVCenter
-                                enabled: root.draftLockMin > 1
-                                onClicked: { root.draftLockMin--; root.draftsDirty = true; }
-                            }
-                            Rectangle {
-                                Layout.preferredWidth: 68
-                                Layout.preferredHeight: 28
-                                Layout.alignment: Qt.AlignVCenter
-                                radius: HKS.radiusSmall
-                                color: HKS.bg
-                                border.width: 1
-                                border.color: HKS.alpha(HKS.muted, 0.3)
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.draftLockMin + " min"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: HKS.fg
-                                }
-                            }
-                            ActionButton {
-                                text: "+"
-                                compact: true
-                                implicitWidth: 30
-                                Layout.preferredWidth: 30
-                                Layout.alignment: Qt.AlignVCenter
-                                enabled: root.draftLockMin < 1440
-                                onClicked: { root.draftLockMin++; root.draftsDirty = true; }
-                            }
-                        }
-
-                        // DPMS off stepper
-                        RowLayout {
-                            width: parent.width
-                            spacing: HKS.space8
-                            Text {
-                                Layout.fillWidth: true
-                                Layout.alignment: Qt.AlignVCenter
-                                text: "Turn off display"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.fg
-                                elide: Text.ElideRight
-                            }
-                            ActionButton {
-                                text: "-"
-                                compact: true
-                                implicitWidth: 30
-                                Layout.preferredWidth: 30
-                                Layout.alignment: Qt.AlignVCenter
-                                enabled: root.draftDpmsMin > 1
-                                onClicked: { root.draftDpmsMin--; root.draftsDirty = true; }
-                            }
-                            Rectangle {
-                                Layout.preferredWidth: 68
-                                Layout.preferredHeight: 28
-                                Layout.alignment: Qt.AlignVCenter
-                                radius: HKS.radiusSmall
-                                color: HKS.bg
-                                border.width: 1
-                                border.color: HKS.alpha(HKS.muted, 0.3)
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.draftDpmsMin + " min"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: HKS.fg
-                                }
-                            }
-                            ActionButton {
-                                text: "+"
-                                compact: true
-                                implicitWidth: 30
-                                Layout.preferredWidth: 30
-                                Layout.alignment: Qt.AlignVCenter
-                                enabled: root.draftDpmsMin < 1440
-                                onClicked: { root.draftDpmsMin++; root.draftsDirty = true; }
-                            }
-                        }
-
-                        Text {
-                            visible: root.idleValidationErr.length > 0
-                            text: root.idleValidationErr
-                            font.family: HKS.fontFamily
-                            font.pixelSize: 11
-                            color: HKS.critical
-                            width: parent.width
-                            wrapMode: Text.WordWrap
-                        }
-                    }
+                Text {
+                    id: dpmsLbl
+                    objectName: "elideOk"
+                    x: 0
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.max(80, dpmsRowBox.width - dpmsCtrls.width - HKS.space8)
+                    text: "Turn off display"
+                    font.family: HKS.fontFamily
+                    font.pixelSize: HKS.fontSizeSmall
+                    color: HKS.fg
+                    elide: Text.ElideRight
                 }
 
-                // Read-only Lid and Sleep Card
-                Rectangle {
-                    visible: !!PowerService.lidSleep.available
-                    width: parent.width
-                    height: lidCol.implicitHeight + 24
-                    radius: HKS.radiusMedium
-                    color: HKS.surface
-                    border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.18)
+                Row {
+                    id: dpmsCtrls
+                    x: dpmsRowBox.width - width
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: HKS.space8
 
-                    Column {
-                        id: lidCol
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: HKS.space12
-                        spacing: 4
+                    ActionButton {
+                        text: "-"
+                        compact: true
+                        implicitWidth: 30
+                        enabled: root.draftDpmsMin > 1
+                        onClicked: { root.draftDpmsMin--; root.draftsDirty = true; }
+                    }
+
+                    Rectangle {
+                        width: 68
+                        height: 28
+                        radius: HKS.radiusSmall
+                        color: HKS.bg
+                        border.width: 1
+                        border.color: HKS.alpha(HKS.muted, 0.3)
 
                         Text {
-                            text: "Lid & Sleep (Read-Only)"
+                            anchors.centerIn: parent
+                            text: root.draftDpmsMin + " min"
                             font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSize
-                            font.weight: Font.DemiBold
+                            font.pixelSize: HKS.fontSizeSmall
                             color: HKS.fg
                         }
-                        Text {
-                            text: "Sleep mode: " + String(PowerService.lidSleep.mem_sleep || "unknown")
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.muted
-                        }
-                        Text {
-                            text: "Lid switch: battery=" + String(PowerService.lidSleep.handle_lid_switch || "suspend")
-                                + " · ac=" + String(PowerService.lidSleep.handle_lid_switch_external_power || "suspend")
-                                + " · docked=" + String(PowerService.lidSleep.handle_lid_switch_docked || "ignore")
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.muted
-                            wrapMode: Text.WordWrap
-                            width: parent.width
-                        }
+                    }
+
+                    ActionButton {
+                        text: "+"
+                        compact: true
+                        implicitWidth: 30
+                        enabled: root.draftDpmsMin < 1440
+                        onClicked: { root.draftDpmsMin++; root.draftsDirty = true; }
                     }
                 }
+            }
+
+            Text {
+                visible: root.idleValidationErr.length > 0
+                text: root.idleValidationErr
+                font.family: HKS.fontFamily
+                font.pixelSize: 11
+                color: HKS.critical
+                width: parent.width
+                wrapMode: Text.WordWrap
+            }
+        }
+
+        // Read-only Lid and Sleep Card
+        SectionCard {
+            visible: PowerService.available && !!PowerService.lidSleep.available
+            width: viewport.innerWidth
+            cardPadding: viewport.cardPadding
+            spacing: 4
+
+            Text {
+                width: parent.width
+                text: "Lid & Sleep (Read-Only)"
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSize
+                font.weight: Font.DemiBold
+                color: HKS.fg
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                width: parent.width
+                text: "Sleep mode: " + String(PowerService.lidSleep.mem_sleep || "unknown")
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSizeSmall
+                color: HKS.muted
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                width: parent.width
+                text: "Lid switch: battery=" + String(PowerService.lidSleep.handle_lid_switch || "suspend")
+                    + " · ac=" + String(PowerService.lidSleep.handle_lid_switch_external_power || "suspend")
+                    + " · docked=" + String(PowerService.lidSleep.handle_lid_switch_docked || "ignore")
+                font.family: HKS.fontFamily
+                font.pixelSize: HKS.fontSizeSmall
+                color: HKS.muted
+                wrapMode: Text.WordWrap
             }
         }
     }
@@ -580,7 +589,7 @@ Item {
 
         Rectangle {
             anchors.centerIn: parent
-            width: 440
+            width: Math.min(440, parent.width - HKS.space24)
             height: modalCol.implicitHeight + 36
             radius: HKS.radius
             color: HKS.surface
@@ -612,21 +621,22 @@ Item {
                     wrapMode: Text.WordWrap
                 }
 
-                Row {
-                    anchors.right: parent.right
+                Flow {
+                    width: parent.width
+                    layoutDirection: Qt.RightToLeft
                     spacing: HKS.space8
-
-                    ActionButton {
-                        text: "Cancel"
-                        compact: true
-                        onClicked: PowerService.cancelPending()
-                    }
 
                     ActionButton {
                         text: "Disable Turbo"
                         variant: "danger"
                         compact: true
                         onClicked: PowerService.confirmPending()
+                    }
+
+                    ActionButton {
+                        text: "Cancel"
+                        compact: true
+                        onClicked: PowerService.cancelPending()
                     }
                 }
             }
