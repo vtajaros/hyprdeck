@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import "../theme"
 import "../shared_components"
 import "../components"
@@ -363,78 +364,147 @@ Item {
                         }
 
                         // Dim stepper
-                        Row {
+                        RowLayout {
                             width: parent.width
                             spacing: HKS.space8
                             Text {
-                                width: parent.width - 140
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Dim screen: " + root.draftDimMin + " min"
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Dim screen"
                                 font.family: HKS.fontFamily
                                 font.pixelSize: HKS.fontSizeSmall
                                 color: HKS.fg
+                                elide: Text.ElideRight
                             }
                             ActionButton {
                                 text: "-"
                                 compact: true
+                                implicitWidth: 30
+                                Layout.preferredWidth: 30
+                                Layout.alignment: Qt.AlignVCenter
                                 enabled: root.draftDimMin > 1
                                 onClicked: { root.draftDimMin--; root.draftsDirty = true; }
+                            }
+                            Rectangle {
+                                Layout.preferredWidth: 68
+                                Layout.preferredHeight: 28
+                                Layout.alignment: Qt.AlignVCenter
+                                radius: HKS.radiusSmall
+                                color: HKS.bg
+                                border.width: 1
+                                border.color: HKS.alpha(HKS.muted, 0.3)
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.draftDimMin + " min"
+                                    font.family: HKS.fontFamily
+                                    font.pixelSize: HKS.fontSizeSmall
+                                    color: HKS.fg
+                                }
                             }
                             ActionButton {
                                 text: "+"
                                 compact: true
+                                implicitWidth: 30
+                                Layout.preferredWidth: 30
+                                Layout.alignment: Qt.AlignVCenter
                                 enabled: root.draftDimMin < 1440
                                 onClicked: { root.draftDimMin++; root.draftsDirty = true; }
                             }
                         }
 
                         // Lock stepper
-                        Row {
+                        RowLayout {
                             width: parent.width
                             spacing: HKS.space8
                             Text {
-                                width: parent.width - 140
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Lock session: " + root.draftLockMin + " min"
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Lock session"
                                 font.family: HKS.fontFamily
                                 font.pixelSize: HKS.fontSizeSmall
                                 color: HKS.fg
+                                elide: Text.ElideRight
                             }
                             ActionButton {
                                 text: "-"
                                 compact: true
+                                implicitWidth: 30
+                                Layout.preferredWidth: 30
+                                Layout.alignment: Qt.AlignVCenter
                                 enabled: root.draftLockMin > 1
                                 onClicked: { root.draftLockMin--; root.draftsDirty = true; }
+                            }
+                            Rectangle {
+                                Layout.preferredWidth: 68
+                                Layout.preferredHeight: 28
+                                Layout.alignment: Qt.AlignVCenter
+                                radius: HKS.radiusSmall
+                                color: HKS.bg
+                                border.width: 1
+                                border.color: HKS.alpha(HKS.muted, 0.3)
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.draftLockMin + " min"
+                                    font.family: HKS.fontFamily
+                                    font.pixelSize: HKS.fontSizeSmall
+                                    color: HKS.fg
+                                }
                             }
                             ActionButton {
                                 text: "+"
                                 compact: true
+                                implicitWidth: 30
+                                Layout.preferredWidth: 30
+                                Layout.alignment: Qt.AlignVCenter
                                 enabled: root.draftLockMin < 1440
                                 onClicked: { root.draftLockMin++; root.draftsDirty = true; }
                             }
                         }
 
                         // DPMS off stepper
-                        Row {
+                        RowLayout {
                             width: parent.width
                             spacing: HKS.space8
                             Text {
-                                width: parent.width - 140
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Turn off display: " + root.draftDpmsMin + " min"
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Turn off display"
                                 font.family: HKS.fontFamily
                                 font.pixelSize: HKS.fontSizeSmall
                                 color: HKS.fg
+                                elide: Text.ElideRight
                             }
                             ActionButton {
                                 text: "-"
                                 compact: true
+                                implicitWidth: 30
+                                Layout.preferredWidth: 30
+                                Layout.alignment: Qt.AlignVCenter
                                 enabled: root.draftDpmsMin > 1
                                 onClicked: { root.draftDpmsMin--; root.draftsDirty = true; }
+                            }
+                            Rectangle {
+                                Layout.preferredWidth: 68
+                                Layout.preferredHeight: 28
+                                Layout.alignment: Qt.AlignVCenter
+                                radius: HKS.radiusSmall
+                                color: HKS.bg
+                                border.width: 1
+                                border.color: HKS.alpha(HKS.muted, 0.3)
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.draftDpmsMin + " min"
+                                    font.family: HKS.fontFamily
+                                    font.pixelSize: HKS.fontSizeSmall
+                                    color: HKS.fg
+                                }
                             }
                             ActionButton {
                                 text: "+"
                                 compact: true
+                                implicitWidth: 30
+                                Layout.preferredWidth: 30
+                                Layout.alignment: Qt.AlignVCenter
                                 enabled: root.draftDpmsMin < 1440
                                 onClicked: { root.draftDpmsMin++; root.draftsDirty = true; }
                             }

@@ -11,6 +11,12 @@ Item {
         id: audioLogic
     }
 
+    property bool showDetails: false
+    property bool showInactiveOutputs: false
+    property bool showInactiveInputs: false
+    readonly property var outputParts: audioLogic.partitionDevices(AudioService.outputs)
+    readonly property var inputParts: audioLogic.partitionDevices(AudioService.inputs)
+
     Column {
         anchors.fill: parent
         anchors.margins: HKS.space24
@@ -45,6 +51,13 @@ Item {
                 id: headerActions
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: HKS.space8
+
+                ActionButton {
+                    text: root.showDetails ? "Details: On" : "Details"
+                    compact: true
+                    variant: root.showDetails ? "accent" : "neutral"
+                    onClicked: root.showDetails = !root.showDetails
+                }
 
                 ActionButton {
                     text: AudioService.busy ? "Applying..." : "Refresh"
@@ -120,7 +133,7 @@ Item {
                     }
 
                     Repeater {
-                        model: AudioService.outputs
+                        model: root.showInactiveOutputs ? AudioService.outputs : root.outputParts.active
                         delegate: Rectangle {
                             id: outCard
                             required property var modelData
@@ -181,6 +194,7 @@ Item {
                                         }
 
                                         Text {
+                                            visible: root.showDetails
                                             text: String(outCard.modelData.name || "")
                                             font.family: HKS.fontFamily
                                             font.pixelSize: 11
@@ -281,6 +295,33 @@ Item {
                             }
                         }
                     }
+
+                    SectionCard {
+                        visible: root.outputParts.inactive.length > 0
+                        width: contentCol.width
+
+                        Row {
+                            width: parent.width
+                            spacing: HKS.space12
+
+                            Text {
+                                width: Math.max(160, parent.width - outInactiveBtn.width - HKS.space12)
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.outputParts.inactive.length + (root.outputParts.inactive.length === 1 ? " inactive output" : " inactive outputs")
+                                font.family: HKS.fontFamily
+                                font.pixelSize: HKS.fontSizeSmall
+                                color: HKS.muted
+                            }
+
+                            ActionButton {
+                                id: outInactiveBtn
+                                text: root.showInactiveOutputs ? "Hide" : "Show"
+                                compact: true
+                                variant: root.showInactiveOutputs ? "accent" : "neutral"
+                                onClicked: root.showInactiveOutputs = !root.showInactiveOutputs
+                            }
+                        }
+                    }
                 }
 
                 // Input Sources
@@ -297,7 +338,7 @@ Item {
                     }
 
                     Repeater {
-                        model: AudioService.inputs
+                        model: root.showInactiveInputs ? AudioService.inputs : root.inputParts.active
                         delegate: Rectangle {
                             id: inCard
                             required property var modelData
@@ -358,6 +399,7 @@ Item {
                                         }
 
                                         Text {
+                                            visible: root.showDetails
                                             text: String(inCard.modelData.name || "")
                                             font.family: HKS.fontFamily
                                             font.pixelSize: 11
@@ -446,6 +488,33 @@ Item {
                                         color: HKS.fg
                                     }
                                 }
+                            }
+                        }
+                    }
+
+                    SectionCard {
+                        visible: root.inputParts.inactive.length > 0
+                        width: contentCol.width
+
+                        Row {
+                            width: parent.width
+                            spacing: HKS.space12
+
+                            Text {
+                                width: Math.max(160, parent.width - inInactiveBtn.width - HKS.space12)
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.inputParts.inactive.length + (root.inputParts.inactive.length === 1 ? " inactive input" : " inactive inputs")
+                                font.family: HKS.fontFamily
+                                font.pixelSize: HKS.fontSizeSmall
+                                color: HKS.muted
+                            }
+
+                            ActionButton {
+                                id: inInactiveBtn
+                                text: root.showInactiveInputs ? "Hide" : "Show"
+                                compact: true
+                                variant: root.showInactiveInputs ? "accent" : "neutral"
+                                onClicked: root.showInactiveInputs = !root.showInactiveInputs
                             }
                         }
                     }

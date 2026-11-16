@@ -21,6 +21,11 @@ TestCase {
     }
 
     SettingControlLogic {
+        id: enumLogic
+        optionType: "enum"
+    }
+
+    SettingControlLogic {
         id: intLogic
         optionType: "int"
         value: 8
@@ -295,5 +300,120 @@ TestCase {
         compare(kbLogic.buttonLabel(false, true), "Focus Keybind Studio");
         compare(kbLogic.buttonLabel(true, false), "Opening...");
         compare(kbLogic.buttonLabel(true, true), "Opening...");
+    }
+
+    function test_input_group_options_mouse_and_touchpad() {
+        var sampleOpts = [
+            { id: "input.kb_layout", group: "Keyboard", capable: true },
+            { id: "input.repeat_rate", group: "Keyboard", capable: true },
+            { id: "input.follow_mouse", group: "Mouse", capable: true },
+            { id: "input.sensitivity", group: "Mouse", capable: true },
+            { id: "input.touchpad.natural_scroll", group: "Touchpad", capable: true },
+            { id: "input.touchpad.tap_to_click", group: "Touchpad", capable: false }
+        ];
+        var mouseOpts = inputLogic.groupOptions(sampleOpts, inputLogic.mouseGroupName(), []);
+        compare(mouseOpts.length, 2);
+        compare(mouseOpts[0].id, "input.follow_mouse");
+
+        var tpOpts = inputLogic.groupOptions(sampleOpts, inputLogic.touchpadGroupName(), []);
+        compare(tpOpts.length, 1);
+        compare(tpOpts[0].id, "input.touchpad.natural_scroll");
+
+        var kbOpts = inputLogic.groupOptions(sampleOpts, inputLogic.keyboardGroupName(), ["input.kb_layout"]);
+        compare(kbOpts.length, 1);
+        compare(kbOpts[0].id, "input.repeat_rate");
+    }
+
+    function test_network_rescan_on_show_logic() {
+        // Trigger on show when empty or stale (> 30s)
+        verify(netLogic.shouldAutoRescanOnShow(true, true, true, true, false, false, false, 0, 100000, 105000, 30000));
+        verify(netLogic.shouldAutoRescanOnShow(true, true, true, true, false, false, false, 5, 0, 105000, 30000));
+        verify(netLogic.shouldAutoRescanOnShow(true, true, true, true, false, false, false, 5, 100000, 131000, 30000));
+        // Skip when recent (<= 30s) and non-empty
+        verify(!netLogic.shouldAutoRescanOnShow(true, true, true, true, false, false, false, 5, 100000, 120000, 30000));
+        // Skip when not visible, unavailable, no wifi, wifi off, busy, scanning, or loading
+        verify(!netLogic.shouldAutoRescanOnShow(false, true, true, true, false, false, false, 0, 0, 100000, 30000));
+        verify(!netLogic.shouldAutoRescanOnShow(true, false, true, true, false, false, false, 0, 0, 100000, 30000));
+        verify(!netLogic.shouldAutoRescanOnShow(true, true, false, true, false, false, false, 0, 0, 100000, 30000));
+        verify(!netLogic.shouldAutoRescanOnShow(true, true, true, false, false, false, false, 0, 0, 100000, 30000));
+        verify(!netLogic.shouldAutoRescanOnShow(true, true, true, true, true, false, false, 0, 0, 100000, 30000));
+        verify(!netLogic.shouldAutoRescanOnShow(true, true, true, true, false, true, false, 0, 0, 100000, 30000));
+        verify(!netLogic.shouldAutoRescanOnShow(true, true, true, true, false, false, true, 0, 0, 100000, 30000));
+    }
+
+    function test_setting_control_enum_label_default() {
+        compare(enumLogic.enumOptionLabel(""), "Default");
+        compare(enumLogic.enumOptionLabel(null), "Default");
+        compare(enumLogic.enumOptionLabel("flat"), "flat");
+        compare(enumLogic.enumOptionLabel("adaptive"), "adaptive");
+    }
+
+    function test_input_xkb_search_and_common_filter() {
+        var groups = [
+            { group: "grp", description: "Switching to another layout", options: [
+                { code: "grp:alt_shift_toggle", description: "Alt+Shift" },
+                { code: "grp:win_space_toggle", description: "Win+Space" }
+            ] },
+            { group: "caps", description: "Caps Lock behavior", options: [
+                { code: "caps:escape", description: "Make Caps Lock an additional Esc" }
+            ] },
+            { group: "keypad", description: "Numeric keypad", options: [
+                { code: "keypad:pointerkeys", description: "Mouse keys" }
+            ] }
+        ];
+        var common = inputLogic.commonXkbGroups(groups);
+        compare(common.length, 2);
+        compare(common[0].group, "grp");
+        compare(common[1].group, "caps");
+
+        var filtered = inputLogic.filterXkbOptionGroups(groups, "esc");
+        compare(filtered.length, 1);
+        compare(filtered[0].group, "caps");
+        compare(filtered[0].options.length, 1);
+        compare(filtered[0].options[0].code, "caps:escape");
+    }
+
+    function test_audio_partition_active_and_inactive() {
+        var devs = [
+            { name: "sink1", is_default: true, running_state: "SUSPENDED" },
+            { name: "sink2", is_default: false, running_state: "RUNNING" },
+            { name: "sink3", is_default: false, running_state: "SUSPENDED" },
+            { name: "sink4", is_default: false, running_state: "IDLE" }
+        ];
+        var part = audioLogic.partitionDevices(devs);
+        compare(part.active.length, 3);
+        compare(part.active[0].name, "sink1");
+        compare(part.active[1].name, "sink2");
+        compare(part.active[2].name, "sink4");
+        compare(part.inactive.length, 1);
+        compare(part.inactive[0].name, "sink3");
+    }
+
+    function test_network_dedupe_saved_connections() {
+        var devices = [
+            { name: "wlp0s20f3", is_active: true, active_connection: "HomeWiFi" },
+            { name: "enp62s0", is_active: false, active_connection: "" }
+        ];
+        var conns = [
+            { uuid: "u1", name: "HomeWiFi", active: true },
+            { uuid: "u2", name: "OfficeWiFi", active: false },
+            { uuid: "u3", name: "Wired connection 1", active: false }
+        ];
+        var saved = netLogic.savedConnectionsExcludingActiveDevices(conns, devices);
+        compare(saved.length, 2);
+        compare(saved[0].uuid, "u2");
+        compare(saved[1].uuid, "u3");
+    }
+
+    function test_themes_chip_truncation_with_current() {
+        var items = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "CurTheme"];
+        var collapsed = themesLogic.visibleThemeChips(items, "CurTheme", false, 8);
+        compare(collapsed.length, 9);
+        compare(collapsed[0], "CurTheme");
+        compare(collapsed[1], "A");
+        compare(collapsed[8], "H");
+
+        var expanded = themesLogic.visibleThemeChips(items, "CurTheme", true, 8);
+        compare(expanded.length, 11);
     }
 }

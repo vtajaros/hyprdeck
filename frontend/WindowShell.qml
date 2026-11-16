@@ -128,39 +128,6 @@ FloatingWindow {
                 color: HKS.surface
                 border.width: 0
 
-                // Close [X] (no compositor titlebar: QT_WAYLAND_DISABLE_WINDOWDECORATION=1)
-                Rectangle {
-                    id: closeButton
-                    z: 5
-                    anchors.top: parent.top
-                    anchors.right: parent.right
-                    anchors.topMargin: HKS.space12
-                    anchors.rightMargin: HKS.space8
-                    width: 24
-                    height: 24
-                    radius: 6
-                    opacity: closeGuard.closeAllowed ? 1.0 : 0.35
-                    color: closeMa.containsMouse && closeGuard.closeAllowed
-                        ? HKS.alpha(HKS.critical, 0.25) : "transparent"
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "✕"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: 11
-                        color: closeMa.containsMouse && closeGuard.closeAllowed ? HKS.critical : HKS.muted
-                    }
-
-                    MouseArea {
-                        id: closeMa
-                        anchors.fill: parent
-                        enabled: closeGuard.closeAllowed
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: win.closeWindow()
-                    }
-                }
-
                 // 1px subtle divider on right
                 Rectangle {
                     anchors.right: parent.right

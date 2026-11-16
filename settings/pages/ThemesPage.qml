@@ -11,6 +11,10 @@ Item {
         id: themesLogic
     }
 
+    property bool showAllIcons: false
+    property bool showAllCursors: false
+    property bool expandConflicts: false
+
     Column {
         anchors.fill: parent
         anchors.margins: HKS.space24
@@ -127,12 +131,27 @@ Item {
                     spacing: HKS.space8
                     visible: ThemesService.conflicts.length > 0
 
-                    Text {
-                        text: "Consistency & Conflicts (" + ThemesService.conflicts.length + ")"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
-                        font.weight: Font.Bold
-                        color: HKS.fg
+                    Row {
+                        width: parent.width
+                        spacing: HKS.space12
+
+                        Text {
+                            width: Math.max(180, parent.width - conflictToggleBtn.width - HKS.space12)
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Consistency & Conflicts (" + ThemesService.conflicts.length + ")"
+                            font.family: HKS.fontFamily
+                            font.pixelSize: HKS.fontSize
+                            font.weight: Font.Bold
+                            color: HKS.fg
+                        }
+
+                        ActionButton {
+                            id: conflictToggleBtn
+                            text: root.expandConflicts ? "Hide hints" : "Fix hints"
+                            compact: true
+                            variant: root.expandConflicts ? "accent" : "neutral"
+                            onClicked: root.expandConflicts = !root.expandConflicts
+                        }
                     }
 
                     Repeater {
@@ -164,10 +183,13 @@ Item {
                                     font.weight: Font.DemiBold
                                     color: confCard.modelData.severity === "warning" ? HKS.warning : HKS.fg
                                     width: parent.width
-                                    wrapMode: Text.WordWrap
+                                    elide: root.expandConflicts ? Text.ElideNone : Text.ElideRight
+                                    maximumLineCount: root.expandConflicts ? 10 : 1
+                                    wrapMode: root.expandConflicts ? Text.WordWrap : Text.NoWrap
                                 }
 
                                 Text {
+                                    visible: root.expandConflicts && String(confCard.modelData.fix_hint || "").length > 0
                                     text: String(confCard.modelData.fix_hint || "")
                                     font.family: HKS.fontFamily
                                     font.pixelSize: 11
@@ -177,7 +199,7 @@ Item {
                                 }
 
                                 Rectangle {
-                                    visible: !!(confCard.modelData.copy_text && String(confCard.modelData.copy_text).length > 0)
+                                    visible: root.expandConflicts && !!(confCard.modelData.copy_text && String(confCard.modelData.copy_text).length > 0)
                                     width: parent.width
                                     height: 28
                                     radius: 4
@@ -312,12 +334,29 @@ Item {
                         anchors.margins: HKS.space12
                         spacing: HKS.space8
 
-                        Text {
-                            text: "Icon Theme (" + String(ThemesService.icons.gsettings_theme || "unset") + ") — " + themesLogic.iconBadgeText(ThemesService.icons.gsettings_theme)
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSize
-                            font.weight: Font.DemiBold
-                            color: HKS.fg
+                        Row {
+                            width: parent.width
+                            spacing: HKS.space12
+
+                            Text {
+                                width: Math.max(180, parent.width - iconShowAllBtn.width - HKS.space12)
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Icon Theme (" + String(ThemesService.icons.gsettings_theme || "unset") + ") — " + themesLogic.iconBadgeText(ThemesService.icons.gsettings_theme)
+                                font.family: HKS.fontFamily
+                                font.pixelSize: HKS.fontSize
+                                font.weight: Font.DemiBold
+                                color: HKS.fg
+                                elide: Text.ElideRight
+                            }
+
+                            ActionButton {
+                                id: iconShowAllBtn
+                                visible: (ThemesService.icons.installed || []).length > themesLogic.visibleThemeChips(ThemesService.icons.installed || [], ThemesService.icons.gsettings_theme, false, 8).length || root.showAllIcons
+                                text: root.showAllIcons ? "Show less" : ("Show all (" + (ThemesService.icons.installed || []).length + ")")
+                                compact: true
+                                variant: root.showAllIcons ? "accent" : "neutral"
+                                onClicked: root.showAllIcons = !root.showAllIcons
+                            }
                         }
 
                         Flow {
@@ -325,11 +364,11 @@ Item {
                             spacing: 6
 
                             Repeater {
-                                model: ThemesService.icons.installed || []
+                                model: themesLogic.visibleThemeChips(ThemesService.icons.installed || [], ThemesService.icons.gsettings_theme, root.showAllIcons, 8)
                                 delegate: ActionButton {
                                     required property string modelData
                                     text: modelData === "Papirus-Dynamic" ? "Papirus-Dynamic ★" : modelData
-                                    variant: ThemesService.icons.gsettings_theme === modelData ? "accent" : "secondary"
+                                    variant: ThemesService.icons.gsettings_theme === modelData ? "accent" : "neutral"
                                     compact: true
                                     enabled: !ThemesService.busy
                                     onClicked: ThemesService.setIconTheme(modelData)
@@ -399,15 +438,25 @@ Item {
                             spacing: 6
 
                             Repeater {
-                                model: ThemesService.cursor.installed || []
+                                model: themesLogic.visibleThemeChips(ThemesService.cursor.installed || [], ThemesService.cursor.gsettings_theme, root.showAllCursors, 8)
                                 delegate: ActionButton {
                                     required property string modelData
                                     text: modelData
-                                    variant: ThemesService.cursor.gsettings_theme === modelData ? "accent" : "secondary"
+                                    variant: ThemesService.cursor.gsettings_theme === modelData ? "accent" : "neutral"
                                     compact: true
                                     enabled: !ThemesService.busy
                                     onClicked: ThemesService.setCursor(modelData, Number(ThemesService.cursor.size || 24))
                                 }
+                            }
+                        }
+
+                        Row {
+                            visible: (ThemesService.cursor.installed || []).length > themesLogic.visibleThemeChips(ThemesService.cursor.installed || [], ThemesService.cursor.gsettings_theme, false, 8).length || root.showAllCursors
+                            ActionButton {
+                                text: root.showAllCursors ? "Show less" : ("Show all (" + (ThemesService.cursor.installed || []).length + ")")
+                                compact: true
+                                variant: root.showAllCursors ? "accent" : "neutral"
+                                onClicked: root.showAllCursors = !root.showAllCursors
                             }
                         }
                     }

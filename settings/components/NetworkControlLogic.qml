@@ -48,4 +48,44 @@ QtObject {
         if (general && !general.wifi_enabled) return "Wi-Fi is turned off.";
         return "";
     }
+
+    function shouldAutoRescanOnShow(pageVisible, available, hasWifiDevice, wifiEnabled, busy, scanning, loading, wifiNetworkCount, lastScanEpochMs, nowEpochMs, maxAgeMs) {
+        if (!pageVisible || !available || !hasWifiDevice || !wifiEnabled) {
+            return false;
+        }
+        if (busy || scanning || loading) {
+            return false;
+        }
+        if ((wifiNetworkCount || 0) === 0) {
+            return true;
+        }
+        if (!(lastScanEpochMs > 0)) {
+            return true;
+        }
+        var threshold = (maxAgeMs !== undefined && maxAgeMs > 0) ? maxAgeMs : 30000;
+        var age = (nowEpochMs || 0) - lastScanEpochMs;
+        return age > threshold;
+    }
+
+    function savedConnectionsExcludingActiveDevices(connections, devices) {
+        var conns = connections || [];
+        var devs = devices || [];
+        var activeNames = ({});
+        for (var i = 0; i < devs.length; i++) {
+            var d = devs[i];
+            if (d && d.is_active && d.active_connection) {
+                activeNames[String(d.active_connection)] = true;
+            }
+        }
+        var out = [];
+        for (var j = 0; j < conns.length; j++) {
+            var c = conns[j];
+            if (!c) continue;
+            if (c.name && activeNames[String(c.name)]) {
+                continue;
+            }
+            out.push(c);
+        }
+        return out;
+    }
 }

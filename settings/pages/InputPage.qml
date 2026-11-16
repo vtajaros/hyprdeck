@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import "../theme"
 import "../shared_components"
 import "../components"
@@ -10,6 +11,9 @@ Item {
 
     property string activeTab: "keyboard" // "keyboard" | "mouse" | "touchpad" | "devices"
     property bool showVirtualDevices: false
+    property bool xkbExpanded: false
+    property bool xkbShowAllGroups: false
+    property string xkbQuery: ""
 
     InputControlLogic {
         id: inputLogic
@@ -82,17 +86,7 @@ Item {
     }
 
     function _groupOptions(groupName, excludeIds) {
-        var all = InputService.options || [];
-        var excl = excludeIds || [];
-        var out = [];
-        for (var i = 0; i < all.length; i++) {
-            var o = all[i];
-            if (!o || !o.capable) continue;
-            if (o.group !== groupName) continue;
-            if (excl.indexOf(o.id) !== -1) continue;
-            out.push(o);
-        }
-        return out;
+        return inputLogic.groupOptions(InputService.options, groupName, excludeIds);
     }
 
     function _hiddenVirtualCount() {
@@ -322,15 +316,15 @@ Item {
 
                             Repeater {
                                 model: root._keyboardLayouts()
-                                delegate: Row {
+                                delegate: RowLayout {
                                     required property string modelData
                                     required property int index
                                     width: parent.width
                                     spacing: HKS.space8
 
                                     Text {
-                                        width: 24
-                                        anchors.verticalCenter: parent.verticalCenter
+                                        Layout.preferredWidth: 22
+                                        Layout.alignment: Qt.AlignVCenter
                                         text: (index + 1) + "."
                                         font.family: HKS.fontFamily
                                         font.pixelSize: HKS.fontSizeSmall
@@ -338,8 +332,9 @@ Item {
                                     }
 
                                     Rectangle {
-                                        width: 80
-                                        height: 28
+                                        Layout.preferredWidth: 72
+                                        Layout.preferredHeight: 28
+                                        Layout.alignment: Qt.AlignVCenter
                                         radius: HKS.radiusSmall
                                         color: HKS.surfaceAlt
                                         border.width: 1
@@ -356,13 +351,28 @@ Item {
                                     }
 
                                     TextField {
-                                        width: Math.max(120, parent.width - 250)
-                                        height: 28
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 80
+                                        Layout.preferredHeight: 28
+                                        Layout.alignment: Qt.AlignVCenter
                                         placeholderText: "variant (optional)"
+                                        placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
                                         text: root._keyboardVariants()[index] || ""
                                         font.family: HKS.fontFamily
                                         font.pixelSize: HKS.fontSizeSmall
                                         color: HKS.fg
+                                        verticalAlignment: TextInput.AlignVCenter
+                                        selectByMouse: true
+                                        selectionColor: HKS.alpha(HKS.accent, 0.35)
+                                        selectedTextColor: HKS.fg
+                                        leftPadding: 8
+                                        rightPadding: 8
+                                        background: Rectangle {
+                                            radius: HKS.radiusSmall
+                                            color: HKS.bg
+                                            border.width: 1
+                                            border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                        }
                                         onEditingFinished: {
                                             var ls = root._keyboardLayouts();
                                             var vs = root._keyboardVariants();
@@ -374,6 +384,9 @@ Item {
                                     ActionButton {
                                         text: "↑"
                                         compact: true
+                                        implicitWidth: 30
+                                        Layout.preferredWidth: 30
+                                        Layout.alignment: Qt.AlignVCenter
                                         enabled: index > 0
                                         onClicked: {
                                             var r = inputLogic.moveLayout(root._keyboardLayouts(), root._keyboardVariants(), index, -1);
@@ -384,6 +397,9 @@ Item {
                                     ActionButton {
                                         text: "↓"
                                         compact: true
+                                        implicitWidth: 30
+                                        Layout.preferredWidth: 30
+                                        Layout.alignment: Qt.AlignVCenter
                                         enabled: index < root._keyboardLayouts().length - 1
                                         onClicked: {
                                             var r = inputLogic.moveLayout(root._keyboardLayouts(), root._keyboardVariants(), index, 1);
@@ -394,6 +410,9 @@ Item {
                                     ActionButton {
                                         text: "✕"
                                         compact: true
+                                        implicitWidth: 30
+                                        Layout.preferredWidth: 30
+                                        Layout.alignment: Qt.AlignVCenter
                                         variant: "danger"
                                         enabled: root._keyboardLayouts().length > 1
                                         onClicked: {
@@ -405,33 +424,64 @@ Item {
                             }
 
                             // Add layout row
-                            Row {
+                            RowLayout {
                                 width: parent.width
                                 spacing: HKS.space8
 
                                 TextField {
                                     id: addLayoutInput
-                                    width: 120
-                                    height: 28
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 90
+                                    Layout.preferredHeight: 28
+                                    Layout.alignment: Qt.AlignVCenter
                                     placeholderText: "code (e.g. de)"
+                                    placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
                                     font.family: HKS.fontFamily
                                     font.pixelSize: HKS.fontSizeSmall
                                     color: HKS.fg
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    selectByMouse: true
+                                    selectionColor: HKS.alpha(HKS.accent, 0.35)
+                                    selectedTextColor: HKS.fg
+                                    leftPadding: 8
+                                    rightPadding: 8
+                                    background: Rectangle {
+                                        radius: HKS.radiusSmall
+                                        color: HKS.bg
+                                        border.width: 1
+                                        border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                    }
                                 }
 
                                 TextField {
                                     id: addVariantInput
-                                    width: 140
-                                    height: 28
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 100
+                                    Layout.preferredHeight: 28
+                                    Layout.alignment: Qt.AlignVCenter
                                     placeholderText: "variant (optional)"
+                                    placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
                                     font.family: HKS.fontFamily
                                     font.pixelSize: HKS.fontSizeSmall
                                     color: HKS.fg
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    selectByMouse: true
+                                    selectionColor: HKS.alpha(HKS.accent, 0.35)
+                                    selectedTextColor: HKS.fg
+                                    leftPadding: 8
+                                    rightPadding: 8
+                                    background: Rectangle {
+                                        radius: HKS.radiusSmall
+                                        color: HKS.bg
+                                        border.width: 1
+                                        border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                    }
                                 }
 
                                 ActionButton {
                                     text: "Add layout"
                                     compact: true
+                                    Layout.alignment: Qt.AlignVCenter
                                     enabled: addLayoutInput.text.trim().length > 0
                                     onClicked: {
                                         var r = inputLogic.addLayout(
@@ -449,7 +499,30 @@ Item {
                         }
                     }
 
-                    // XKB Option Groups Card
+                    // Remaining Keyboard catalog options (repeat_rate, repeat_delay, numlock_by_default, resolve_binds_by_sym)
+                    Repeater {
+                        model: root._groupOptions(inputLogic.keyboardGroupName(), ["input.kb_layout", "input.kb_variant", "input.kb_options"])
+                        delegate: SettingRow {
+                            required property var modelData
+                            width: tabContentCol.width
+                            option: modelData
+                            currentValue: InputService.effectiveOptionValue(modelData.id)
+                            modified: InputService.draftOptions.hasOwnProperty(modelData.id)
+                            hasOverride: !!modelData.has_override
+                            onValueEdited: function(optionId, newValue) {
+                                InputService.setOptionDraft(optionId, newValue);
+                            }
+                            onResetRequested: function(optionId) {
+                                var o = InputService.findOption(optionId);
+                                if (o) {
+                                    var baseVal = o.live_value !== undefined ? o.live_value : o.effective_value;
+                                    if (baseVal !== undefined) InputService.setOptionDraft(optionId, baseVal);
+                                }
+                            }
+                        }
+                    }
+
+                    // Collapsed-by-default Advanced: XKB Options
                     Rectangle {
                         width: parent.width
                         height: xkbCol.implicitHeight + 24
@@ -467,23 +540,42 @@ Item {
                             anchors.margins: 12
                             spacing: HKS.space8
 
-                            Text {
-                                text: "XKB Options"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeBody
-                                font.weight: Font.Medium
-                                color: HKS.fg
+                            RowLayout {
+                                width: parent.width
+                                spacing: HKS.space8
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    text: "Advanced: XKB options (" + root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "").length + " selected)"
+                                    font.family: HKS.fontFamily
+                                    font.pixelSize: HKS.fontSizeBody
+                                    font.weight: Font.Medium
+                                    color: HKS.fg
+                                    elide: Text.ElideRight
+                                }
+
+                                ActionButton {
+                                    text: root.xkbExpanded ? "Hide" : "Show"
+                                    compact: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    onClicked: root.xkbExpanded = !root.xkbExpanded
+                                }
                             }
 
-                            Repeater {
-                                model: InputService.xkb.option_groups || []
-                                delegate: Column {
-                                    required property var modelData
+                            Column {
+                                visible: root.xkbExpanded
+                                width: parent.width
+                                spacing: HKS.space8
+
+                                // Selected row
+                                Column {
                                     width: parent.width
                                     spacing: 4
+                                    visible: root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "").length > 0
 
                                     Text {
-                                        text: modelData.label || modelData.id || ""
+                                        text: "Selected"
                                         font.family: HKS.fontFamily
                                         font.pixelSize: HKS.fontSizeSmall
                                         font.weight: Font.Medium
@@ -495,44 +587,101 @@ Item {
                                         spacing: 6
 
                                         Repeater {
-                                            model: modelData.options || []
+                                            model: root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "")
                                             delegate: ActionButton {
-                                                required property var modelData
-                                                property var groupOpts: []
-                                                text: modelData.label || modelData.id
+                                                required property string modelData
+                                                text: modelData + " ✕"
                                                 compact: true
-                                                variant: root._hasXkbOption(modelData.id) ? "accent" : "secondary"
-                                                onClicked: {
-                                                    var ids = [];
-                                                    if (parent && parent.parent) {
-                                                        // no-op; group exclusivity handled below
-                                                    }
-                                                    root._toggleXkbOption(modelData.id, []);
+                                                variant: "accent"
+                                                onClicked: root._toggleXkbOption(modelData, [])
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Search + Common/All toggle
+                                RowLayout {
+                                    width: parent.width
+                                    spacing: HKS.space8
+
+                                    TextField {
+                                        id: xkbSearchField
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 28
+                                        Layout.alignment: Qt.AlignVCenter
+                                        placeholderText: "Search XKB options (e.g. caps, escape, grp)..."
+                                        placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
+                                        font.family: HKS.fontFamily
+                                        font.pixelSize: HKS.fontSizeSmall
+                                        color: HKS.fg
+                                        verticalAlignment: TextInput.AlignVCenter
+                                        selectByMouse: true
+                                        selectionColor: HKS.alpha(HKS.accent, 0.35)
+                                        selectedTextColor: HKS.fg
+                                        leftPadding: 8
+                                        rightPadding: 8
+                                        text: root.xkbQuery
+                                        onTextChanged: root.xkbQuery = text
+                                        background: Rectangle {
+                                            radius: HKS.radiusSmall
+                                            color: HKS.bg
+                                            border.width: 1
+                                            border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                        }
+                                    }
+
+                                    ActionButton {
+                                        visible: root.xkbQuery.trim().length === 0
+                                        text: root.xkbShowAllGroups ? "Common only" : "All groups"
+                                        compact: true
+                                        Layout.alignment: Qt.AlignVCenter
+                                        variant: root.xkbShowAllGroups ? "accent" : "neutral"
+                                        onClicked: root.xkbShowAllGroups = !root.xkbShowAllGroups
+                                    }
+                                }
+
+                                Repeater {
+                                    model: {
+                                        var groups = InputService.xkb.option_groups || [];
+                                        if (root.xkbQuery.trim().length > 0) {
+                                            return inputLogic.filterXkbOptionGroups(groups, root.xkbQuery);
+                                        }
+                                        return root.xkbShowAllGroups ? groups : inputLogic.commonXkbGroups(groups);
+                                    }
+                                    delegate: Column {
+                                        required property var modelData
+                                        width: parent.width
+                                        spacing: 4
+
+                                        Text {
+                                            text: modelData.description || modelData.group || ""
+                                            font.family: HKS.fontFamily
+                                            font.pixelSize: HKS.fontSizeSmall
+                                            font.weight: Font.Medium
+                                            color: HKS.accent
+                                        }
+
+                                        Flow {
+                                            id: xkbFlow
+                                            width: parent.width
+                                            spacing: 6
+
+                                            Repeater {
+                                                model: modelData.options || []
+                                                delegate: ActionButton {
+                                                    required property var modelData
+                                                    readonly property string optCode: String(modelData.code || "")
+                                                    readonly property string optLabel: String(modelData.description || modelData.code || "")
+                                                    text: optLabel
+                                                    compact: true
+                                                    width: Math.min(implicitWidth, xkbFlow.width)
+                                                    variant: root._hasXkbOption(optCode) ? "accent" : "neutral"
+                                                    onClicked: root._toggleXkbOption(optCode, [])
                                                 }
                                             }
                                         }
                                     }
                                 }
-                            }
-                        }
-                    }
-
-                    // Remaining Keyboard catalog options (repeat_rate, repeat_delay, numlock_by_default, resolve_binds_by_sym)
-                    Repeater {
-                        model: root._groupOptions("keyboard", ["input.kb_layout", "input.kb_variant", "input.kb_options"])
-                        delegate: SettingRow {
-                            required property var modelData
-                            width: tabContentCol.width
-                            option: modelData
-                            currentValue: InputService.effectiveOptionValue(modelData.id)
-                            modified: InputService.draftOptions.hasOwnProperty(modelData.id)
-                            hasOverride: !!modelData.has_override
-                            onValueEdited: function(optionId, newValue) {
-                                InputService.setOptionDraft(optionId, newValue);
-                            }
-                            onResetRequested: function(optionId) {
-                                var o = InputService.findOption(optionId);
-                                if (o) InputService.setOptionDraft(optionId, o.default);
                             }
                         }
                     }
@@ -566,9 +715,22 @@ Item {
                                 width: parent.width
                                 height: 32
                                 placeholderText: "Type here to test layout, repeat rate, and delay..."
+                                placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
                                 font.family: HKS.fontFamily
                                 font.pixelSize: HKS.fontSizeBody
                                 color: HKS.fg
+                                verticalAlignment: TextInput.AlignVCenter
+                                selectByMouse: true
+                                selectionColor: HKS.alpha(HKS.accent, 0.35)
+                                selectedTextColor: HKS.fg
+                                leftPadding: 8
+                                rightPadding: 8
+                                background: Rectangle {
+                                    radius: HKS.radiusSmall
+                                    color: HKS.bg
+                                    border.width: 1
+                                    border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                }
                             }
                         }
                     }
@@ -580,8 +742,17 @@ Item {
                     spacing: HKS.space8
                     visible: root.activeTab === "mouse"
 
+                    EmptyState {
+                        visible: !InputService.loading && root._groupOptions(inputLogic.mouseGroupName(), []).length === 0
+                        width: parent.width
+                        height: 180
+                        icon: "󰍽"
+                        title: "Mouse options unavailable"
+                        message: "No capable mouse options were detected for this session."
+                    }
+
                     Repeater {
-                        model: root._groupOptions("mouse", [])
+                        model: root._groupOptions(inputLogic.mouseGroupName(), [])
                         delegate: SettingRow {
                             required property var modelData
                             width: tabContentCol.width
@@ -606,8 +777,17 @@ Item {
                     spacing: HKS.space8
                     visible: root.activeTab === "touchpad"
 
+                    EmptyState {
+                        visible: !InputService.loading && root._groupOptions(inputLogic.touchpadGroupName(), []).length === 0
+                        width: parent.width
+                        height: 180
+                        icon: "󰟸"
+                        title: "Touchpad options unavailable"
+                        message: "No capable touchpad options were detected for this session."
+                    }
+
                     Repeater {
-                        model: root._groupOptions("touchpad", [])
+                        model: root._groupOptions(inputLogic.touchpadGroupName(), [])
                         delegate: SettingRow {
                             required property var modelData
                             width: tabContentCol.width
@@ -629,10 +809,11 @@ Item {
                 // DEVICES TAB
                 Column {
                     width: parent.width
-                    spacing: HKS.space12
+                    spacing: HKS.space8
                     visible: root.activeTab === "devices"
 
                     Row {
+                        visible: root._hiddenVirtualCount() > 0 || root.showVirtualDevices
                         width: parent.width
                         spacing: HKS.space12
 
@@ -641,7 +822,7 @@ Item {
                                 ? "Hide virtual devices"
                                 : ("Show virtual devices (" + root._hiddenVirtualCount() + " hidden)")
                             compact: true
-                            variant: root.showVirtualDevices ? "accent" : "secondary"
+                            variant: root.showVirtualDevices ? "accent" : "neutral"
                             onClicked: root.showVirtualDevices = !root.showVirtualDevices
                         }
                     }
@@ -651,7 +832,7 @@ Item {
                         delegate: Rectangle {
                             required property var modelData
                             width: tabContentCol.width
-                            height: devCol.implicitHeight + 24
+                            height: devRow.implicitHeight + 16
                             radius: HKS.radiusMedium
                             color: InputService.draftDevices.hasOwnProperty(modelData.name)
                                 ? HKS.alpha(HKS.accent, 0.08) : HKS.surface
@@ -659,19 +840,22 @@ Item {
                             border.color: InputService.draftDevices.hasOwnProperty(modelData.name)
                                 ? HKS.alpha(HKS.accent, 0.45) : HKS.alpha(HKS.muted, 0.16)
 
-                            Column {
-                                id: devCol
+                            RowLayout {
+                                id: devRow
                                 anchors.left: parent.left
                                 anchors.right: parent.right
-                                anchors.top: parent.top
-                                anchors.margins: 12
-                                spacing: HKS.space8
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 12
+                                spacing: HKS.space12
 
                                 Row {
-                                    width: parent.width
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
                                     spacing: HKS.space8
 
                                     Text {
+                                        anchors.verticalCenter: parent.verticalCenter
                                         text: modelData.name
                                         font.family: HKS.fontFamily
                                         font.pixelSize: HKS.fontSizeBody
@@ -680,6 +864,7 @@ Item {
                                     }
 
                                     Text {
+                                        anchors.verticalCenter: parent.verticalCenter
                                         text: "[" + (modelData.category || "other") + (modelData.virtual ? ", virtual" : "") + "]"
                                         font.family: HKS.fontFamily
                                         font.pixelSize: HKS.fontSizeSmall
@@ -687,33 +872,42 @@ Item {
                                     }
                                 }
 
-                                Row {
-                                    spacing: HKS.space12
+                                Item {
+                                    Layout.preferredWidth: 270
+                                    Layout.preferredHeight: devBtns.implicitHeight
+                                    Layout.alignment: Qt.AlignVCenter
 
-                                    ActionButton {
-                                        property bool curEnabled: InputService.effectiveDeviceField(modelData, "enabled") !== false
-                                        property bool canDisable: inputLogic.canDisableDevice(InputService.devices, InputService.draftDevices, modelData.name)
-                                        text: curEnabled ? "Enabled" : "Disabled"
-                                        compact: true
-                                        variant: curEnabled ? "accent" : "danger"
-                                        enabled: !curEnabled || canDisable
-                                        onClicked: InputService.setDeviceDraft(modelData.name, "enabled", !curEnabled)
-                                    }
+                                    Row {
+                                        id: devBtns
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: HKS.space8
 
-                                    ActionButton {
-                                        property bool curNat: !!InputService.effectiveDeviceField(modelData, "natural_scroll")
-                                        visible: modelData.category === "mouse" || modelData.category === "touchpad"
-                                        text: "Natural scroll: " + (curNat ? "On" : "Off")
-                                        compact: true
-                                        variant: curNat ? "accent" : "secondary"
-                                        onClicked: InputService.setDeviceDraft(modelData.name, "natural_scroll", !curNat)
-                                    }
+                                        ActionButton {
+                                            visible: InputService.draftDevices.hasOwnProperty(modelData.name)
+                                            text: "Discard"
+                                            compact: true
+                                            onClicked: InputService.clearDeviceDraft(modelData.name)
+                                        }
 
-                                    ActionButton {
-                                        visible: InputService.draftDevices.hasOwnProperty(modelData.name)
-                                        text: "Discard"
-                                        compact: true
-                                        onClicked: InputService.clearDeviceDraft(modelData.name)
+                                        ActionButton {
+                                            property bool curNat: !!InputService.effectiveDeviceField(modelData, "natural_scroll")
+                                            visible: modelData.category === "mouse" || modelData.category === "touchpad"
+                                            text: "Natural scroll: " + (curNat ? "On" : "Off")
+                                            compact: true
+                                            variant: curNat ? "accent" : "neutral"
+                                            onClicked: InputService.setDeviceDraft(modelData.name, "natural_scroll", !curNat)
+                                        }
+
+                                        ActionButton {
+                                            property bool curEnabled: InputService.effectiveDeviceField(modelData, "enabled") !== false
+                                            property bool canDisable: inputLogic.canDisableDevice(InputService.devices, InputService.draftDevices, modelData.name)
+                                            text: curEnabled ? "Enabled" : "Disabled"
+                                            compact: true
+                                            variant: curEnabled ? "accent" : "danger"
+                                            enabled: !curEnabled || canDisable
+                                            onClicked: InputService.setDeviceDraft(modelData.name, "enabled", !curEnabled)
+                                        }
                                     }
                                 }
                             }

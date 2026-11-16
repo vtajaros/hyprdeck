@@ -26,4 +26,21 @@ QtObject {
         var d = Math.round(Number(balanceDiff) || 0);
         return d > 0 ? ("L/R diff: " + d + "%") : "";
     }
+
+    function partitionDevices(devices) {
+        var list = devices || [];
+        var active = [];
+        var inactive = [];
+        for (var i = 0; i < list.length; i++) {
+            var d = list[i];
+            if (!d) continue;
+            var isInactive = !d.is_default && String(d.running_state || "").toUpperCase() === "SUSPENDED";
+            if (isInactive) {
+                inactive.push(d);
+            } else {
+                active.push(d);
+            }
+        }
+        return { active: active, inactive: inactive };
+    }
 }

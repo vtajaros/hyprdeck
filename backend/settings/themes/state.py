@@ -92,39 +92,74 @@ def _gsettings_get(
     return val
 
 
-def discover_gtk_themes(paths: Mapping[str, str]) -> list[str]:
-    """Discover installed GTK themes from system and user theme directories."""
-    found: set[str] = set()
-    roots = (
+_GTK_EXCLUDED_THEMES = frozenset({"Default", "Emacs"})
+_ICON_EXCLUDED_THEMES = frozenset({"hicolor", "locolor", "default"})
+
+
+def _has_non_cursor_icon_directories(index_theme_path: str) -> bool:
+    """Return True if *index_theme_path* defines at least one non-cursor icon directory."""
+    raw = _read_text_safe(index_theme_path)
+    if not raw:
+        return False
+    dirs_raw = parse_ini_key(raw, "Icon Theme", "Directories")
+    if not dirs_raw:
+        return False
+    for part in dirs_raw.split(","):
+        seg = part.strip().lower()
+        if not seg:
+            continue
+        if seg == "cursors" or seg.startswith("cursors/"):
+            continue
+        return True
+    return False
+
+
+def discover_gtk_themes(
+    paths: Mapping[str, str],
+    *,
+    active_themes: tuple[str | None, ...] = (),
+    roots: tuple[str, ...] | None = None,
+) -> list[str]:
+    """Discover installed GTK themes (containing gtk-3.0 or gtk-4.0) plus built-in Adwaita."""
+    found: set[str] = {"Adwaita"}
+    if "Adwaita-dark" in {(t or "").strip() for t in active_themes}:
+        found.add("Adwaita-dark")
+    scan_roots = roots if roots is not None else (
         "/usr/share/themes",
         paths["user_themes_dir"],
         paths["user_local_themes_dir"],
     )
-    for root in roots:
+    for root in scan_roots:
         if not os.path.isdir(root):
             continue
         try:
             for entry in os.listdir(root):
-                if entry.startswith("."):
+                if entry.startswith(".") or entry in _GTK_EXCLUDED_THEMES:
                     continue
                 full = os.path.join(root, entry)
-                if os.path.isdir(full):
+                if not os.path.isdir(full):
+                    continue
+                if os.path.isdir(os.path.join(full, "gtk-3.0")) or os.path.isdir(os.path.join(full, "gtk-4.0")):
                     found.add(entry)
         except OSError:
             continue
     return sorted(found, key=str.lower)
 
 
-def discover_icon_and_cursor_themes(paths: Mapping[str, str]) -> tuple[list[str], list[str]]:
-    """Discover installed icon themes and cursor-capable themes (containing a `cursors/` subdir)."""
+def discover_icon_and_cursor_themes(
+    paths: Mapping[str, str],
+    *,
+    roots: tuple[str, ...] | None = None,
+) -> tuple[list[str], list[str]]:
+    """Discover installed icon themes (index.theme with non-cursor Directories=) and cursor themes."""
     icons: set[str] = set()
     cursors: set[str] = set()
-    roots = (
+    scan_roots = roots if roots is not None else (
         "/usr/share/icons",
         paths["user_icons_dir"],
         paths["user_local_icons_dir"],
     )
-    for root in roots:
+    for root in scan_roots:
         if not os.path.isdir(root):
             continue
         try:
@@ -134,7 +169,12 @@ def discover_icon_and_cursor_themes(paths: Mapping[str, str]) -> tuple[list[str]
                 full = os.path.join(root, entry)
                 if not os.path.isdir(full):
                     continue
-                if os.path.isfile(os.path.join(full, "index.theme")) and entry not in ("hicolor", "locolor", "default"):
+                index_path = os.path.join(full, "index.theme")
+                if (
+                    entry not in _ICON_EXCLUDED_THEMES
+                    and os.path.isfile(index_path)
+                    and _has_non_cursor_icon_directories(index_path)
+                ):
                     icons.add(entry)
                 if os.path.isdir(os.path.join(full, "cursors")):
                     cursors.add(entry)
@@ -366,7 +406,10 @@ def get_themes_state(
     env_hyprcursor_size_raw = environ.get("HYPRCURSOR_SIZE", "").strip()
     env_hyprcursor_size = int(env_hyprcursor_size_raw) if env_hyprcursor_size_raw.isdigit() else None
 
-    installed_gtk = discover_gtk_themes(paths)
+    installed_gtk = discover_gtk_themes(
+        paths,
+        active_themes=(gs_gtk, gtk3_theme, gtk4_theme),
+    )
     installed_icons, installed_cursors = discover_icon_and_cursor_themes(paths)
     installed_qt_styles = discover_qt_styles(qt_plugin_dirs)
     installed_qt_schemes = discover_qt_color_schemes(paths["qt6ct_colors_dir"])

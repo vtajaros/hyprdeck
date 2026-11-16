@@ -36,6 +36,16 @@ Singleton {
     property string error: ""
     property string statusMessage: ""
     property bool pollingEnabled: false
+    property real lastScanEpochMs: 0
+    property bool _autoRescanCheckedForShow: false
+
+    onPollingEnabledChanged: {
+        if (!root.pollingEnabled) {
+            root._autoRescanCheckedForShow = false;
+        } else {
+            root.maybeAutoRescanOnShow();
+        }
+    }
 
     // Confirmation modal state
     property bool confirmOpen: false
@@ -94,8 +104,29 @@ Singleton {
     }
 
     function rescan() {
+        if (root.busy || root.scanning || opProc.running) return;
         root.scanning = true;
         _runOp(["python3", "-m", "backend.cli", "settings", "network", "rescan", "--json"]);
+    }
+
+    function maybeAutoRescanOnShow() {
+        if (root._autoRescanCheckedForShow || root.loading) return;
+        root._autoRescanCheckedForShow = true;
+        if (root.logic.shouldAutoRescanOnShow(
+            root.pollingEnabled,
+            root.available,
+            root.hasWifiDevice,
+            !!(root.general && root.general.wifi_enabled),
+            root.busy,
+            root.scanning,
+            root.loading,
+            (root.wifiNetworks || []).length,
+            root.lastScanEpochMs,
+            Date.now(),
+            30000
+        )) {
+            root.rescan();
+        }
     }
 
     function connectSaved(uuid) {
@@ -189,6 +220,9 @@ Singleton {
                 try {
                     var data = JSON.parse(txt);
                     root._applyState(data);
+                    if (root.pollingEnabled && !root._autoRescanCheckedForShow) {
+                        root.maybeAutoRescanOnShow();
+                    }
                 } catch (e) {
                     root.available = false;
                     root.error = "Failed to parse Network state JSON: " + e.message;
@@ -224,6 +258,7 @@ Singleton {
         }
         stdout: StdioCollector {
             onStreamFinished: {
+                var wasScanning = root.scanning;
                 root.busy = false;
                 root.scanning = false;
                 root._ephemeralStdin = "";
@@ -237,6 +272,9 @@ Singleton {
                     if (data.ok) {
                         root.statusMessage = "Network updated.";
                         root.error = "";
+                        if (wasScanning) {
+                            root.lastScanEpochMs = Date.now();
+                        }
                     } else {
                         root.error = String(data.error || "Network operation failed.");
                     }

@@ -138,4 +138,77 @@ QtObject {
         }
         return enabledAfter >= 1;
     }
+
+    function keyboardGroupName() {
+        return "Keyboard";
+    }
+
+    function mouseGroupName() {
+        return "Mouse";
+    }
+
+    function touchpadGroupName() {
+        return "Touchpad";
+    }
+
+    function groupOptions(options, groupName, excludeIds) {
+        var all = options || [];
+        var excl = excludeIds || [];
+        var target = String(groupName || "");
+        var out = [];
+        for (var i = 0; i < all.length; i++) {
+            var o = all[i];
+            if (!o || !o.capable) continue;
+            if (String(o.group || "") !== target) continue;
+            if (excl.indexOf(o.id) !== -1) continue;
+            out.push(o);
+        }
+        return out;
+    }
+
+    function commonXkbGroups(groups) {
+        var list = groups || [];
+        var wanted = ({ "grp": true, "caps": true, "compose": true, "lv3": true, "ctrl": true });
+        var out = [];
+        for (var i = 0; i < list.length; i++) {
+            var g = list[i];
+            if (g && wanted[String(g.group || "")]) {
+                out.push(g);
+            }
+        }
+        return out;
+    }
+
+    function filterXkbOptionGroups(groups, query) {
+        var list = groups || [];
+        var q = String(query || "").trim().toLowerCase();
+        if (q.length === 0) {
+            return list;
+        }
+        var out = [];
+        for (var i = 0; i < list.length; i++) {
+            var g = list[i];
+            if (!g) continue;
+            var gText = (String(g.group || "") + " " + String(g.description || "")).toLowerCase();
+            var gMatches = gText.indexOf(q) !== -1;
+            var opts = g.options || [];
+            var matchedOpts = [];
+            for (var j = 0; j < opts.length; j++) {
+                var o = opts[j];
+                if (!o) continue;
+                var oText = (String(o.code || "") + " " + String(o.description || "")).toLowerCase();
+                if (gMatches || oText.indexOf(q) !== -1) {
+                    matchedOpts.push(o);
+                }
+            }
+            if (matchedOpts.length > 0) {
+                out.push({
+                    group: g.group,
+                    description: g.description,
+                    options: matchedOpts
+                });
+            }
+        }
+        return out;
+    }
 }

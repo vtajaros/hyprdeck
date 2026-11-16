@@ -38,4 +38,11 @@ QtObject {
         }
         return String(val);
     }
+
+    function enumOptionLabel(val) {
+        if (val === null || val === undefined || String(val) === "") {
+            return "Default";
+        }
+        return String(val);
+    }
 }

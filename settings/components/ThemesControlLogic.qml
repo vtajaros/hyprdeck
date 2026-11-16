@@ -30,4 +30,28 @@ QtObject {
         }
         return false;
     }
+
+    function visibleThemeChips(items, current, showAll, maxOthers) {
+        var list = items || [];
+        var cap = (maxOthers !== undefined && maxOthers > 0) ? maxOthers : 8;
+        if (showAll) {
+            return list.slice();
+        }
+        var cur = String(current || "");
+        var out = [];
+        var seen = ({});
+        if (cur.length > 0 && list.indexOf(cur) !== -1) {
+            out.push(cur);
+            seen[cur] = true;
+        }
+        var addedOthers = 0;
+        for (var i = 0; i < list.length && addedOthers < cap; i++) {
+            var item = list[i];
+            if (seen[item]) continue;
+            out.push(item);
+            seen[item] = true;
+            addedOthers++;
+        }
+        return out;
+    }
 }

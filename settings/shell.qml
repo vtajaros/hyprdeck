@@ -370,6 +370,53 @@ ShellRoot {
                     optsMap[o.id] = SettingsService.effectiveValue(o);
                 }
             }
+            var mouseOptCount = 0;
+            var touchpadOptCount = 0;
+            var inOpts = InputService.options || [];
+            for (var k = 0; k < inOpts.length; k++) {
+                var io = inOpts[k];
+                if (!io || !io.capable) continue;
+                if (io.group === "Mouse") mouseOptCount++;
+                else if (io.group === "Touchpad") touchpadOptCount++;
+            }
+            var outVis = 0; var outInact = 0;
+            var aOuts = AudioService.outputs || [];
+            for (var ao = 0; ao < aOuts.length; ao++) {
+                var od = aOuts[ao];
+                if (!od.is_default && String(od.running_state || "").toUpperCase() === "SUSPENDED") outInact++;
+                else outVis++;
+            }
+            var inVis = 0; var inInact = 0;
+            var aIns = AudioService.inputs || [];
+            for (var ai = 0; ai < aIns.length; ai++) {
+                var idv = aIns[ai];
+                if (!idv.is_default && String(idv.running_state || "").toUpperCase() === "SUSPENDED") inInact++;
+                else inVis++;
+            }
+            var netActiveNames = ({});
+            var netDevs = NetworkService.devices || [];
+            for (var nd = 0; nd < netDevs.length; nd++) {
+                if (netDevs[nd] && netDevs[nd].is_active && netDevs[nd].active_connection) {
+                    netActiveNames[String(netDevs[nd].active_connection)] = true;
+                }
+            }
+            var netSavedShown = 0;
+            var netConns = NetworkService.connections || [];
+            for (var nc = 0; nc < netConns.length; nc++) {
+                if (netConns[nc] && !(netConns[nc].name && netActiveNames[String(netConns[nc].name)])) netSavedShown++;
+            }
+            function _chipCount(list, cur) {
+                var arr = list || [];
+                var c = String(cur || "");
+                var seen = ({});
+                var cnt = 0;
+                if (c.length > 0 && arr.indexOf(c) !== -1) { seen[c] = true; cnt++; }
+                var others = 0;
+                for (var idx = 0; idx < arr.length && others < 8; idx++) {
+                    if (!seen[arr[idx]]) { seen[arr[idx]] = true; cnt++; others++; }
+                }
+                return cnt;
+            }
             return JSON.stringify({
                 ok: true,
                 currentPage: winLoader.item ? winLoader.item.currentPage : "",
@@ -398,6 +445,8 @@ ShellRoot {
                 },
                 input: {
                     options: InputService.options,
+                    mouseOptionCount: mouseOptCount,
+                    touchpadOptionCount: touchpadOptCount,
                     devices: InputService.devices,
                     deviceOverrides: InputService.deviceOverrides,
                     draftOptions: InputService.draftOptions,
@@ -419,6 +468,10 @@ ShellRoot {
                     outputs: AudioService.outputs,
                     inputs: AudioService.inputs,
                     streams: AudioService.streams,
+                    visibleOutputCount: outVis,
+                    inactiveOutputCount: outInact,
+                    visibleInputCount: inVis,
+                    inactiveInputCount: inInact,
                     busy: AudioService.busy,
                     loading: AudioService.loading,
                     error: AudioService.error,
@@ -443,6 +496,8 @@ ShellRoot {
                     hasWifiDevice: NetworkService.hasWifiDevice,
                     devices: NetworkService.devices,
                     connections: NetworkService.connections,
+                    savedShownCount: netSavedShown,
+                    savedDedupedCount: netConns.length - netSavedShown,
                     wifiNetworks: NetworkService.wifiNetworks,
                     warnings: NetworkService.warnings,
                     safety: NetworkService.safety,
@@ -458,6 +513,8 @@ ShellRoot {
                     gtk: ThemesService.gtk,
                     icons: ThemesService.icons,
                     cursor: ThemesService.cursor,
+                    iconChipsShown: _chipCount(ThemesService.icons ? ThemesService.icons.installed : [], ThemesService.icons ? ThemesService.icons.gsettings_theme : ""),
+                    cursorChipsShown: _chipCount(ThemesService.cursor ? ThemesService.cursor.installed : [], ThemesService.cursor ? ThemesService.cursor.gsettings_theme : ""),
                     qt: ThemesService.qt,
                     colorScheme: ThemesService.colorScheme,
                     conflicts: ThemesService.conflicts,

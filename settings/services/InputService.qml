@@ -69,13 +69,17 @@ Singleton {
             return root.draftOptions[optId];
         }
         var o = findOption(optId);
-        return o ? o.value : null;
+        if (!o) return null;
+        if (o.effective_value !== undefined) return o.effective_value;
+        if (o.live_value !== undefined) return o.live_value;
+        return o.value !== undefined ? o.value : null;
     }
 
     function setOptionDraft(optId, val) {
         var next = Object.assign({}, root.draftOptions);
         var o = findOption(optId);
-        if (o && o.value === val) {
+        var baseVal = o ? (o.effective_value !== undefined ? o.effective_value : (o.live_value !== undefined ? o.live_value : o.value)) : undefined;
+        if (o && baseVal === val) {
             delete next[optId];
         } else {
             next[optId] = val;

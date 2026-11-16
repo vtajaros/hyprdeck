@@ -99,12 +99,16 @@ class TestThemesIsolationAndState(IsolatedTestCase):
 
         # Create installed themes/icons/cursors/qt colors & plugin dir
         for t in ("Adwaita", "Breeze", "Breeze-Dark"):
-            os.makedirs(os.path.join(self.themes_home, ".themes", t), exist_ok=True)
-        for ic in ("Papirus-Dynamic", "Papirus-Dark", "breeze-dark", "CursorOnlyIconless"):
+            os.makedirs(os.path.join(self.themes_home, ".themes", t, "gtk-3.0"), exist_ok=True)
+        for ic in ("Papirus-Dynamic", "Papirus-Dark", "breeze-dark"):
             ic_dir = os.path.join(self.themes_home, ".local", "share", "icons", ic)
             os.makedirs(ic_dir, exist_ok=True)
             with open(os.path.join(ic_dir, "index.theme"), "w", encoding="utf-8") as f:
-                f.write("[Icon Theme]\nName=" + ic + "\n")
+                f.write("[Icon Theme]\nName=" + ic + "\nDirectories=16x16/apps\n")
+        cursor_only_dir = os.path.join(self.themes_home, ".local", "share", "icons", "CursorOnlyIconless")
+        os.makedirs(cursor_only_dir, exist_ok=True)
+        with open(os.path.join(cursor_only_dir, "index.theme"), "w", encoding="utf-8") as f:
+            f.write("[Icon Theme]\nName=CursorOnlyIconless\n")
         for cur in ("Pop", "Adwaita"):
             os.makedirs(os.path.join(self.themes_home, ".icons", cur, "cursors"), exist_ok=True)
 
@@ -158,6 +162,85 @@ class TestThemesIsolationAndState(IsolatedTestCase):
         st = get_themes_state(runner=runner, env={**os.environ, ENV_THEMES_HOME: empty_home})
         self.assertTrue(st["available"])
         self.assertIsNone(st["gtk"]["gsettings_theme"])
+
+
+class TestThemeDiscoveryFiltering(IsolatedTestCase):
+    """One-behavior tests for GTK, icon, and cursor theme discovery filtering."""
+
+    def test_gtk_discovery_filters_non_gtk_and_default_emacs(self) -> None:
+        from backend.settings.themes.state import discover_gtk_themes, resolve_themes_paths
+
+        fake_home = os.path.join(self._isolated_root, "fake_gtk_home")
+        themes_root = os.path.join(fake_home, ".themes")
+        for name, sub in (
+            ("Breeze", "gtk-3.0"),
+            ("Breeze4", "gtk-4.0"),
+            ("Default", "gtk-3.0"),
+            ("Emacs", "gtk-3.0"),
+            ("EmptyDir", None),
+        ):
+            base = os.path.join(themes_root, name)
+            os.makedirs(os.path.join(base, sub) if sub else base, exist_ok=True)
+        paths = resolve_themes_paths({ENV_THEMES_HOME: fake_home})
+        found = discover_gtk_themes(paths, roots=(themes_root,))
+        self.assertIn("Breeze", found)
+        self.assertIn("Breeze4", found)
+        self.assertNotIn("Default", found)
+        self.assertNotIn("Emacs", found)
+        self.assertNotIn("EmptyDir", found)
+
+    def test_gtk_discovery_includes_adwaita_and_conditional_adwaita_dark(self) -> None:
+        from backend.settings.themes.state import discover_gtk_themes, resolve_themes_paths
+
+        fake_home = os.path.join(self._isolated_root, "fake_adwaita_home")
+        themes_root = os.path.join(fake_home, ".themes")
+        os.makedirs(themes_root, exist_ok=True)
+        paths = resolve_themes_paths({ENV_THEMES_HOME: fake_home})
+        found_plain = discover_gtk_themes(paths, roots=(themes_root,))
+        self.assertIn("Adwaita", found_plain)
+        self.assertNotIn("Adwaita-dark", found_plain)
+
+        found_dark = discover_gtk_themes(paths, active_themes=("Adwaita-dark",), roots=(themes_root,))
+        self.assertIn("Adwaita", found_dark)
+        self.assertIn("Adwaita-dark", found_dark)
+
+    def test_icon_discovery_requires_non_cursor_directories_in_index_theme(self) -> None:
+        from backend.settings.themes.state import discover_icon_and_cursor_themes, resolve_themes_paths
+
+        fake_home = os.path.join(self._isolated_root, "fake_icon_home")
+        icons_root = os.path.join(fake_home, ".icons")
+        good = os.path.join(icons_root, "FakeGoodIcons")
+        os.makedirs(good, exist_ok=True)
+        with open(os.path.join(good, "index.theme"), "w", encoding="utf-8") as f:
+            f.write("[Icon Theme]\nName=FakeGoodIcons\nDirectories=16x16/apps,24x24/actions\n")
+        cur_no_dirs = os.path.join(icons_root, "FakeCursorNoDirs")
+        os.makedirs(os.path.join(cur_no_dirs, "cursors"), exist_ok=True)
+        with open(os.path.join(cur_no_dirs, "index.theme"), "w", encoding="utf-8") as f:
+            f.write("[Icon Theme]\nName=FakeCursorNoDirs\n")
+        cur_only_dir = os.path.join(icons_root, "FakeCursorOnlyDir")
+        os.makedirs(os.path.join(cur_only_dir, "cursors"), exist_ok=True)
+        with open(os.path.join(cur_only_dir, "index.theme"), "w", encoding="utf-8") as f:
+            f.write("[Icon Theme]\nName=FakeCursorOnlyDir\nDirectories=cursors\n")
+        for excluded in ("hicolor", "locolor", "default"):
+            ex_dir = os.path.join(icons_root, excluded)
+            os.makedirs(ex_dir, exist_ok=True)
+            with open(os.path.join(ex_dir, "index.theme"), "w", encoding="utf-8") as f:
+                f.write("[Icon Theme]\nDirectories=16x16/apps\n")
+
+        paths = resolve_themes_paths({ENV_THEMES_HOME: fake_home})
+        icons, _ = discover_icon_and_cursor_themes(paths, roots=(icons_root,))
+        self.assertEqual(icons, ["FakeGoodIcons"])
+
+    def test_cursor_discovery_unchanged_for_cursors_subdir(self) -> None:
+        from backend.settings.themes.state import discover_icon_and_cursor_themes, resolve_themes_paths
+
+        fake_home = os.path.join(self._isolated_root, "fake_cursor_home")
+        icons_root = os.path.join(fake_home, ".icons")
+        os.makedirs(os.path.join(icons_root, "FakeCursorOnly", "cursors"), exist_ok=True)
+        os.makedirs(os.path.join(icons_root, "FakeIconsOnly"), exist_ok=True)
+        paths = resolve_themes_paths({ENV_THEMES_HOME: fake_home})
+        _, cursors = discover_icon_and_cursor_themes(paths, roots=(icons_root,))
+        self.assertEqual(cursors, ["FakeCursorOnly"])
 
 
 class TestThemesOpsAndMutationSafety(TestThemesIsolationAndState):

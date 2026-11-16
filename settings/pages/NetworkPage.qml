@@ -14,6 +14,8 @@ Item {
     property string joinPromptSsid: ""
     property string joinPromptSecurity: ""
     property bool joinPromptOpen: false
+    property bool showDetails: false
+    readonly property var savedConnections: netLogic.savedConnectionsExcludingActiveDevices(NetworkService.connections, NetworkService.devices)
 
     function openJoinPrompt(ssid, security) {
         root.joinPromptSsid = String(ssid || "");
@@ -84,6 +86,13 @@ Item {
                 id: headerActions
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: HKS.space8
+
+                ActionButton {
+                    text: root.showDetails ? "Details: On" : "Details"
+                    compact: true
+                    variant: root.showDetails ? "accent" : "neutral"
+                    onClicked: root.showDetails = !root.showDetails
+                }
 
                 ActionButton {
                     text: NetworkService.general.wifi_enabled ? "Wi-Fi: On" : "Wi-Fi: Off"
@@ -204,6 +213,24 @@ Item {
                                             font.family: HKS.fontFamily
                                             font.pixelSize: 11
                                             color: devCard.modelData.is_active ? HKS.accent : HKS.muted
+                                        }
+                                        Rectangle {
+                                            visible: !!devCard.modelData.is_active
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: activeTagTxt.implicitWidth + 10
+                                            height: 18
+                                            radius: 4
+                                            color: HKS.alpha(HKS.accent, 0.16)
+                                            border.width: 1
+                                            border.color: HKS.alpha(HKS.accent, 0.45)
+                                            Text {
+                                                id: activeTagTxt
+                                                anchors.centerIn: parent
+                                                text: "Active"
+                                                font.family: HKS.fontFamily
+                                                font.pixelSize: 10
+                                                color: HKS.accent
+                                            }
                                         }
                                     }
 
@@ -368,7 +395,7 @@ Item {
                     spacing: HKS.space8
 
                     Text {
-                        text: "Saved Connections (" + NetworkService.connections.length + ")"
+                        text: "Saved Connections (" + root.savedConnections.length + ")"
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSize
                         font.weight: Font.Bold
@@ -401,7 +428,7 @@ Item {
                     }
 
                     Repeater {
-                        model: NetworkService.connections
+                        model: root.savedConnections
                         delegate: Rectangle {
                             id: connCard
                             required property var modelData
@@ -433,7 +460,9 @@ Item {
                                     }
 
                                     Text {
-                                        text: String(connCard.modelData.type || "") + " · " + String(connCard.modelData.uuid || "")
+                                        text: root.showDetails
+                                            ? (String(connCard.modelData.type || "") + " · " + String(connCard.modelData.uuid || ""))
+                                            : String(connCard.modelData.type || "")
                                         font.family: HKS.fontFamily
                                         font.pixelSize: 11
                                         color: HKS.muted

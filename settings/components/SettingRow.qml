@@ -223,7 +223,7 @@ Rectangle {
                         Text {
                             id: enumTxt
                             anchors.centerIn: parent
-                            text: modelData
+                            text: logic.enumOptionLabel(modelData)
                             font.family: HKS.fontFamily
                             font.pixelSize: HKS.fontSizeSmall
                             color: selected ? HKS.accent : HKS.fg

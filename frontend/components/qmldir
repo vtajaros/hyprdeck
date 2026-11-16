@@ -10,3 +10,4 @@ ActionButton 1.0 ActionButton.qml
 KeybindRecorder 1.0 KeybindRecorder.qml
 KeybindEditDialog 1.0 KeybindEditDialog.qml
 CloseGuard 1.0 CloseGuard.qml
+SectionCard 1.0 SectionCard.qml
