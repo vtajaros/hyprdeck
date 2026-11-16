@@ -660,6 +660,11 @@ ShellRoot {
                     busy: KeyboardService.busy,
                     error: KeyboardService.error,
                     statusMessage: KeyboardService.statusMessage
+                },
+                backups: {
+                    count: BackupsService.backups.length,
+                    loading: BackupsService.loading,
+                    error: BackupsService.error
                 }
             });
         }

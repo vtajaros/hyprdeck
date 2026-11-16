@@ -10,7 +10,7 @@ import sys
 import time
 from pathlib import Path
 
-_TARGET_FILES = ("InputPage", "DisplayPage", "SettingRow")
+_TARGET_FILES = ("InputPage", "DisplayPage", "SettingRow", "BackupsPage")
 _WARN_TOKENS = ("WARN scene:", "ReferenceError", "Unable to assign")
 
 
@@ -111,6 +111,15 @@ def main() -> int:
                 timeout=5,
             )
             time.sleep(0.15)
+
+        subprocess.run(
+            ["quickshell", "ipc", "--pid", str(proc.pid), "call", "settings", "navigate", "backups"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        time.sleep(0.25)
     finally:
         proc.terminate()
         try:

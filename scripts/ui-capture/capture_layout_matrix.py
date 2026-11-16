@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
 import struct
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -33,6 +35,7 @@ CAPTURE_PAGES = (
     ("power", ""),
     ("sysinfo", ""),
     ("keyboard", ""),
+    ("backups", ""),
 )
 
 
@@ -82,6 +85,7 @@ def _wait_services(pid: int) -> None:
                 or st["power"]["loading"]
                 or st["system"]["loading"]
                 or st["keyboard"]["loading"]
+                or st.get("backups", {}).get("loading", False)
             ):
                 return
         time.sleep(0.15)
@@ -222,6 +226,49 @@ def main() -> int:
         print(f"capture_layout_matrix: wrote {captured_count} PNGs and {contact_count} contact sheets in {out_dir}")
         return 0
 
+    def _build_fixture_backup_dir(root: Path) -> Path:
+        cfg = root / "cfg"
+        bdir = root / "backups"
+        cfg.mkdir(parents=True, exist_ok=True)
+        bdir.mkdir(parents=True, exist_ok=True)
+        samples = [
+            ("hyprland.lua", "hyprland.lua.20261116-120001-aaaa1111", "2026-11-16T12:00:01Z", "edit",
+             "hl.bind('SUPER + Return', hl.dsp.exec_cmd('kitty'))\n",
+             "hl.bind('SUPER + Return', hl.dsp.exec_cmd('alacritty'))\n"),
+            ("hyprland.lua", "hyprland.lua.20261116-110001-bbbb2222", "2026-11-16T11:00:01Z", "pre-restore",
+             "hl.bind('SUPER + Return', hl.dsp.exec_cmd('wezterm'))\n",
+             "hl.bind('SUPER + Return', hl.dsp.exec_cmd('alacritty'))\n"),
+            ("hks-overrides.lua", "hks-overrides.lua.20261116-100001-cccc3333", "2026-11-16T10:00:01Z", "edit",
+             "return { general = { gaps_in = 4 } }\n",
+             "return { general = { gaps_in = 6 } }\n"),
+            ("hypridle.conf", "hypridle.conf.20261116-090001-dddd4444", "2026-11-16T09:00:01Z", "edit",
+             "listener {\n  timeout = 300\n}\n",
+             "listener {\n  timeout = 600\n}\n"),
+            ("qt6ct.conf", "qt6ct.conf.20261116-080001-eeee5555", "2026-11-16T08:00:01Z", "edit",
+             "[Appearance]\nstyle=Fusion\n",
+             "[Appearance]\nstyle=Fusion\n"),
+        ]
+        index = []
+        for fname, bid, ts, reason, bak_txt, curr_txt in samples:
+            orig_path = cfg / fname
+            orig_path.write_text(curr_txt, encoding="utf-8")
+            bak_path = bdir / bid
+            bak_bytes = bak_txt.encode("utf-8")
+            bak_path.write_bytes(bak_bytes)
+            index.append({
+                "id": bid,
+                "original_path": str(orig_path),
+                "backup_path": str(bak_path),
+                "sha256": hashlib.sha256(bak_bytes).hexdigest(),
+                "created_at": ts,
+                "reason": reason,
+            })
+        (bdir / "backups.json").write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8")
+        return bdir
+
+    _fixture_tmp = tempfile.TemporaryDirectory(prefix="hyprdeck-cap-backups-")
+    fixture_bdir = _build_fixture_backup_dir(Path(_fixture_tmp.name))
+
     env = {
         **os.environ,
         "QT_QPA_PLATFORM": "offscreen",
@@ -231,6 +278,8 @@ def main() -> int:
         "HKS_SETTINGS_DEBUG": "1",
         "HYPRDECK_ROOT": str(repo_root),
         "HKS_ROOT": str(repo_root),
+        "HYPRDECK_BACKUP_DIR": str(fixture_bdir),
+        "HKS_BACKUP_DIR": str(fixture_bdir),
     }
     env.pop("HYPRDECK_START_HIDDEN", None)
     env.pop("HKS_START_HIDDEN", None)
@@ -247,6 +296,11 @@ def main() -> int:
             sys.stderr.write("capture_layout_matrix: Quickshell IPC did not become ready.\n")
             return 1
         _wait_services(proc.pid)
+        subprocess.run(
+            ["quickshell", "ipc", "--pid", str(proc.pid), "call", "settings", "open"],
+            check=True, capture_output=True, text=True, timeout=5,
+        )
+        time.sleep(0.25)
 
         for page_id, sub_tab in CAPTURE_PAGES:
             page_pngs: list[Path] = []

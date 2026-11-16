@@ -33,6 +33,7 @@ function _hasHorizontalScrollerAncestor(pageRoot, it) {
     var p = it ? it.parent : null;
     while (p && p !== pageRoot) {
         if (p.objectName === "horizontalSafetyScroller" && pageRoot.width < 320) return true;
+        if (p.clip === true && p.contentWidth !== undefined && p.width !== undefined && p.interactive !== undefined && p.contentWidth > p.width) return true;
         p = p.parent;
     }
     return false;

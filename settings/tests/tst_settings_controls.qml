@@ -497,4 +497,49 @@ TestCase {
         compare(c2.width, 431);
         compare(c2.height, 536);
     }
+
+    BackupsLogic {
+        id: backupsLogic
+    }
+
+    function test_backups_logic_grouping_and_decisions() {
+        var sample = [
+            { id: "qt1", file_name: "qt6ct.conf", created_at: "2026-11-16T08:00:00Z", available: true, is_current: false, reason: "edit", size: 120 },
+            { id: "hl1", file_name: "hyprland.lua", created_at: "2026-11-16T09:00:00Z", available: true, is_current: false, reason: "edit", size: 2048 },
+            { id: "hl2", file_name: "hyprland.lua", created_at: "2026-11-16T10:00:00Z", available: true, is_current: true, reason: "pre-restore", size: 2050 }
+        ];
+        var filters = backupsLogic.extractFileFilters(sample);
+        compare(filters[0], "All");
+        compare(filters[1], "hyprland.lua");
+        compare(filters[2], "qt6ct.conf");
+
+        var sorted = backupsLogic.groupAndSortBackups(sample, "All");
+        compare(sorted.length, 3);
+        compare(sorted[0].id, "hl2");
+        compare(sorted[1].id, "hl1");
+        compare(sorted[2].id, "qt1");
+
+        var onlyQt = backupsLogic.groupAndSortBackups(sample, "qt6ct.conf");
+        compare(onlyQt.length, 1);
+        compare(onlyQt[0].id, "qt1");
+
+        compare(backupsLogic.reasonLabel("pre-restore"), "Pre-restore");
+        compare(backupsLogic.reasonLabel("edit"), "Edit");
+        compare(backupsLogic.reasonLabel("other"), "Other");
+
+        compare(backupsLogic.canRestore(sorted[0], false), false); // is_current
+        compare(backupsLogic.canRestore(sorted[1], false), true);
+        compare(backupsLogic.canRestore(sorted[1], true), false); // busy
+        compare(backupsLogic.canRestore({ available: false, is_current: false }, false), false);
+
+        compare(backupsLogic.layoutMode(1250), "split");
+        compare(backupsLogic.layoutMode(900), "stacked");
+        compare(backupsLogic.layoutMode(500), "compact");
+
+        compare(backupsLogic.classifyDiffLine("+added"), "add");
+        compare(backupsLogic.classifyDiffLine("-removed"), "remove");
+        compare(backupsLogic.classifyDiffLine("@@ -1,2 +1,2 @@"), "hunk");
+        compare(backupsLogic.classifyDiffLine("+++ b/file"), "meta");
+        compare(backupsLogic.classifyDiffLine(" context"), "context");
+    }
 }

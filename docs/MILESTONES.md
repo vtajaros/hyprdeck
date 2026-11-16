@@ -195,3 +195,14 @@
 | Responsive dialogs (`KeybindEditDialog`, `KeybindRecorder`, `EditConfirmDialog`) clamped to `viewport - 24` with internal scroll & wrapping actions | `frontend/components/{KeybindEditDialog,KeybindRecorder,EditConfirmDialog}.qml` | [x] Complete |
 | Responsive `PopupShell` & Bar-embedded `HksCard` (`760x560`) compatibility harness + QML tests | `frontend/PopupShell.qml`, `frontend/dev/CardHarness.qml`, `frontend/tests/tst_hkscard_compat.qml`, `settings/tests/tst_settings_controls.qml` | [x] Complete |
 | Multi-target `--target {settings,keybind-studio,popup,card,all}` layout audit & screenshots + S16 hardening (legacy overrides test, `hyprdeck-scene-check` label/docs) | `scripts/hyprdeck-layout-check`, `scripts/ui-capture/capture_layout_matrix.py`, `scripts/hyprdeck-scene-check`, `backend/tests/test_core.py` | [x] Complete |
+| Clip-aware overlap bounds in `LayoutAudit.js` (`S17-F`) | `frontend/components/LayoutAudit.js` | [x] Complete |
+
+---
+
+## Milestone S18 (Settings Backups Page + S17 Closure)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Resolve-by-ID backup path fallback, enriched listing (`available`, `size`, `is_current`, `reason`), capped diff, and safe restore with pre-restore snapshot & auto-rollback | `backend/editor/backups.py`, `backend/settings/backups_ops.py`, `backend/cli.py`, `backend/tests/test_backups_settings.py` | [x] Complete |
+| Responsive Settings `BackupsPage` (split/stacked/compact, `ChipFlow` filters, horizontal-scroll diff viewer, confirm dialog, one-click Undo banner) | `settings/pages/BackupsPage.qml`, `settings/services/BackupsService.qml`, `settings/components/BackupsLogic.qml`, `settings/WindowShell.qml` | [x] Complete |
+| Backups added to scene/layout audits, offscreen matrix capture (`contact-settings-backups.png`), QML unit tests, and docs | `scripts/hyprdeck-scene-check`, `scripts/hyprdeck-layout-check`, `scripts/ui-capture/capture_layout_matrix.py`, `settings/tests/tst_settings_controls.qml` | [x] Complete |

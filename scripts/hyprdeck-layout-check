@@ -52,6 +52,7 @@ SETTINGS_PROBES = (
     ("power", "", False, False, "power"),
     ("sysinfo", "", False, False, "sysinfo"),
     ("keyboard", "", False, False, "keyboard"),
+    ("backups", "", False, False, "backups"),
 )
 
 KEYBIND_VIEWS = (
@@ -140,6 +141,7 @@ def _audit_settings(repo_root: Path, matrix: tuple[tuple[int, int, str], ...]) -
                     or st["power"]["loading"]
                     or st["system"]["loading"]
                     or st["keyboard"]["loading"]
+                    or st.get("backups", {}).get("loading", False)
                 ):
                     break
             time.sleep(0.15)

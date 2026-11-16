@@ -88,6 +88,13 @@ cat "$SANDBOX/config/descriptions.json" | jq '.overrides[0].match.key'  # Output
 grep "SUPER + Q" "$CFG"
 ```
 
+### Settings Backups CLI (read-only list/diff and safe restore with pre-restore snapshot):
+```bash
+python3 -m backend.cli settings backups list --json
+python3 -m backend.cli backups diff --id <backup-id> --json
+python3 -m backend.cli settings backups restore --id <backup-id> --dry-run --json
+```
+
 ### Clean up sandbox:
 ```bash
 rm -rf "$SANDBOX"
