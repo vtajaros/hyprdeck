@@ -4,8 +4,8 @@ from __future__ import annotations
 
 OVERRIDES_FILENAME = "hks-overrides.lua"
 
-APP_DISPLAY_NAME = "System Settings"
-SETTINGS_WINDOW_TITLE = "System Settings"
+APP_DISPLAY_NAME = "HyprDeck Settings"
+SETTINGS_WINDOW_TITLE = "HyprDeck Settings"
 SETTINGS_QUICKSHELL_DIR = "settings"
 
 INCLUDE_BEGIN_MARKER = "-- HKS-OVERRIDES-BEGIN"

@@ -1,4 +1,4 @@
-"""Line-oriented edit plan and safe text transformation engine for Hyprland Keybind Studio."""
+"""Line-oriented edit plan and safe text transformation engine for HyprDeck."""
 
 from __future__ import annotations
 

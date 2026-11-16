@@ -1,4 +1,4 @@
-"""Conflict detection module for Hyprland Keybind Studio (HKS)."""
+"""Conflict detection module for HyprDeck."""
 
 from backend.conflicts.detect import check_candidate_conflict, detect_conflicts, normalize_key
 

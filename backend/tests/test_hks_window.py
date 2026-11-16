@@ -18,7 +18,7 @@ import unittest
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 REAL_SCRIPT = os.path.join(REPO_ROOT, "scripts", "hks-window")
 
-TITLE = "Hyprland Keybind Studio"
+TITLE = "HyprDeck Keybind Studio"
 
 FAKE_HYPRCTL = r"""#!/usr/bin/env bash
 if [ "$1" = "clients" ]; then
@@ -33,7 +33,7 @@ FAKE_QUICKSHELL = r"""#!/usr/bin/env bash
 D="$FAKE_DIR"
 add_win() {
     printf '[%s{"title":"%s","class":"org.quickshell","mapped":true,"address":"0x1"}]' \
-        "$(cat "$D/decoy.json" 2>/dev/null)" "Hyprland Keybind Studio" > "$D/clients.json"
+        "$(cat "$D/decoy.json" 2>/dev/null)" "HyprDeck Keybind Studio" > "$D/clients.json"
 }
 clear_win() {
     printf '[%s]' "$(sed 's/,$//' "$D/decoy.json" 2>/dev/null)" > "$D/clients.json"

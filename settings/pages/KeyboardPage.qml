@@ -124,7 +124,7 @@ Item {
                     spacing: 4
 
                     Text {
-                        text: "Hyprland Keybind Studio"
+                        text: "HyprDeck Keybind Studio"
                         font.family: HKS.fontFamily
                         font.pixelSize: HKS.fontSize
                         font.weight: Font.DemiBold

@@ -1,4 +1,4 @@
-"""CLI entrypoint for Hyprland Keybind Studio (HKS) Phase 1."""
+"""CLI entrypoint for HyprDeck Phase 1."""
 
 from __future__ import annotations
 
@@ -85,7 +85,7 @@ class _CleanArgumentParser(argparse.ArgumentParser):
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = _CleanArgumentParser(
         prog="python -m backend.cli",
-        description="Hyprland Keybind Studio (HKS) Phase 1 read-only config scanner.",
+        description="HyprDeck Phase 1 read-only config scanner.",
     )
     subparsers = parser.add_subparsers(dest="subcommand")
 
@@ -979,14 +979,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     sys_info.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
     # settings keyboard subcommand
-    st_kb = st_sub.add_parser("keyboard", help="Inspect or open Hyprland Keybind Studio.")
+    st_kb = st_sub.add_parser("keyboard", help="Inspect or open HyprDeck Keybind Studio.")
     kb_sub = st_kb.add_subparsers(dest="keyboard_action", required=True)
 
     kb_state = kb_sub.add_parser("state", help="Read Keybind Studio launcher availability and window state.")
     kb_state.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
     kb_state.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
-    kb_open = kb_sub.add_parser("open", help="Launch or focus the Hyprland Keybind Studio window.")
+    kb_open = kb_sub.add_parser("open", help="Launch or focus the HyprDeck Keybind Studio window.")
     kb_open.add_argument("--timeout", dest="timeout", type=float, default=8.0, help="Window launch timeout seconds.")
     kb_open.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 

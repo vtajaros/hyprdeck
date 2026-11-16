@@ -1,4 +1,4 @@
-"""Test suite for Hyprland Keybind Studio."""
+"""Test suite for HyprDeck."""
 
 from backend.tests.isolation import install_suite_isolation_guard
 

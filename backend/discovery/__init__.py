@@ -1,4 +1,4 @@
-"""Discovery package for Hyprland Keybind Studio."""
+"""Discovery package for HyprDeck."""
 
 from backend.discovery.config_discovery import (
     DiscoveryError,

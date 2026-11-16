@@ -9,7 +9,7 @@ import "pages"
 FloatingWindow {
     id: win
 
-    title: "Hyprland Keybind Studio"
+    title: AppInfo.windowTitle
     implicitWidth: 1000
     implicitHeight: 700
     color: HKS.bg

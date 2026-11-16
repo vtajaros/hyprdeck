@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Hyprland System Settings - Window Mode Launcher & Toggle
+# HyprDeck Settings - Window Mode Launcher & Toggle
 #
 #   hks-settings            toggle (decided by whether the window is really mapped)
 #   hks-settings --open     make sure the window is mapped; exit 0 only if it is
@@ -13,7 +13,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SETTINGS_DIR="$REPO_ROOT/settings"
 
-SETTINGS_WINDOW_TITLE="${HKS_SETTINGS_TITLE:-System Settings}"
+SETTINGS_WINDOW_TITLE="${HKS_SETTINGS_TITLE:-HyprDeck Settings}"
 SETTINGS_WINDOW_CLASS="${HKS_SETTINGS_CLASS:-org.quickshell}"
 OPEN_WAIT_MS="${HKS_OPEN_WAIT_MS:-1500}"
 COLD_WAIT_MS="${HKS_COLD_WAIT_MS:-3000}"
@@ -91,6 +91,7 @@ start_instance() {
         return 1
     fi
     export HKS_ROOT="$REPO_ROOT"
+    export HYPRDECK_ROOT="${HYPRDECK_ROOT:-$REPO_ROOT}"
     export HKS_KEEP_ALIVE="1"
     export QML_XHR_ALLOW_FILE_READ=1
     if [ "$1" = "hidden" ]; then
@@ -103,7 +104,7 @@ start_instance() {
 }
 
 fail_open() {
-    echo "hks-settings: System Settings window did not appear (see $LOG_FILE)." >&2
+    echo "hks-settings: HyprDeck Settings window did not appear (see $LOG_FILE)." >&2
     exit 1
 }
 
@@ -133,7 +134,7 @@ do_toggle() {
         poll_state unmapped "$CLOSE_WAIT_MS" && return 0
         kill_settings
         poll_state unmapped "$CLOSE_WAIT_MS" && return 0
-        echo "hks-settings: could not close the System Settings window." >&2
+        echo "hks-settings: could not close the HyprDeck Settings window." >&2
         exit 1
     fi
     do_open

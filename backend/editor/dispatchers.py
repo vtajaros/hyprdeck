@@ -1,4 +1,4 @@
-"""Dispatcher catalog and schema definitions for Hyprland Keybind Studio (Phase 3b)."""
+"""Dispatcher catalog and schema definitions for HyprDeck (Phase 3b)."""
 
 from __future__ import annotations
 

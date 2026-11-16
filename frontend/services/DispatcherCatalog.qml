@@ -11,7 +11,7 @@ Singleton {
     property var catalog: []
     property var categories: []
 
-    readonly property string rootPath: Quickshell.env("HKS_ROOT") || "."
+    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || "."
 
     Process {
         id: proc

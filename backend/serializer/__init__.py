@@ -1,4 +1,4 @@
-"""Serializer package for Hyprland Keybind Studio."""
+"""Serializer package for HyprDeck."""
 
 from backend.serializer.json_serializer import (
     format_conflicts_table,

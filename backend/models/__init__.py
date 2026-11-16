@@ -1,4 +1,4 @@
-"""Models package for Hyprland Keybind Studio."""
+"""Models package for HyprDeck."""
 
 from backend.models.types import (
     VALID_CATEGORIES,

@@ -1,4 +1,4 @@
-# Hyprland Keybind Studio (HKS) — Milestones
+# HyprDeck (formerly Hyprland Keybind Studio / HKS) — Milestones
 
 ## Phase 1 Milestones
 
@@ -138,3 +138,14 @@
 - **Test Suite**: 148 backend unit tests, 19 QML unit tests
 - **QML Lint**: 0 errors / 0 warnings across 34 files
 - **Performance**: Scan time about 0.1 s
+
+---
+
+## Milestone S11 (Rebrand to HyprDeck)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Rebrand user-visible titles to `HyprDeck Keybind Studio` & `HyprDeck Settings` | `frontend/AppInfo.qml`, `settings/AppInfo.qml`, `scripts/hks-window`, `scripts/hks-settings`, `backend/settings/keyboard/state.py` | [x] Complete |
+| Update `rootPath` resolution (`HYPRDECK_ROOT` -> `HKS_ROOT` -> `$HOME/Shared/Projects/hyprdeck`) | `settings/services/*.qml`, `frontend/services/*.qml`, `scripts/ui-capture/capture.qml` | [x] Complete |
+| Set `__tool_name__ = "hyprdeck"` and `bindings.schema.json` `$id` (`hyprdeck.local`) | `backend/__init__.py`, `shared/schemas/bindings.schema.json`, `docs/PHASE1.md` | [x] Complete |
+| Update docs, handoff compatibility note, and roadmap | `README.md`, `HANDOFF.md`, `docs/HANDOFF.md`, `docs/RUNBOOK.md`, `docs/MILESTONES.md`, `docs/ROADMAP.md` | [x] Complete |

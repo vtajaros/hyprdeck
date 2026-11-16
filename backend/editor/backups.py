@@ -1,4 +1,4 @@
-"""Backup creation, listing, and atomic restoration for Hyprland Keybind Studio."""
+"""Backup creation, listing, and atomic restoration for HyprDeck."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
-# Hyprland Keybind Studio (HKS) — Engineering Handoff
+# HyprDeck (formerly Hyprland Keybind Studio / HKS) — Engineering Handoff
 
-**Project Root**: `/home/delata/Shared/Projects/hyprland-keybind-studio`  
+**Project Root**: `/home/delata/Shared/Projects/hyprdeck`  
 **Current Date**: November 8, 2026  
 **Status**: Phases 1, 2a, 2b-0, 2b-1, 2b-2a, 3a, 4a, and 3b are **100% Complete & Verified**.  
 **Test Suite**: 148/148 backend unit tests passing in ~4.8s (`python3 -m unittest discover -s backend/tests -v`).  
@@ -12,7 +12,7 @@
 
 ## 1. Executive Summary & Mission
 
-**Hyprland Keybind Studio (HKS)** is a standalone, lightweight, native desktop application and CLI tool suite built for the Hyprland Wayland compositor on Arch Linux. Its purpose is to discover, parse, categorize, detect conflicts in, and safely edit user keybindings.
+**HyprDeck** (formerly Hyprland Keybind Studio / HKS) is a standalone, lightweight, native desktop application and CLI tool suite built for the Hyprland Wayland compositor on Arch Linux. Its purpose is to discover, parse, categorize, detect conflicts in, and safely edit user keybindings, alongside a unified System Settings center.
 
 ### Key Architectural Invariants
 1. **Zero External Python Dependencies**: Built entirely on the Python 3.14 standard library (`subprocess`, `dataclasses`, `json`, `difflib`, `resource`, `argparse`, `unittest`, `fcntl`, `hashlib`). Zero pip packages required.
@@ -38,7 +38,7 @@
 ## 2. Directory Structure & Codebase Map
 
 ```
-hyprland-keybind-studio/
+hyprdeck/
 ├── README.md
 ├── HANDOFF.md                          # Main engineering handoff document
 ├── docs/
@@ -261,3 +261,10 @@ hyprland-keybind-studio/
    - Automatic migration on shortcut replace.
    - Structured collision handling (`sidecar_warning`).
    - Unified multi-file transactional undo.
+
+---
+
+## 6. Rename Compatibility
+
+- **Repository / directory fallback**: QML services check `HYPRDECK_ROOT` first, then `HKS_ROOT`, and finally `$HOME/Shared/Projects/hyprdeck` (keep a symlink from the old path if migrating an existing checkout).
+- **Retained compatibility shims**: `scripts/hks-*` launcher scripts, `HKS_*` environment variables, `frontend/theme/HKS.qml`, and `hks-overrides.lua` / `-- Managed by Hyprland Keybind Studio.` markers remain unchanged until a dedicated rename milestone (S12).

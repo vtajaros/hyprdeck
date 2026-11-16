@@ -1,4 +1,4 @@
-"""Conflict detection for Hyprland Keybind Studio (HKS)."""
+"""Conflict detection for HyprDeck."""
 
 from __future__ import annotations
 

@@ -150,7 +150,7 @@ Item {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Hyprland Keybind Studio"
+                            text: AppInfo.windowTitle
                             font.family: HKS.fontFamily
                             font.pixelSize: HKS.fontSize
                             font.weight: Font.Bold

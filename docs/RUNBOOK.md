@@ -1,4 +1,4 @@
-# Hyprland Keybind Studio (HKS) — Manual Verification Runbook
+# HyprDeck (formerly Hyprland Keybind Studio / HKS) — Manual Verification Runbook
 
 This runbook provides step-by-step procedures to verify the full HKS system manually, covering automated suites, backend CLI workflows, interactive recorder submaps, and the graphical desktop interface.
 

@@ -1,4 +1,4 @@
-"""Parser package for Hyprland Keybind Studio."""
+"""Parser package for HyprDeck."""
 
 from backend.parser.hyprlang_parser import (
     expand_variables,

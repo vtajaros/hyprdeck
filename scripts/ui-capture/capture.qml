@@ -1,9 +1,9 @@
 import QtQuick
 import QtQuick.Window
 import Quickshell
-import "file:/home/delata/Shared/Projects/hyprland-keybind-studio/frontend/theme"
-import "file:/home/delata/Shared/Projects/hyprland-keybind-studio/frontend/services"
-import "file:/home/delata/Shared/Projects/hyprland-keybind-studio/frontend/components"
+import "../../frontend/theme"
+import "../../frontend/services"
+import "../../frontend/components"
 
 Window {
     id: win
@@ -27,7 +27,7 @@ Window {
         z: 90
     }
 
-    readonly property string rootDir: Quickshell.env("HKS_ROOT") || "/home/delata/Shared/Projects/hyprland-keybind-studio"
+    readonly property string rootDir: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprdeck")
 
     Timer {
         id: stepTimer

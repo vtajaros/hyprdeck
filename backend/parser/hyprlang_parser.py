@@ -1,4 +1,4 @@
-"""Hyprlang (.conf) line state machine parser for Hyprland Keybind Studio."""
+"""Hyprlang (.conf) line state machine parser for HyprDeck."""
 
 from __future__ import annotations
 

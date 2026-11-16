@@ -1,4 +1,4 @@
-"""Validation package for Hyprland Keybind Studio."""
+"""Validation package for HyprDeck."""
 
 from backend.validation.oracle import (
     OracleReport,

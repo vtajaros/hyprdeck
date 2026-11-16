@@ -5,6 +5,7 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 export HKS_ROOT="$ROOT"
+export HYPRDECK_ROOT="${HYPRDECK_ROOT:-$ROOT}"
 export HKS_BACKUP_DIR="$TMP_DIR/backups"
 export HKS_SIDECAR_PATH="$TMP_DIR/sidecar.json"
 export HKS_EDIT_DRYRUN_ONLY=1

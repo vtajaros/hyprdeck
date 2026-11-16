@@ -1,4 +1,4 @@
-"""Data models for Hyprland Keybind Studio (HKS) Phase 1."""
+"""Data models for HyprDeck Phase 1."""
 
 from __future__ import annotations
 

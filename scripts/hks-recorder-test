@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Hyprland Keybind Studio (HKS) - Dev Keybind Recorder Test Harness
+# HyprDeck - Dev Keybind Recorder Test Harness
 # =============================================================================
 set -euo pipefail
 
@@ -28,6 +28,7 @@ if ! command -v quickshell >/dev/null 2>&1; then
 fi
 
 export HKS_ROOT="$REPO_ROOT"
+export HYPRDECK_ROOT="${HYPRDECK_ROOT:-$REPO_ROOT}"
 export HKS_MODE="recorder-test"
 export QML_XHR_ALLOW_FILE_READ=1
 

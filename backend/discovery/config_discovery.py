@@ -1,4 +1,4 @@
-"""Configuration directory and entrypoint discovery for Hyprland Keybind Studio."""
+"""Configuration directory and entrypoint discovery for HyprDeck."""
 
 from __future__ import annotations
 

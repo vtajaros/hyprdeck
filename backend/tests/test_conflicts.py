@@ -1,4 +1,4 @@
-"""Unit tests for Phase 2b-0 conflict detection in Hyprland Keybind Studio."""
+"""Unit tests for Phase 2b-0 conflict detection in HyprDeck."""
 
 from __future__ import annotations
 

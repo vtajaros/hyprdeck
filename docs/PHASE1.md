@@ -48,7 +48,7 @@ Validated by [`shared/schemas/bindings.schema.json`](../shared/schemas/bindings.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `schema_version` | `int` | Always `1`. |
-| `tool` | `object` | `{"name": "hyprland-keybind-studio", "version": "0.1.0"}`. |
+| `tool` | `object` | `{"name": "hyprdeck", "version": "0.1.0"}`. |
 | `generated_at` | `string` | ISO-8601 UTC timestamp (the only non-deterministic field). |
 | `environment` | `object` | `{config_dir, entrypoint, language, detected_by, shadowed[], hyprland_version, python}`. |
 | `files` | `array` | Loaded files with `{path, real_path, role, sha256, line_count}`. |

@@ -29,7 +29,7 @@ Singleton {
     property bool loadingBackups: false
 
     readonly property bool dryRunOnly: (Quickshell.env("HKS_EDIT_DRYRUN_ONLY") === "1") || !!Quickshell.env("HKS_FIXTURE")
-    readonly property string rootPath: Quickshell.env("HKS_ROOT") || "."
+    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || "."
 
     property var _pendingCallback: null
 

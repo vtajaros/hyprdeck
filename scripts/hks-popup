@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Hyprland Keybind Studio (HKS) - Popup Mode Launcher & Toggle
+# HyprDeck - Keybind Studio Popup Mode Launcher & Toggle
 # =============================================================================
 set -euo pipefail
 
@@ -40,6 +40,7 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 
 export HKS_ROOT="$REPO_ROOT"
+export HYPRDECK_ROOT="${HYPRDECK_ROOT:-$REPO_ROOT}"
 export HKS_MODE="popup"
 export QML_XHR_ALLOW_FILE_READ=1
 

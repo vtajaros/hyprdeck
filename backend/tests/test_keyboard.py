@@ -40,7 +40,7 @@ class FakeKeyboardRunner:
                 return LiveCmdResult(ok=False, rc=-1, out="", err="timed out", timed_out=True)
             if self.open_rc != 0:
                 return LiveCmdResult(ok=False, rc=self.open_rc, out="", err=self.open_err or "failed")
-            self.clients = [{"class": "org.quickshell", "title": "Hyprland Keybind Studio", "mapped": True}]
+            self.clients = [{"class": "org.quickshell", "title": "HyprDeck Keybind Studio", "mapped": True}]
             return LiveCmdResult(ok=True, rc=0, out="", err="")
         return LiveCmdResult(ok=False, rc=1, out="", err=f"Unexpected command: {argv!r}")
 
@@ -89,7 +89,7 @@ class TestKeyboardState(_KeyboardTestBase):
         import backend.settings.keyboard.state as kb_state
 
         runner = FakeKeyboardRunner(
-            clients=[{"class": "org.quickshell", "title": "Hyprland Keybind Studio", "mapped": True}],
+            clients=[{"class": "org.quickshell", "title": "HyprDeck Keybind Studio", "mapped": True}],
             pgrep_ok=True,
         )
         st = kb_state.get_keyboard_state(script_path=self.fake_script, runner=runner)
@@ -100,7 +100,7 @@ class TestKeyboardState(_KeyboardTestBase):
         import backend.settings.keyboard.state as kb_state
 
         runner = FakeKeyboardRunner(
-            clients=[{"class": "kitty", "title": "Hyprland Keybind Studio", "mapped": True}],
+            clients=[{"class": "kitty", "title": "HyprDeck Keybind Studio", "mapped": True}],
             pgrep_ok=False,
         )
         st = kb_state.get_keyboard_state(script_path=self.fake_script, runner=runner)
@@ -186,7 +186,7 @@ class TestKeyboardOpsAndCLI(_KeyboardTestBase):
         from backend.cli import main as cli_main
 
         runner = FakeKeyboardRunner(
-            clients=[{"class": "org.quickshell", "title": "Hyprland Keybind Studio", "mapped": True}],
+            clients=[{"class": "org.quickshell", "title": "HyprDeck Keybind Studio", "mapped": True}],
             pgrep_ok=True,
         )
         with mock.patch("backend.settings.keyboard.state.run_live_cmd", side_effect=lambda argv, **kw: runner(list(argv), timeout=kw.get("timeout", 5.0))):

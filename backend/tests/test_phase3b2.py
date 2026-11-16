@@ -1,4 +1,4 @@
-"""Unit tests for Hyprland Keybind Studio Phase 3b-2."""
+"""Unit tests for HyprDeck Phase 3b-2."""
 
 from __future__ import annotations
 

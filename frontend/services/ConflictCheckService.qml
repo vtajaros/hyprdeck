@@ -13,7 +13,7 @@ Singleton {
     property bool disabledHeld: false
     property var disabledBinds: []
 
-    readonly property string rootPath: Quickshell.env("HKS_ROOT") || "."
+    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || "."
 
     property var _pendingArgs: null
 

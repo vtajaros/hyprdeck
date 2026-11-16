@@ -1,4 +1,4 @@
-"""Safe configuration edit engine for Hyprland Keybind Studio (Phase 4a)."""
+"""Safe configuration edit engine for HyprDeck (Phase 4a)."""
 
 from __future__ import annotations
 

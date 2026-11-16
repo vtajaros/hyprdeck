@@ -6,7 +6,7 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property string rootPath: Quickshell.env("HKS_ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprland-keybind-studio")
+    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || (Quickshell.env("HOME") + "/Shared/Projects/hyprdeck")
     readonly property bool debugMode: Quickshell.env("HKS_SETTINGS_DEBUG") === "1"
 
     property bool available: false

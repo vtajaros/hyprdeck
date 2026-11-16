@@ -1,5 +1,5 @@
 -- =============================================================================
--- Hyprland Keybind Studio (HKS) - Sandboxed Lua 5.4 Bind Recorder
+-- HyprDeck - Sandboxed Lua 5.4 Bind Recorder
 -- Usage: lua5.4 recorder.lua <entry_abs_path> <config_dir_abs>
 -- =============================================================================
 

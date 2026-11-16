@@ -1,4 +1,4 @@
-"""Operations for launching/focusing the separate Hyprland Keybind Studio window."""
+"""Operations for launching/focusing the separate HyprDeck window."""
 
 from __future__ import annotations
 

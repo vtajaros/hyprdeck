@@ -1,4 +1,6 @@
-# Hyprland Keybind Studio (HKS)
+# HyprDeck
+
+*(Formerly Hyprland Keybind Studio / HKS — includes **HyprDeck Settings** and **HyprDeck Keybind Studio**.)*
 
 **Phases 1, 2a, 2b-0, 2b-1, 2b-2a, 3a, 4a & 3b**: Hyprland configuration discovery engine, dual-language keybinding parser (`hyprland.lua` & `hyprland.conf`), live `hyprctl` oracle verification, human description derivation, conflict detection, a desktop GUI built with Quickshell (QtQuick / QML), safe editing UI with preview-first modal verification and undo toast, interactive keybind recorder, dispatcher catalog, arbitrary additions, persistent sidecar synchronization, and automatic multi-file rollback.
 

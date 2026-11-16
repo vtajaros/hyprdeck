@@ -1,4 +1,4 @@
-"""Insertion policy and anchor management for Hyprland Keybind Studio (Phase 3b)."""
+"""Insertion policy and anchor management for HyprDeck (Phase 3b)."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Hyprland Keybind Studio (HKS) - Window Mode Launcher & Toggle
+# HyprDeck - Keybind Studio Window Mode Launcher & Toggle
 #
 #   hks-window            toggle (decided by whether the window is really mapped)
 #   hks-window --open     make sure the window is mapped; exit 0 only if it is
@@ -14,7 +14,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIR="$REPO_ROOT/frontend"
 
-HKS_WINDOW_TITLE="${HKS_WINDOW_TITLE:-Hyprland Keybind Studio}"
+HKS_WINDOW_TITLE="${HKS_WINDOW_TITLE:-HyprDeck Keybind Studio}"
 HKS_WINDOW_CLASS="${HKS_WINDOW_CLASS:-org.quickshell}"
 OPEN_WAIT_MS="${HKS_OPEN_WAIT_MS:-1500}"
 COLD_WAIT_MS="${HKS_COLD_WAIT_MS:-3000}"
@@ -97,6 +97,7 @@ start_instance() {
         return 1
     fi
     export HKS_ROOT="$REPO_ROOT"
+    export HYPRDECK_ROOT="${HYPRDECK_ROOT:-$REPO_ROOT}"
     export HKS_MODE="window"
     export HKS_KEEP_ALIVE="1"
     export QML_XHR_ALLOW_FILE_READ=1
@@ -110,7 +111,7 @@ start_instance() {
 }
 
 fail_open() {
-    echo "hks-window: Hyprland Keybind Studio window did not appear (see $LOG_FILE)." >&2
+    echo "hks-window: HyprDeck Keybind Studio window did not appear (see $LOG_FILE)." >&2
     exit 1
 }
 

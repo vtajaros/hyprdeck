@@ -14,7 +14,7 @@ from backend.core.live_cmd import (
     run_live_cmd,
 )
 
-HKS_WINDOW_TITLE = "Hyprland Keybind Studio"
+HKS_WINDOW_TITLE = "HyprDeck Keybind Studio"
 HKS_WINDOW_CLASS = "org.quickshell"
 
 

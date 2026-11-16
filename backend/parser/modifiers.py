@@ -1,4 +1,4 @@
-"""Modifier bitmask table and key classification for Hyprland Keybind Studio."""
+"""Modifier bitmask table and key classification for HyprDeck."""
 
 from __future__ import annotations
 

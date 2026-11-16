@@ -1,4 +1,4 @@
-"""Code generation and line rewriting engine for Hyprland Keybind Studio (Phase 3b)."""
+"""Code generation and line rewriting engine for HyprDeck (Phase 3b)."""
 
 from __future__ import annotations
 

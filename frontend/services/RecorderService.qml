@@ -13,7 +13,7 @@ Singleton {
     property string error: ""
     property string submap: "default"
 
-    readonly property string rootPath: Quickshell.env("HKS_ROOT") || "."
+    readonly property string rootPath: Quickshell.env("HYPRDECK_ROOT") || Quickshell.env("HKS_ROOT") || "."
 
     property var _pendingCallback: null
 
