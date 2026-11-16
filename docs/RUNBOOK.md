@@ -14,6 +14,7 @@ Run the consolidated automated test runner:
 - `[1/3]` Backend unit test suite: 148 tests pass in < 5 seconds with zero errors or failures.
 - `[2/3]` Frontend QML unit tests: 19 tests pass in offscreen `qmltestrunner` (< 200ms).
 - `[3/3]` Frontend QML lint: `qmllint` passes with 0 errors and 0 warnings across all 34 QML files.
+- `[4/4]` Headless scene-warning guard (`./scripts/hks-scene-check`): visits Display and all Input tabs under `HKS_SETTINGS_DEBUG=1` and asserts 0 scene warnings in `InputPage`, `DisplayPage`, or `SettingRow` (set `HKS_SKIP_SCENE=1` on headless/CI hosts without a compositor/Quickshell).
 - Exit code is `0`.
 
 ---

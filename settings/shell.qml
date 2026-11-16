@@ -360,6 +360,17 @@ ShellRoot {
             });
         }
 
+        function debugSetInputView(tabName: string, xkbExpanded: bool): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            var pg = winLoader.item ? winLoader.item.inputPageRef : null;
+            if (!pg) return JSON.stringify({ ok: false, error: "inputPage not loaded" });
+            if (tabName && String(tabName).length > 0) {
+                pg.activeTab = String(tabName);
+            }
+            pg.xkbExpanded = !!xkbExpanded;
+            return JSON.stringify({ ok: true, activeTab: pg.activeTab, xkbExpanded: pg.xkbExpanded });
+        }
+
         function debugState(): string {
             if (!root.debugEnabled) return root._debugDisabledJson();
             var optsMap = ({});

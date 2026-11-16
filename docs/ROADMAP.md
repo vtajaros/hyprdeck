@@ -2,8 +2,8 @@
 
 Next steps in priority order:
 
-1. **Cleanup**: fix remaining headless QML warnings (`InputPage.qml` ~309/520/615/752, `DisplayPage.qml` ~668: undefined-to-int, `"selected is not defined"`).
-2. **S12 full rename**: `hks-*` scripts to `hyprdeck-*`, `HKS_*` env vars to `HYPRDECK_*`, with the old names kept as shims; update the Bar/Hyprland exec lines in one dedicated step.
+1. [x] **Cleanup (S12)**: fix remaining headless QML warnings (`InputPage.qml` ~309/520/615/752, `DisplayPage.qml` ~668: undefined-to-int, `"selected is not defined"`), plus `./scripts/hks-scene-check` guard.
+2. **S13 full rename**: `hks-*` scripts to `hyprdeck-*`, `HKS_*` env vars to `HYPRDECK_*`, with the old names kept as shims; update the Bar/Hyprland exec lines in one dedicated step.
 3. **Single `Paths` singleton** for root resolution to replace the 13 duplicated `rootPath` lines.
 4. **Declutter pass** for the pages not yet done: Display, Input, Bluetooth, Power, using `SectionCard` and `Details` toggles for consistency.
 5. **Overview/Home page** for Settings with quick status tiles, plus a cross-page settings search.

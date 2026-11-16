@@ -309,7 +309,7 @@ Item {
                             Text {
                                 text: "Keyboard Layouts & Variants"
                                 font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeBody
+                                font.pixelSize: HKS.fontSize
                                 font.weight: Font.Medium
                                 color: HKS.fg
                             }
@@ -549,7 +549,7 @@ Item {
                                     Layout.alignment: Qt.AlignVCenter
                                     text: "Advanced: XKB options (" + root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "").length + " selected)"
                                     font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeBody
+                                    font.pixelSize: HKS.fontSize
                                     font.weight: Font.Medium
                                     color: HKS.fg
                                     elide: Text.ElideRight
@@ -717,7 +717,7 @@ Item {
                                 placeholderText: "Type here to test layout, repeat rate, and delay..."
                                 placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
                                 font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeBody
+                                font.pixelSize: HKS.fontSize
                                 color: HKS.fg
                                 verticalAlignment: TextInput.AlignVCenter
                                 selectByMouse: true
@@ -858,7 +858,7 @@ Item {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: modelData.name
                                         font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeBody
+                                        font.pixelSize: HKS.fontSize
                                         font.weight: Font.Medium
                                         color: HKS.fg
                                     }

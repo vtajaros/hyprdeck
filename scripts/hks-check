@@ -37,7 +37,7 @@ fi
 echo
 
 # 3. Frontend & Settings QML Lint
-echo "[3/3] Running qmllint on frontend and settings files..."
+echo "[3/4] Running qmllint on frontend and settings files..."
 if command -v qmllint >/dev/null 2>&1; then
     QML_FILES=($(find frontend settings -name "*.qml" | sort))
     echo "Found ${#QML_FILES[@]} QML files."
@@ -45,6 +45,17 @@ if command -v qmllint >/dev/null 2>&1; then
     echo "qmllint passed with 0 errors/warnings."
 else
     echo "qmllint not found; skipping QML static analysis."
+fi
+echo
+
+# 4. Headless Scene-Warning Regression Guard (optional via HKS_SKIP_SCENE=1)
+echo "[4/4] Running headless QML scene-warning check..."
+if [ "${HKS_SKIP_SCENE:-0}" = "1" ]; then
+    echo "HKS_SKIP_SCENE=1 set; skipping headless scene check."
+elif command -v quickshell >/dev/null 2>&1 && [ -x "$REPO_ROOT/scripts/hks-scene-check" ]; then
+    "$REPO_ROOT/scripts/hks-scene-check"
+else
+    echo "quickshell or scripts/hks-scene-check unavailable; skipping scene check."
 fi
 echo
 

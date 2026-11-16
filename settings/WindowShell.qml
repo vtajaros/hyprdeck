@@ -19,6 +19,7 @@ FloatingWindow {
     property bool reopening: false
     property bool unsavedPromptOpen: false
     property string currentPage: Quickshell.env("HKS_SETTINGS_PAGE") || "appearance"
+    property alias inputPageRef: inputPage
 
     onClosed: {
         if (win.reopening) {
@@ -444,6 +445,7 @@ FloatingWindow {
                 }
 
                 InputPage {
+                    id: inputPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "input"
                 }

@@ -652,20 +652,21 @@ Item {
                                             color: HKS.muted
                                         }
                                         Rectangle {
+                                            id: mirrorNoneChip
                                             readonly property bool selected: outputCard.effMirror === "" || outputCard.effMirror === "none"
                                             width: mirrorNoneTxt.implicitWidth + 14
                                             height: 26
                                             radius: HKS.radiusSmall
-                                            color: selected ? HKS.alpha(HKS.accent, 0.22) : HKS.elevated
+                                            color: mirrorNoneChip.selected ? HKS.alpha(HKS.accent, 0.22) : HKS.elevated
                                             border.width: 1
-                                            border.color: selected ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+                                            border.color: mirrorNoneChip.selected ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
                                             Text {
                                                 id: mirrorNoneTxt
                                                 anchors.centerIn: parent
                                                 text: "None"
                                                 font.family: HKS.fontFamily
                                                 font.pixelSize: HKS.fontSizeSmall
-                                                color: selected ? HKS.accent : HKS.fg
+                                                color: mirrorNoneChip.selected ? HKS.accent : HKS.fg
                                             }
                                             MouseArea {
                                                 anchors.fill: parent

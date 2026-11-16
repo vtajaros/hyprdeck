@@ -149,3 +149,13 @@
 | Update `rootPath` resolution (`HYPRDECK_ROOT` -> `HKS_ROOT` -> `$HOME/Shared/Projects/hyprdeck`) | `settings/services/*.qml`, `frontend/services/*.qml`, `scripts/ui-capture/capture.qml` | [x] Complete |
 | Set `__tool_name__ = "hyprdeck"` and `bindings.schema.json` `$id` (`hyprdeck.local`) | `backend/__init__.py`, `shared/schemas/bindings.schema.json`, `docs/PHASE1.md` | [x] Complete |
 | Update docs, handoff compatibility note, and roadmap | `README.md`, `HANDOFF.md`, `docs/HANDOFF.md`, `docs/RUNBOOK.md`, `docs/MILESTONES.md`, `docs/ROADMAP.md` | [x] Complete |
+
+---
+
+## Milestone S12 (Scene Warnings Cleanup & Guard)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Fix `ReferenceError: selected is not defined` on Mirror "None" chip | `settings/pages/DisplayPage.qml` | [x] Complete |
+| Fix `Unable to assign [undefined] to int` (`HKS.fontSizeBody` -> `HKS.fontSize`) | `settings/pages/InputPage.qml` | [x] Complete |
+| Add headless scene-warning regression guard & wire into `hks-check` | `scripts/hks-scene-check`, `scripts/hks-check`, `settings/WindowShell.qml`, `settings/shell.qml`, `docs/RUNBOOK.md` | [x] Complete |
