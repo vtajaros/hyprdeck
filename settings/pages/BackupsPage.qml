@@ -12,10 +12,6 @@ Item {
         id: logic
     }
 
-    ResponsiveLogic {
-        id: respLogic
-    }
-
     property string activeFilter: "All"
     property var selectedRecord: null
     property bool compactDetailOpen: false
@@ -514,7 +510,7 @@ Item {
         }
 
         Rectangle {
-            readonly property var modalDims: respLogic.clampDialogSize(520, 420, root.width, root.height)
+            readonly property var modalDims: ResponsiveLogic.clampDialogSize(520, 420, root.width, root.height)
             width: modalDims.width
             height: modalDims.height
             anchors.centerIn: parent
@@ -622,7 +618,7 @@ Item {
         }
 
         Rectangle {
-            readonly property var modalDims: respLogic.clampDialogSize(420, 210, root.width, root.height)
+            readonly property var modalDims: ResponsiveLogic.clampDialogSize(420, 210, root.width, root.height)
             width: modalDims.width
             height: modalDims.height
             anchors.centerIn: parent
