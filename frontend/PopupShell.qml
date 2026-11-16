@@ -148,10 +148,13 @@ Item {
                     Row {
                         anchors.left: parent.left
                         anchors.leftMargin: Deck.space16
+                        anchors.right: parent.right
+                        anchors.rightMargin: Deck.space16
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 10
 
                         Text {
+                            id: popIcon
                             anchors.verticalCenter: parent.verticalCenter
                             text: ""
                             font.family: Deck.fontFamily
@@ -160,7 +163,10 @@ Item {
                         }
 
                         Text {
+                            objectName: "elideOk"
                             anchors.verticalCenter: parent.verticalCenter
+                            width: Math.min(implicitWidth, Math.max(40, parent.width - popIcon.width - modeBadgeRect.width - 20))
+                            elide: Text.ElideRight
                             text: AppInfo.windowTitle
                             font.family: Deck.fontFamily
                             font.pixelSize: Deck.fontSize
@@ -169,6 +175,7 @@ Item {
                         }
 
                         Rectangle {
+                            id: modeBadgeRect
                             anchors.verticalCenter: parent.verticalCenter
                             width: modeBadge.implicitWidth + 8
                             height: 16
