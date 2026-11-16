@@ -611,11 +611,35 @@ def pair_device(
     if before_dev is None:
         return _fail(f"Unknown Bluetooth device: {norm_mac}", needs_manual=False)
 
-    pair_res = run_live_cmd(
-        ["bluetoothctl", "--timeout", str(capped_to), "--agent", "NoInputNoOutput", "pair", norm_mac],
-        timeout=float(capped_to + 5),
-        runner=runner,
-    )
+    orig_pairable = bool(before_state["controller"].get("pairable"))
+    pairable_restored: dict[str, Any] = {
+        "changed": False,
+        "ok": True,
+        "before": orig_pairable,
+        "after": orig_pairable,
+        "error": None,
+    }
+
+    try:
+        pair_res = run_live_cmd(
+            ["bluetoothctl", "--timeout", str(capped_to), "--agent", "NoInputNoOutput", "pair", norm_mac],
+            timeout=float(capped_to + 5),
+            runner=runner,
+        )
+    finally:
+        cur_state = get_bluetooth_state(runner=runner)
+        if cur_state.get("available") and cur_state.get("controller"):
+            cur_pairable = bool(cur_state["controller"].get("pairable"))
+            if cur_pairable != orig_pairable:
+                rst = set_pairable(orig_pairable, runner=runner)
+                pairable_restored = {
+                    "changed": True,
+                    "ok": bool(rst.get("ok")),
+                    "before": cur_pairable,
+                    "after": orig_pairable if rst.get("ok") else cur_pairable,
+                    "error": rst.get("error"),
+                }
+
     combined = f"{pair_res.out}\n{pair_res.err}".lower()
 
     after_state = get_bluetooth_state(runner=runner)
@@ -628,7 +652,13 @@ def pair_device(
             if needs_manual
             else (pair_res.err.strip() or pair_res.out.strip() or f"Pairing failed (rc={pair_res.rc})")
         )
-        return _fail(err_msg, before=before_dev, after=after_dev, needs_manual=needs_manual)
+        return _fail(
+            err_msg,
+            before=before_dev,
+            after=after_dev,
+            needs_manual=needs_manual,
+            pairable_restored=pairable_restored,
+        )
 
     if after_dev is None or not after_dev.get("paired"):
         return _fail(
@@ -636,5 +666,13 @@ def pair_device(
             before=before_dev,
             after=after_dev,
             needs_manual=False,
+            pairable_restored=pairable_restored,
         )
-    return {"ok": True, "before": before_dev, "after": after_dev, "needs_manual": False, "error": None}
+    return {
+        "ok": True,
+        "before": before_dev,
+        "after": after_dev,
+        "needs_manual": False,
+        "pairable_restored": pairable_restored,
+        "error": None,
+    }

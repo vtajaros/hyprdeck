@@ -354,6 +354,41 @@ class TestBluetoothOpsAndCLI(IsolatedTestCase):
         r_pair_pk = pair_device("AA:BB:CC:DD:EE:FF", runner=runner_pk)
         self.assertFalse(r_pair_pk["ok"])
         self.assertTrue(r_pair_pk["needs_manual"])
+        self.assertFalse(r_pair_pk["pairable_restored"]["changed"])
+        # Unchanged Pairable -> no Pairable write
+        self.assertFalse(any("Pairable" in c for c in runner_pk.calls))
+
+    def test_pair_restores_pairable_on_change_timeout_and_exception(self) -> None:
+        # 1. Pair flips Pairable to True -> finally restores it to False
+        runner = FakeBluezRunner()
+        orig_call = runner.__call__
+
+        def pair_flips_pairable(argv, timeout=5.0):
+            res = orig_call(argv, timeout=timeout)
+            if len(argv) >= 6 and argv[0] == "bluetoothctl" and argv[5] == "pair":
+                runner._objects()["/org/bluez/hci0"]["org.bluez.Adapter1"]["Pairable"]["data"] = True
+            return res
+
+        r_ok = pair_device("AA:BB:CC:DD:EE:FF", runner=pair_flips_pairable)
+        self.assertTrue(r_ok["ok"])
+        self.assertTrue(r_ok["pairable_restored"]["changed"])
+        self.assertTrue(r_ok["pairable_restored"]["ok"])
+        self.assertFalse(r_ok["pairable_restored"]["after"])
+        self.assertFalse(get_bluetooth_state(runner=runner)["controller"]["pairable"])
+
+        # 2. Pair raises exception after flipping Pairable -> finally still restores
+        runner2 = FakeBluezRunner()
+        orig_call2 = runner2.__call__
+
+        def pair_raises(argv, timeout=5.0):
+            if len(argv) >= 6 and argv[0] == "bluetoothctl" and argv[5] == "pair":
+                runner2._objects()["/org/bluez/hci0"]["org.bluez.Adapter1"]["Pairable"]["data"] = True
+                raise RuntimeError("bluetoothctl crashed")
+            return orig_call2(argv, timeout=timeout)
+
+        with self.assertRaises(RuntimeError):
+            pair_device("AA:BB:CC:DD:EE:FF", runner=pair_raises)
+        self.assertFalse(get_bluetooth_state(runner=runner2)["controller"]["pairable"])
 
     def test_cli_settings_bluetooth(self) -> None:
         from backend.cli import main as cli_main

@@ -3,3 +3,4 @@ DisplayPage 1.0 DisplayPage.qml
 InputPage 1.0 InputPage.qml
 AudioPage 1.0 AudioPage.qml
 BluetoothPage 1.0 BluetoothPage.qml
+NetworkPage 1.0 NetworkPage.qml

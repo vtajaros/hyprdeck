@@ -43,6 +43,7 @@ ShellRoot {
             DisplayService.reload();
             AudioService.reload(false);
             BluetoothService.reload(false);
+            NetworkService.reload(false);
         }
 
         function navigate(page: string) {
@@ -205,6 +206,65 @@ ShellRoot {
             return JSON.stringify({ ok: true, confirmOpen: BluetoothService.confirmOpen });
         }
 
+        function debugNetworkState(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            return JSON.stringify({
+                ok: true,
+                available: NetworkService.available,
+                general: NetworkService.general,
+                hasWifiDevice: NetworkService.hasWifiDevice,
+                devices: NetworkService.devices,
+                debugDevices: NetworkService.debugDevices,
+                connections: NetworkService.connections,
+                wifiNetworks: NetworkService.wifiNetworks,
+                safety: NetworkService.safety,
+                confirmOpen: NetworkService.confirmOpen,
+                confirmTitle: NetworkService.confirmTitle,
+                confirmMessage: NetworkService.confirmMessage,
+                loading: NetworkService.loading,
+                busy: NetworkService.busy,
+                error: NetworkService.error,
+                statusMessage: NetworkService.statusMessage
+            });
+        }
+
+        function debugNetworkRequestDisconnect(deviceName: string): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            var target = null;
+            var devs = NetworkService.devices || [];
+            for (var i = 0; i < devs.length; i++) {
+                if (devs[i] && devs[i].name === String(deviceName)) {
+                    target = devs[i];
+                    break;
+                }
+            }
+            if (!target) {
+                return JSON.stringify({ ok: false, error: "Unknown device: " + String(deviceName) });
+            }
+            if (!target.would_cut_current_session) {
+                return JSON.stringify({
+                    ok: true,
+                    confirmOpen: false,
+                    wouldCutSession: false,
+                    device: target.name
+                });
+            }
+            NetworkService.requestDisconnect(target);
+            return JSON.stringify({
+                ok: true,
+                confirmOpen: NetworkService.confirmOpen,
+                confirmTitle: NetworkService.confirmTitle,
+                confirmMessage: NetworkService.confirmMessage,
+                wouldCutSession: true
+            });
+        }
+
+        function debugNetworkCancelConfirm(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            NetworkService.cancelPending();
+            return JSON.stringify({ ok: true, confirmOpen: NetworkService.confirmOpen });
+        }
+
         function debugState(): string {
             if (!root.debugEnabled) return root._debugDisabledJson();
             var optsMap = ({});
@@ -281,6 +341,20 @@ ShellRoot {
                     loading: BluetoothService.loading,
                     error: BluetoothService.error,
                     statusMessage: BluetoothService.statusMessage
+                },
+                network: {
+                    available: NetworkService.available,
+                    general: NetworkService.general,
+                    hasWifiDevice: NetworkService.hasWifiDevice,
+                    devices: NetworkService.devices,
+                    connections: NetworkService.connections,
+                    wifiNetworks: NetworkService.wifiNetworks,
+                    safety: NetworkService.safety,
+                    confirmOpen: NetworkService.confirmOpen,
+                    busy: NetworkService.busy,
+                    loading: NetworkService.loading,
+                    error: NetworkService.error,
+                    statusMessage: NetworkService.statusMessage
                 }
             });
         }

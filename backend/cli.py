@@ -851,6 +851,64 @@ def build_arg_parser() -> argparse.ArgumentParser:
     bt_scan.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
     bt_scan.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
+    # settings network subcommand
+    st_net = st_sub.add_parser("network", help="Live NetworkManager status, Wi-Fi, and connection operations.")
+    net_sub = st_net.add_subparsers(dest="network_action", required=True)
+
+    net_state = net_sub.add_parser("state", help="Read NetworkManager general, device, connection, and Wi-Fi state.")
+    net_state.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    net_state.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    net_wifi = net_sub.add_parser("wifi", help="Enable or disable Wi-Fi radio.")
+    net_wifi.add_argument("state", choices=("on", "off"), help="Target state: on or off.")
+    net_wifi.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    net_wifi.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    net_rescan = net_sub.add_parser("rescan", help="Trigger Wi-Fi scan.")
+    net_rescan.add_argument("--timeout", dest="timeout", type=float, default=10.0, help="Per-command timeout seconds.")
+    net_rescan.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    net_conn = net_sub.add_parser("connect", help="Activate a saved connection by UUID.")
+    net_conn.add_argument("uuid", help="Connection UUID.")
+    net_conn.add_argument("--timeout", dest="timeout", type=float, default=15.0, help="Activation timeout seconds.")
+    net_conn.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    net_disc = net_sub.add_parser("disconnect", help="Disconnect a network device.")
+    net_disc.add_argument("device", help="Device interface name.")
+    net_disc.add_argument("--confirm", dest="confirm", action="store_true", default=False, help="Confirm cutting active session.")
+    net_disc.add_argument("--timeout", dest="timeout", type=float, default=10.0, help="Per-command timeout seconds.")
+    net_disc.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    net_join = net_sub.add_parser("join", help="Connect to a Wi-Fi SSID (password read from stdin only, never argv).")
+    net_join.add_argument("ssid", help="Target Wi-Fi SSID.")
+    net_join.add_argument("--security", dest="security", default="", help="Security hint (e.g. wpa, wep, open).")
+    net_join.add_argument("--timeout", dest="timeout", type=float, default=15.0, help="Activation timeout seconds.")
+    net_join.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    net_forget = net_sub.add_parser("forget", help="Delete a saved connection profile by UUID.")
+    net_forget.add_argument("uuid", help="Connection UUID.")
+    net_forget.add_argument("--confirm", dest="confirm", action="store_true", default=False, help="Confirm cutting active session.")
+    net_forget.add_argument("--timeout", dest="timeout", type=float, default=10.0, help="Per-command timeout seconds.")
+    net_forget.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    net_auto = net_sub.add_parser("autoconnect", help="Set connection autoconnect on or off.")
+    net_auto.add_argument("uuid", help="Connection UUID.")
+    net_auto.add_argument("state", choices=("on", "off"), help="Target state: on or off.")
+    net_auto.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    net_auto.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    net_met = net_sub.add_parser("metered", help="Set connection metered state.")
+    net_met.add_argument("uuid", help="Connection UUID.")
+    net_met.add_argument("value", choices=("yes", "no", "unknown"), help="Metered value.")
+    net_met.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    net_met.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    net_dns = net_sub.add_parser("dns", help="Set connection IPv4 DNS servers or 'auto'.")
+    net_dns.add_argument("uuid", help="Connection UUID.")
+    net_dns.add_argument("servers", help="Comma-separated IPv4/IPv6 addresses or 'auto'.")
+    net_dns.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    net_dns.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
     return parser
 
 
@@ -2646,6 +2704,65 @@ def _handle_settings_bluetooth(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 1
 
 
+def _handle_settings_network(args: argparse.Namespace) -> int:
+    from backend.settings.network.ops import (
+        connect_new_wifi,
+        connect_saved,
+        disconnect,
+        forget,
+        rescan,
+        set_autoconnect,
+        set_ipv4_dns,
+        set_metered,
+        set_wifi_enabled,
+    )
+    from backend.settings.network.state import get_network_state
+
+    n_action = args.network_action
+    timeout = getattr(args, "timeout", 5.0)
+
+    if n_action == "state":
+        st = get_network_state(timeout=timeout)
+        sys.stdout.write(json.dumps(st, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    if n_action == "wifi":
+        res = set_wifi_enabled(args.state == "on", timeout=timeout)
+    elif n_action == "rescan":
+        res = rescan(timeout=timeout)
+    elif n_action == "connect":
+        res = connect_saved(args.uuid, wait_timeout=timeout)
+    elif n_action == "disconnect":
+        res = disconnect(args.device, confirm=args.confirm, timeout=timeout)
+    elif n_action == "join":
+        pw: str | None = None
+        if not sys.stdin.isatty():
+            line = sys.stdin.readline().rstrip("\r\n")
+            if line:
+                pw = line
+        res = connect_new_wifi(
+            args.ssid,
+            security=args.security,
+            password=pw,
+            wait_timeout=timeout,
+        )
+    elif n_action == "forget":
+        res = forget(args.uuid, confirm=args.confirm, timeout=timeout)
+    elif n_action == "autoconnect":
+        res = set_autoconnect(args.uuid, args.state == "on", timeout=timeout)
+    elif n_action == "metered":
+        res = set_metered(args.uuid, args.value, timeout=timeout)
+    elif n_action == "dns":
+        res = set_ipv4_dns(args.uuid, args.servers, timeout=timeout)
+    else:
+        res = {"ok": False, "error": f"Unknown network action: {n_action}"}
+
+    sys.stdout.write(json.dumps(res, indent=2) + "\n")
+    sys.stdout.flush()
+    return 0 if res.get("ok") else 1
+
+
 def _handle_settings(args: argparse.Namespace) -> int:
     from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
     from backend.editor.backups import compute_file_sha256
@@ -2661,6 +2778,9 @@ def _handle_settings(args: argparse.Namespace) -> int:
 
     if action == "bluetooth":
         return _handle_settings_bluetooth(args)
+
+    if action == "network":
+        return _handle_settings_network(args)
 
     if action == "display":
         return _handle_settings_display(args, cfg_dir, reload_override, debug_bdir)

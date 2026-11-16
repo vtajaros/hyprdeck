@@ -74,6 +74,9 @@ FloatingWindow {
         if (!BluetoothService.loading && !BluetoothService.busy) {
             BluetoothService.reload(true);
         }
+        if (!NetworkService.loading && !NetworkService.busy) {
+            NetworkService.reload(true);
+        }
     }
 
     function _performClose() {
@@ -116,7 +119,7 @@ FloatingWindow {
         id: closeGuard
         recorderActive: false
         editDialogOpen: false
-        dialogOpen: win.unsavedPromptOpen || DisplayService.countdownActive || InputService.countdownActive || BluetoothService.confirmOpen
+        dialogOpen: win.unsavedPromptOpen || DisplayService.countdownActive || InputService.countdownActive || BluetoothService.confirmOpen || NetworkService.confirmOpen
         focusItem: rootSurface.Window.activeFocusItem
     }
 
@@ -126,6 +129,7 @@ FloatingWindow {
         InputService.reload();
         AudioService.reload(false);
         BluetoothService.reload(false);
+        NetworkService.reload(false);
     }
 
     Binding {
@@ -140,8 +144,13 @@ FloatingWindow {
         value: win.visible && win.currentPage === "bluetooth"
     }
 
+    Binding {
+        target: NetworkService
+        property: "pollingEnabled"
+        value: win.visible && win.currentPage === "network"
+    }
+
     readonly property var placeholderPages: [
-        { id: "network", icon: "󰖩", title: "Network", summary: "Wi-Fi networks, Ethernet links, and DNS status." },
         { id: "power", icon: "󰁹", title: "Power", summary: "Idle timeouts, sleep behavior, and battery profiles." },
         { id: "sysinfo", icon: "󰋼", title: "System info", summary: "OS, kernel, Hyprland version, and hardware overview." }
     ]
@@ -342,6 +351,18 @@ FloatingWindow {
                             }
                         }
 
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰖩"
+                            text: "Network"
+                            active: win.currentPage === "network" && globalSearch.text.trim().length === 0
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.currentPage = "network";
+                                NetworkService.reload(false);
+                            }
+                        }
+
                         Rectangle {
                             width: parent.width
                             height: 1
@@ -395,6 +416,11 @@ FloatingWindow {
                 BluetoothPage {
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "bluetooth"
+                }
+
+                NetworkPage {
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "network"
                 }
 
                 PlaceholderPage {

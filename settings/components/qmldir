@@ -3,5 +3,6 @@ DisplayControlLogic 1.0 DisplayControlLogic.qml
 InputControlLogic 1.0 InputControlLogic.qml
 AudioControlLogic 1.0 AudioControlLogic.qml
 BluetoothControlLogic 1.0 BluetoothControlLogic.qml
+NetworkControlLogic 1.0 NetworkControlLogic.qml
 SettingRow 1.0 SettingRow.qml
 PlaceholderPage 1.0 PlaceholderPage.qml

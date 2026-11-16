@@ -1,0 +1,48 @@
+{
+  "general_dual": "connected:full:enabled:enabled:missing:enabled:enabled\n",
+  "general_wifi_only": "connected:full:enabled:enabled:missing:enabled:enabled\n",
+  "general_wifi_disabled": "connected:full:enabled:disabled:missing:enabled:enabled\n",
+  "devices_dual": [
+    "enp62s0:ethernet:connected:Wired connection 1:373f29e9-13ec-310b-a026-e07187e48386",
+    "wlp0s20f3:wifi:connected:EWAKWI-FI_5G:1b7f5db6-4c36-4232-b6f5-dc75b8970cc6",
+    "lo:loopback:connected (externally):lo:d84e6b6e-875e-4178-b49c-43f8628f1e35",
+    "p2p-dev-wlp0s20f3:wifi-p2p:disconnected::"
+  ],
+  "device_show_dual": [
+    "GENERAL.DEVICE:enp62s0",
+    "GENERAL.TYPE:ethernet",
+    "GENERAL.STATE:100 (connected)",
+    "GENERAL.HWADDR:00\\:11\\:22\\:33\\:44\\:55",
+    "GENERAL.MTU:1500",
+    "GENERAL.CONNECTION:Wired connection 1",
+    "GENERAL.CON-UUID:373f29e9-13ec-310b-a026-e07187e48386",
+    "IP4.ADDRESS[1]:192.168.1.2/24",
+    "IP4.GATEWAY:192.168.1.1",
+    "IP4.DNS[1]:8.8.8.8",
+    "",
+    "GENERAL.DEVICE:wlp0s20f3",
+    "GENERAL.TYPE:wifi",
+    "GENERAL.STATE:100 (connected)",
+    "GENERAL.HWADDR:88\\:F4\\:DA\\:1B\\:CB\\:41",
+    "GENERAL.MTU:1500",
+    "GENERAL.CONNECTION:EWAKWI-FI_5G",
+    "GENERAL.CON-UUID:1b7f5db6-4c36-4232-b6f5-dc75b8970cc6",
+    "IP4.ADDRESS[1]:192.168.1.3/24",
+    "IP4.GATEWAY:192.168.1.1",
+    "IP4.DNS[1]:8.8.8.8"
+  ],
+  "connections_dual": [
+    "373f29e9-13ec-310b-a026-e07187e48386:Wired connection 1:802-3-ethernet:yes:enp62s0:yes",
+    "1b7f5db6-4c36-4232-b6f5-dc75b8970cc6:EWAKWI-FI_5G:802-11-wireless:yes:wlp0s20f3:yes",
+    "d84e6b6e-875e-4178-b49c-43f8628f1e35:lo:loopback:yes:lo:yes",
+    "eb23a063-94aa-4482-8a9b-d9fb8e3bfe34:GalaxyEyes:802-11-wireless:yes::no"
+  ],
+  "wifi_list_sample": [
+    "EWAKWI-FI_5G:54:WPA1 WPA2:*",
+    "EWAKWI-FI_5G:32:WPA2: ",
+    "My\\:Home\\\\Net 5G:75:WPA2: ",
+    "GalaxyEyes:40:WPA2: ",
+    ":60:WPA2: ",
+    "--:45:WPA2: "
+  ]
+}

@@ -60,6 +60,10 @@ TestCase {
         id: btLogic
     }
 
+    NetworkControlLogic {
+        id: netLogic
+    }
+
     function test_close_guard_blocks_when_prompt_open() {
         guard.dialogOpen = false;
         verify(guard.closeAllowed);
@@ -203,5 +207,23 @@ TestCase {
         verify(btLogic.needsConfirm("remove", devs[1], safety));
         compare(btLogic.rssiLabel(-58), "-58 dBm");
         compare(btLogic.rssiLabel(null), "");
+    }
+
+    function test_network_connectivity_and_destructive_confirm() {
+        compare(netLogic.connectivityLabel("full"), "Online");
+        compare(netLogic.connectivityLabel("none"), "Offline");
+        var safetyCut = { wifi_off_would_cut_session: true };
+        verify(netLogic.needsConfirm("wifi_off", null, safetyCut));
+        verify(netLogic.destructiveConsequence("wifi_off", null, safetyCut).indexOf("only active connection") >= 0);
+
+        var devCut = { name: "wlp0s20f3", would_cut_current_session: true };
+        var devSafe = { name: "enp62s0", would_cut_current_session: false };
+        verify(netLogic.needsConfirm("disconnect", devCut, {}));
+        verify(!netLogic.needsConfirm("disconnect", devSafe, {}));
+
+        var connCut = { name: "EWAKWI-FI_5G", would_cut_current_session: true };
+        verify(netLogic.destructiveConsequence("forget", connCut, {}).indexOf("only active connection") >= 0);
+        compare(netLogic.wifiStateBanner(false, true, {}), "NetworkManager is unavailable.");
+        compare(netLogic.wifiStateBanner(true, false, {}), "No Wi-Fi device found.");
     }
 }

@@ -379,7 +379,7 @@ def install_suite_isolation_guard() -> None:
     def guarded_run_live_cmd(argv, *, timeout=live_cmd_mod.DEFAULT_LIVE_CMD_TIMEOUT_SECONDS, runner=None, env=None):
         if runner is None and not isinstance(argv, (str, bytes)):
             items = list(argv)
-            if items and items[0] in ("pactl", "wpctl", "busctl", "bluetoothctl", "rfkill"):
+            if items and items[0] in ("pactl", "wpctl", "busctl", "bluetoothctl", "rfkill", "nmcli"):
                 raise AssertionError(
                     f"Test isolation violation: real {items[0]!r} called in tests without mock runner"
                 )
