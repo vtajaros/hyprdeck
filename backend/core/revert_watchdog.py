@@ -1,4 +1,4 @@
-"""Detached OS-level confirm-or-revert watchdog for HKS managed changes.
+"""Detached OS-level confirm-or-revert watchdog for HyprDeck managed changes.
 
 This is the primitive the future Display page uses for its 15-second
 confirm-or-revert safety net. Runs in its own session (`start_new_session=True`)
@@ -144,7 +144,7 @@ def run_revert_watchdog(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="hks-revert-watchdog")
+    parser = argparse.ArgumentParser(prog="hyprdeck-revert-watchdog")
     parser.add_argument("--plan", required=True)
     parser.add_argument("--timeout", type=float, default=15.0)
     parser.add_argument("--watch-pid", type=int, default=0)

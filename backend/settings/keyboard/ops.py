@@ -20,7 +20,7 @@ def open_hks(
     env: Mapping[str, str] | None = None,
     timeout: float = OPEN_HKS_TIMEOUT_SECONDS,
 ) -> dict[str, Any]:
-    """Launch or focus Keybind Studio via ``hks-window --open`` (never toggle)."""
+    """Launch or focus Keybind Studio via ``hyprdeck-window --open`` (never toggle)."""
     paths = resolve_keyboard_paths(script_path=script_path, env=env)
     target_script = paths["script_path"]
     if not check_script_available(target_script):
@@ -34,7 +34,7 @@ def open_hks(
     if res.timed_out:
         return {
             "ok": False,
-            "error": "HKS window did not appear",
+            "error": "Keybind Studio window did not appear",
             "window_open_after": False,
         }
     if not res.ok:

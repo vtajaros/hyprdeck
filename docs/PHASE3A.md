@@ -1,3 +1,5 @@
+> Historical document written under the name HKS.
+
 # Hyprland Keybind Studio (HKS) — Phase 3a: Editing UI & Services
 
 ## 1. Overview

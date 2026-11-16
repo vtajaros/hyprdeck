@@ -171,3 +171,15 @@
 | Adaptive window shell (`full`/`narrow`/`rail` sidebar, overlay search, min size) & `SettingRow` stacking | `settings/WindowShell.qml`, `settings/components/SettingRow.qml` | [x] Complete |
 | Retrofit all 10 Settings pages for `360px`..`3400px` widths & 2-col wide `OptionsPage` | `settings/pages/*.qml` | [x] Complete |
 | Headless 10-size x 18-view layout audit (`0` violations) & offscreen PNG/contact-sheet generator | `scripts/hks-layout-check`, `scripts/ui-capture/capture_layout_matrix.py`, `scripts/hks-check` (`[6/6]`) | [x] Complete |
+
+---
+
+## Milestone S16 (Complete HyprDeck Rename & Compatibility Shims)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Theme singleton rename `HKS` -> `Deck` across QML + token guard | `frontend/theme/Deck.qml`, `frontend/theme/qmldir`, `scripts/hyprdeck-token-check` | [x] Complete |
+| `HYPRDECK_* > HKS_* > default` env resolution helpers & wrapper exports | `backend/core/env.py`, `scripts/lib-hyprdeck-env.sh`, `Deck.env()` | [x] Complete |
+| Rename `scripts/hks-*` -> `scripts/hyprdeck-*` with silent shims + tests | `scripts/hyprdeck-*`, `scripts/hks-*`, `backend/tests/test_hyprdeck_window.py` | [x] Complete |
+| Canonical `~/.config/hyprdeck` & `~/.local/share/hyprdeck` + `migrate-data` CLI | `backend/core/data_migration.py`, `backend/cli.py`, `backend/tests/test_data_migration.py` | [x] Complete |
+| Legacy inventory, brand guard (`[7/7]`), and live-switch preparation | `docs/LEGACY_NAMES.md`, `scripts/hyprdeck-brand-check`, `scripts/hyprdeck-check` | [x] Complete |

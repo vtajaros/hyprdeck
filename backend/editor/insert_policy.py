@@ -65,7 +65,7 @@ def plan_insert_bind(
     submap: str | None = None,
     prefer_mainmod: bool = False,
 ) -> tuple[EditOp, InsertPlan]:
-    """Plan insertion of a new keybinding into `file_path` according to HKS anchor policy."""
+    """Plan insertion of a new keybinding into `file_path` according to HyprDeck anchor policy."""
     abs_path = os.path.abspath(os.path.expanduser(file_path))
     if not os.path.isfile(abs_path):
         raise FileNotFoundError(f"Configuration file not found: {abs_path}")
@@ -160,8 +160,8 @@ def plan_insert_bind(
                 break
 
         if anchor_idx != -1:
-            # Anchor exists: find the last HKS-managed line in this block.
-            # Continue downwards while lines are HKS-managed binds or comments.
+            # Anchor exists: find the last HyprDeck-managed line in this block.
+            # Continue downwards while lines are HyprDeck-managed binds or comments.
             last_block_idx = anchor_idx
             for scan_idx in range(anchor_idx + 1, len(lines)):
                 l_strip = lines[scan_idx].strip()

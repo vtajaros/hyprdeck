@@ -1,7 +1,7 @@
 """Detached OS-level watchdog for Hyprland recorder submap safety (Milestone 3b-8).
 
 Runs in its own session (`setsid` / `start_new_session=True`) so it survives
-crashes or `SIGKILL` of the HKS UI or backend process. Resets the recorder
+crashes or `SIGKILL` of the HyprDeck UI or backend process. Resets the recorder
 submap once when either the hard timeout expires or the watched parent PID
 disappears, whichever comes first.
 """
@@ -79,13 +79,13 @@ def run_watchdog(
 
     res = leave(language=language)
     if not res.get("ok"):
-        _log_failure(f"hks watchdog: failed to reset submap '{submap_name}': {res.get('message')}")
+        _log_failure(f"hyprdeck watchdog: failed to reset submap '{submap_name}': {res.get('message')}")
         return 1
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="hks-recorder-watchdog")
+    parser = argparse.ArgumentParser(prog="hyprdeck-recorder-watchdog")
     parser.add_argument("--submap", default=HYPRDECK_RECORD_SUBMAP)
     parser.add_argument("--language", default="lua")
     parser.add_argument("--timeout", type=float, default=20.0)

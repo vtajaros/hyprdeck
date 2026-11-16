@@ -889,7 +889,7 @@ class TestPhase3b10ExecQuotingAndResizeDescribe(IsolatedTestCase):
                 with tempfile.TemporaryDirectory() as td:
                     cfg_dir = os.path.join(td, "hypr")
                     bak_dir = os.path.join(td, "backups")
-                    sc_path = os.path.join(td, "hks", "descriptions.json")
+                    sc_path = os.path.join(td, "hyprdeck", "descriptions.json")
                     os.makedirs(cfg_dir, exist_ok=True)
                     cfg_path = os.path.join(cfg_dir, "hyprland.lua")
                     with open(cfg_path, "w", encoding="utf-8") as f:
@@ -931,7 +931,7 @@ class TestPhase3b10ExecQuotingAndResizeDescribe(IsolatedTestCase):
                 with tempfile.TemporaryDirectory() as td:
                     cfg_dir = os.path.join(td, "hypr")
                     bak_dir = os.path.join(td, "backups")
-                    sc_path = os.path.join(td, "hks", "descriptions.json")
+                    sc_path = os.path.join(td, "hyprdeck", "descriptions.json")
                     os.makedirs(cfg_dir, exist_ok=True)
                     cfg_path = os.path.join(cfg_dir, "hyprland.lua")
                     with open(cfg_path, "w", encoding="utf-8") as f:
@@ -981,7 +981,7 @@ class TestPhase3b10ExecQuotingAndResizeDescribe(IsolatedTestCase):
         with tempfile.TemporaryDirectory() as td:
             cfg_dir = os.path.join(td, "hypr")
             bak_dir = os.path.join(td, "backups")
-            sc_path = os.path.join(td, "hks", "descriptions.json")
+            sc_path = os.path.join(td, "hyprdeck", "descriptions.json")
             os.makedirs(cfg_dir, exist_ok=True)
             hl_cfg = os.path.join(cfg_dir, "hyprland.conf")
             with open(hl_cfg, "w", encoding="utf-8") as f:
@@ -1014,7 +1014,7 @@ class TestPhase3b10ExecQuotingAndResizeDescribe(IsolatedTestCase):
         with tempfile.TemporaryDirectory() as td:
             cfg_dir = os.path.join(td, "hypr")
             bak_dir = os.path.join(td, "backups")
-            sc_path = os.path.join(td, "hks", "descriptions.json")
+            sc_path = os.path.join(td, "hyprdeck", "descriptions.json")
             os.makedirs(cfg_dir, exist_ok=True)
             cfg_path = os.path.join(cfg_dir, "hyprland.lua")
             orig_dsp = "hl.dsp.exec_cmd('sh -c \"echo hi\"')"

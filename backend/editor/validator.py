@@ -1,4 +1,4 @@
-"""Configuration candidate verification via Hyprland --verify-config and the HKS recorder."""
+"""Configuration candidate verification via Hyprland --verify-config and the HyprDeck recorder."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ NOISE_SUBSTRINGS = (
 
 
 class RecorderVerificationError(Exception):
-    """Raised when the HKS recorder/parser fails to cleanly parse a candidate config."""
+    """Raised when the HyprDeck recorder/parser fails to cleanly parse a candidate config."""
 
     def __init__(
         self,
@@ -342,7 +342,7 @@ def verify_with_recorder(
     *,
     env: dict[str, str] | None = None,
 ) -> list[BindRecord]:
-    """Run the HKS recorder/parser on `candidate_path` and return the parsed BindRecords.
+    """Run the HyprDeck recorder/parser on `candidate_path` and return the parsed BindRecords.
 
     Raises RecorderVerificationError if parsing is incomplete or produces error diagnostics.
     """
@@ -415,7 +415,7 @@ def stage_candidate_config(
     abs_entrypoint = os.path.abspath(os.path.expanduser(entrypoint))
     abs_target = os.path.abspath(os.path.expanduser(target_file))
 
-    with tempfile.TemporaryDirectory(prefix="hks-stage-") as tmp_dir:
+    with tempfile.TemporaryDirectory(prefix="hyprdeck-stage-") as tmp_dir:
         if os.path.isdir(abs_config_dir):
             _copy_config_tree(abs_config_dir, tmp_dir)
 

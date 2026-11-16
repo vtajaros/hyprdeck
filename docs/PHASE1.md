@@ -1,3 +1,5 @@
+> Historical document written under the name HKS.
+
 # Hyprland Keybind Studio (HKS) — Phase 1 Architecture & Reference
 
 ## 1. Overview

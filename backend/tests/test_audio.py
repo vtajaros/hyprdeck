@@ -202,7 +202,7 @@ class TestAudioStateParsing(IsolatedTestCase):
         self.assertFalse(stream["mute"])
 
     def test_classify_other_kind_and_empty_lists(self) -> None:
-        self.assertEqual(classify_device_kind("hks-test", "Null Output", {}), "other")
+        self.assertEqual(classify_device_kind("hyprdeck-test", "Null Output", {}), "other")
         self.assertEqual(parse_channel_volumes({}), (0, 0))
         empty_runner = FakePactlRunner(
             {"default_sink": "", "default_source": "", "sinks": [], "sources": [], "sink_inputs": []}

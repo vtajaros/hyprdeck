@@ -1,6 +1,6 @@
 import QtQuick
 
-// Pure decision logic for the HKS window close [X] button and the app-wide
+// Pure decision logic for the Keybind Studio window close [X] button and the app-wide
 // Escape shortcut. Kept free of Quickshell/Singleton imports so it is unit
 // testable headlessly.
 //

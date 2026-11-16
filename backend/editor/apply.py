@@ -687,7 +687,7 @@ def resolve_insert_op(
     all_files: list[str] | None = None,
     prefer_mainmod: bool = False,
 ) -> tuple[EditOp, InsertPlan, BindRecord]:
-    """Construct an EditOp for inserting a new keybinding per HKS insertion policy.
+    """Construct an EditOp for inserting a new keybinding per HyprDeck insertion policy.
 
     Returns (EditOp, InsertPlan, expected_new_bind).
     """

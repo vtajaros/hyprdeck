@@ -1,4 +1,4 @@
-"""Pure functions for managing the HKS overrides include block in hyprland.lua."""
+"""Pure functions for managing the HyprDeck overrides include block in hyprland.lua."""
 
 from __future__ import annotations
 
@@ -55,16 +55,16 @@ def _locate_markers(text: str) -> tuple[int, int] | None:
     if not begin_matches and not end_matches:
         return None
     if len(begin_matches) > 1:
-        raise IncludeBlockError("Duplicate HKS include BEGIN marker found")
+        raise IncludeBlockError("Duplicate HyprDeck include BEGIN marker found")
     if len(end_matches) > 1:
-        raise IncludeBlockError("Duplicate HKS include END marker found")
+        raise IncludeBlockError("Duplicate HyprDeck include END marker found")
     if len(begin_matches) != len(end_matches):
-        raise IncludeBlockError("Unpaired HKS include marker (missing BEGIN or END)")
+        raise IncludeBlockError("Unpaired HyprDeck include marker (missing BEGIN or END)")
 
     begin_start, _ = begin_matches[0]
     end_start, end_finish = end_matches[0]
     if end_start < begin_start:
-        raise IncludeBlockError("Malformed HKS include markers (END appears before BEGIN)")
+        raise IncludeBlockError("Malformed HyprDeck include markers (END appears before BEGIN)")
 
     return begin_start, end_finish
 

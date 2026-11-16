@@ -1,8 +1,8 @@
 .pragma library
 
-// Qt Key to Hyprland Key & Modifier Translation Library for HKS
+// Qt Key to Hyprland Key & Modifier Translation Library for HyprDeck
 
-// Modifiers bitmask constants matching Hyprland / HKS
+// Modifiers bitmask constants matching Hyprland / HyprDeck
 var MOD_SHIFT = 1;
 var MOD_CTRL  = 4;
 var MOD_ALT   = 8;

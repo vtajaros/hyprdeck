@@ -1,4 +1,4 @@
-# HyprDeck (formerly Hyprland Keybind Studio / HKS) — Engineering Handoff
+# HyprDeck — Engineering Handoff
 
 **Project Root**: `/home/delata/Shared/Projects/hyprdeck`  
 **Current Date**: November 8, 2026  
@@ -12,7 +12,7 @@
 
 ## 1. Executive Summary & Mission
 
-**HyprDeck** (formerly Hyprland Keybind Studio / HKS) is a standalone, lightweight, native desktop application and CLI tool suite built for the Hyprland Wayland compositor on Arch Linux. Its purpose is to discover, parse, categorize, detect conflicts in, and safely edit user keybindings, alongside a unified System Settings center.
+**HyprDeck** is a standalone, lightweight, native desktop application and CLI tool suite built for the Hyprland Wayland compositor on Arch Linux. Its purpose is to discover, parse, categorize, detect conflicts in, and safely edit user keybindings, alongside a unified System Settings center.
 
 ### Key Architectural Invariants
 1. **Zero External Python Dependencies**: Built entirely on the Python 3.14 standard library (`subprocess`, `dataclasses`, `json`, `difflib`, `resource`, `argparse`, `unittest`, `fcntl`, `hashlib`). Zero pip packages required.
@@ -23,7 +23,7 @@
    - Modifications (`disable`, `enable`, `delete`, `replace`, `add`, `restore`) operate via line-oriented edit plans.
    - 3-Layer Verification before disk writes: syntax validation -> sandbox recorder check -> bind set diff.
    - Pre-edit atomic backups saved to `~/.local/share/hks/backups/`.
-   - If `hyprctl reload` fails after an edit, HKS automatically rolls back to the immediate backup.
+   - If `hyprctl reload` fails after an edit, HyprDeck automatically rolls back to the immediate backup.
 4. **Native Desktop UI (Quickshell / QML)**:
    - Built on **Quickshell 0.3.2** (QtQuick / QML) using Qt Quick Controls Basic style.
    - Dual runtime shells: Full desktop application (`WindowShell.qml`) and instant layershell HUD overlay (`PopupShell.qml`).
@@ -120,7 +120,7 @@ hyprdeck/
 │   ├── WindowShell.qml                 # Desktop window application
 │   ├── PopupShell.qml                  # Layershell HUD overlay
 │   ├── theme/
-│   │   ├── HKS.qml                     # Theme singleton & color tokens
+│   │   ├── Deck.qml                    # Theme singleton & color tokens
 │   │   └── qmldir
 │   ├── components/
 │   │   ├── ActionButton.qml            # Styled push button
@@ -159,10 +159,10 @@ hyprdeck/
 │       ├── tst_components.qml          # QtTest headless component verification
 │       └── tst_keymap.qml              # QtTest keymap translation test
 └── scripts/
-    ├── hks-check                       # Verification runner (tests + qmllint)
-    ├── hks-popup                       # Layershell popup toggle launcher
-    ├── hks-recorder-test               # Standalone recorder harness launcher
-    └── hks-window                      # Desktop window toggle launcher
+    ├── hyprdeck-check                  # Verification runner (tests + guards)
+    ├── hyprdeck-popup                  # Layershell popup toggle launcher
+    ├── hyprdeck-recorder-test          # Standalone recorder harness launcher
+    └── hyprdeck-window                 # Desktop window toggle launcher
 ```
 
 ---
@@ -172,7 +172,7 @@ hyprdeck/
 - **Unit Tests**: 148 backend tests passing (`Ran 148 tests in 4.840s`, OK).
 - **QML Component Tests**: 19 tests passing in `qmltestrunner` (11 keymap tests + 8 headless UI component tests).
 - **QML Lint**: 0 errors, 0 warnings across all 34 files.
-- **Oracle Agreement**: Exactly 123 active binds in running Hyprland match parsed output. 3 binds are disabled via HKS comments (`-- HKS-DISABLED:`), reconciling $126 - 3 = 123$.
+- **Oracle Agreement**: Exactly 123 active binds in running Hyprland match parsed output. 3 binds are disabled via disabled-bind comments (`-- HKS-disabled:`), reconciling $126 - 3 = 123$.
 - **Git State**: Clean branch `main`, zero uncommitted tags or release commits.
 
 ---

@@ -1,3 +1,5 @@
+> Historical document written under the name HKS.
+
 # Hyprland Keybind Studio (HKS) — Phase 2b-0: Conflict Detection
 
 ## 1. Overview

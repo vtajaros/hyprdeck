@@ -50,10 +50,10 @@ def check_script_available(script_path: str) -> bool:
 
 
 def parse_hyprctl_clients_for_hks(raw: str) -> bool | None:
-    """Parse ``hyprctl clients -j`` output and report whether HKS window is mapped.
+    """Parse ``hyprctl clients -j`` output and report whether Keybind Studio window is mapped.
 
     Returns ``True`` if mapped, ``False`` if JSON parsed cleanly without a mapped
-    HKS window, or ``None`` if *raw* cannot be parsed as a JSON client list.
+    Keybind Studio window, or ``None`` if *raw* cannot be parsed as a JSON client list.
     """
     if not raw or not raw.strip():
         return None
@@ -81,7 +81,7 @@ def probe_hks_window_open(
     runner: LiveRunner | None = None,
     timeout: float = DEFAULT_LIVE_CMD_TIMEOUT_SECONDS,
 ) -> bool | None:
-    """Query Hyprland clients to check whether the HKS window is currently mapped."""
+    """Query Hyprland clients to check whether the Keybind Studio window is currently mapped."""
     res = run_live_cmd(["hyprctl", "clients", "-j"], timeout=timeout, runner=runner)
     if not res.ok:
         return None
@@ -94,7 +94,7 @@ def probe_hks_running(
     runner: LiveRunner | None = None,
     timeout: float = DEFAULT_LIVE_CMD_TIMEOUT_SECONDS,
 ) -> bool:
-    """Return True if the crash-isolated HKS Quickshell process is running."""
+    """Return True if the crash-isolated Keybind Studio Quickshell process is running."""
     res = run_live_cmd(
         ["pgrep", "-f", f"[q]uickshell -p {frontend_dir}"],
         timeout=timeout,

@@ -49,7 +49,7 @@ def resolve_debug_companion_dir(config_dir: str, leaf: str) -> str:
     """Return an isolated temp-dir companion path outside both $HOME and `config_dir`."""
     abs_cfg = os.path.abspath(os.path.expanduser(config_dir))
     digest = hashlib.sha256(abs_cfg.encode("utf-8")).hexdigest()[:12]
-    return os.path.abspath(os.path.join(tempfile.gettempdir(), f"hks-debug-{digest}", leaf))
+    return os.path.abspath(os.path.join(tempfile.gettempdir(), f"hyprdeck-debug-{digest}", leaf))
 
 
 def resolve_state_dir(
@@ -78,7 +78,7 @@ def _write_private_bytes(path: str, data: bytes) -> None:
     abs_path = os.path.abspath(os.path.expanduser(path))
     parent = os.path.dirname(abs_path)
     os.makedirs(parent, exist_ok=True)
-    fd, tmp_path = tempfile.mkstemp(prefix=".hks-guard-", dir=parent)
+    fd, tmp_path = tempfile.mkstemp(prefix=".hyprdeck-guard-", dir=parent)
     try:
         os.chmod(tmp_path, 0o600)
         with os.fdopen(fd, "wb") as f:

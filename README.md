@@ -1,6 +1,6 @@
 # HyprDeck
 
-*(Formerly Hyprland Keybind Studio / HKS — includes **HyprDeck Settings** and **HyprDeck Keybind Studio**.)*
+*Unified Hyprland control center — includes **HyprDeck Settings** and **HyprDeck Keybind Studio**.*
 
 **Phases 1, 2a, 2b-0, 2b-1, 2b-2a, 3a, 4a & 3b**: Hyprland configuration discovery engine, dual-language keybinding parser (`hyprland.lua` & `hyprland.conf`), live `hyprctl` oracle verification, human description derivation, conflict detection, a desktop GUI built with Quickshell (QtQuick / QML), safe editing UI with preview-first modal verification and undo toast, interactive keybind recorder, dispatcher catalog, arbitrary additions, persistent sidecar synchronization, and automatic multi-file rollback.
 
@@ -16,16 +16,19 @@
 ### Graphical Client (Quickshell)
 
 ```bash
-# 1. Launch floating desktop window (sidebar, search, category chips, settings)
-./scripts/hks-window
+# 1. Launch floating Keybind Studio window
+./scripts/hyprdeck-window
 
-# 2. Launch instant Wayland layershell popup HUD (centered card with backdrop scrim)
-./scripts/hks-popup
+# 2. Launch HyprDeck Settings window
+./scripts/hyprdeck-settings
+
+# 3. Launch instant Wayland layershell popup HUD (centered card with backdrop scrim)
+./scripts/hyprdeck-popup
 
 # Note: Running either script while the app is active will toggle it closed gracefully via IPC.
 
-# 3. Run verification check (all backend tests + qmllint on frontend QML)
-./scripts/hks-check
+# 4. Run full verification check (backend + QML tests + qmllint + guards)
+./scripts/hyprdeck-check
 ```
 
 ### Command Line Interface
@@ -48,7 +51,7 @@ python3 -m backend.cli sidecar-template
 python3 -m backend.cli sidecar-template --all
 
 # 6. Scan or summarize with an explicit sidecar file (or disable sidecar loading)
-python3 -m backend.cli scan --sidecar ~/.config/hks/descriptions.json
+python3 -m backend.cli scan --sidecar ~/.config/hyprdeck/descriptions.json
 python3 -m backend.cli summary --no-sidecar
 
 # 7. Safely modify, add, disable, delete keybindings, or restore backups
@@ -74,7 +77,7 @@ python3 -m backend.cli recorder leave
 python3 -m backend.cli recorder heal
 
 # 10. Run the test suite and verification check
-./scripts/hks-check
+./scripts/hyprdeck-check
 ```
 
 ## Documentation

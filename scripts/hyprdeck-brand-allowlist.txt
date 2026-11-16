@@ -1,0 +1,31 @@
+# Allowlist for scripts/hyprdeck-brand-check
+# Format: <category> | <path_glob> | <regex>
+historical_docs       | docs/PHASE*.md                          | HKS|hks|Hyprland Keybind Studio
+legacy_names_doc      | docs/LEGACY_NAMES.md                    | HKS|hks|Hyprland Keybind Studio
+milestones_history    | docs/MILESTONES.md                      | HKS|hks|Hyprland Keybind Studio
+roadmap_history       | docs/ROADMAP.md                         | HKS|hks|Hyprland Keybind Studio
+handoff_legacy_notes  | HANDOFF.md                              | HKS-disabled|HKS: custom binds|hks-overrides\.lua|HKS_\*|scripts/hks-\*|HKS_ROOT|HKS\.qml|Managed by Hyprland Keybind Studio
+handoff_legacy_notes  | docs/HANDOFF.md                         | HKS-disabled|HKS: custom binds|hks-overrides\.lua|HKS_\*|scripts/hks-\*|HKS_ROOT|HKS\.qml|Managed by Hyprland Keybind Studio
+runbook_legacy_notes  | docs/RUNBOOK.md                         | HKS: custom binds|hks_record|hks-window|hks-overrides|legacy `HKS` / `Hyprland Keybind Studio`
+brand_guard_self      | scripts/hyprdeck-brand-check            | HKS|hks|Hyprland Keybind Studio
+brand_guard_self      | scripts/hyprdeck-brand-allowlist.txt    | HKS|hks|Hyprland Keybind Studio
+
+# Intentional on-disk legacy format markers & overrides file
+legacy_markers        | *                                       | hks-overrides\.lua|HKS-OVERRIDES-(?:BEGIN|END)|HKS-SECTION(?:-(?:BEGIN|END))?|HKS:\s*custom binds|HKS-[Dd]isabled|HKS-DISABLED|Managed by Hyprland Keybind Studio|--\s*HKS|#\s*HKS
+
+# Privileged helper (kept until packaging/polkit milestone)
+power_helper          | *                                       | hks-power-helper
+
+# Compatibility script shims & shim tests
+script_shims          | scripts/hks-*                           | HKS|hks|Hyprland Keybind Studio
+script_shims          | backend/tests/*                         | hks-(?:window|settings|popup|check|scene-check|layout-check|token-check|recorder-test)|hkswtest_|f"hks-\{suffix\}"
+script_shims          | scripts/hyprdeck-scene-check            | hks-scene-check
+
+# Environment variable fallbacks (HYPRDECK_* > HKS_*)
+env_fallbacks         | *                                       | HKS_[A-Z0-9_]+|HYPRDECK_/\s*HKS_|\bHKS_\*
+
+# Legacy data directory fallbacks (~/.config/hks, ~/.local/share/hks)
+data_dir_fallbacks    | *                                       | (?:\.config|\.local/share|/hks)/hks\b|LEGACY_STATE_DIR_NAME\s*=\s*"hks"|"\.(?:config|local)",\s*(?:"share",\s*)?"hks"|/hks"|hks/descriptions\.json|hks directories|hks/revert-guard|\(hks -> hyprdeck\)|legacy hks/
+
+# Runtime IPC target, Wayland layer namespace, recorder submap, logger/temp prefixes
+ipc_or_submap         | *                                       | \bhks_record\b|call hks\b|popups toggle hks\b|(?:ipcTarget|target):\s*"hks"|"hks-popup"|hks\.(?:recorder|revert)|hks_test_iso_|hks_sandbox_cwd_|__HKS_INSTRUCTION_LIMIT__|definitely_missing_hks_sidecar|hks-tmp-

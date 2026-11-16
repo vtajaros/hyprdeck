@@ -7,7 +7,7 @@ import "../components"
 FloatingWindow {
     id: win
 
-    title: "HKS Keybind Recorder Harness"
+    title: "HyprDeck Keybind Recorder Harness"
     implicitWidth: 640
     implicitHeight: 480
     color: Deck.bg
@@ -37,7 +37,7 @@ FloatingWindow {
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: "HKS Recorder Test Harness"
+                    text: "HyprDeck Recorder Test Harness"
                     font.family: Deck.fontFamily
                     font.pixelSize: Deck.fontSizeLarge
                     font.weight: Font.Bold

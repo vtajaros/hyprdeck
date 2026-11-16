@@ -189,7 +189,7 @@ class TestPhase3b3Part1InsertionEdgeCases(unittest.TestCase):
                 path, "lua", ["SUPER"], "Return", "exec_cmd", "kitty"
             )
             self.assertFalse(plan.anchor_created)
-            # Must target the last line of the HKS block (line 7: -- HKS-disabled: ...)
+            # Must target the last line of the HyprDeck block (line 7: -- HKS-disabled: ...)
             self.assertEqual(plan.line_number, 7)
             self.assertEqual(
                 op.new_text,
@@ -337,7 +337,9 @@ class TestPhase3b3Part2CLIAndDryRun(IsolatedTestCase):
             with open(conf_path, "w", encoding="utf-8") as f:
                 f.write('hl.bind("SUPER + Q", hl.dsp.window.close())\n')
 
+            os.environ["HYPRDECK_BACKUP_DIR"] = self.backup_dir
             os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+            os.environ["HYPRDECK_SIDECAR_PATH"] = self.sidecar_path
             os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
             try:
@@ -369,7 +371,9 @@ class TestPhase3b3Part2CLIAndDryRun(IsolatedTestCase):
                 self.assertEqual(out["has_conflicts"], False)
                 self.assertEqual(out["conflicts"], [])
             finally:
+                os.environ["HYPRDECK_BACKUP_DIR"] = self.backup_dir
                 os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+                os.environ["HYPRDECK_SIDECAR_PATH"] = self.sidecar_path
                 os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
     def test_cli_add_conflict_duplicate_guard(self) -> None:
@@ -378,7 +382,9 @@ class TestPhase3b3Part2CLIAndDryRun(IsolatedTestCase):
             with open(conf_path, "w", encoding="utf-8") as f:
                 f.write('hl.bind("SUPER + Q", hl.dsp.window.close())\n')
 
+            os.environ["HYPRDECK_BACKUP_DIR"] = self.backup_dir
             os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+            os.environ["HYPRDECK_SIDECAR_PATH"] = self.sidecar_path
             os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
             try:
@@ -425,7 +431,9 @@ class TestPhase3b3Part2CLIAndDryRun(IsolatedTestCase):
                 self.assertFalse(out2["applied"])
                 self.assertIn("conflict", out2["errors"][0].lower())
             finally:
+                os.environ["HYPRDECK_BACKUP_DIR"] = self.backup_dir
                 os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+                os.environ["HYPRDECK_SIDECAR_PATH"] = self.sidecar_path
                 os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
     def test_cli_add_apply_3layer_and_second_add(self) -> None:
@@ -434,7 +442,9 @@ class TestPhase3b3Part2CLIAndDryRun(IsolatedTestCase):
             with open(conf_path, "w", encoding="utf-8") as f:
                 f.write('hl.bind("SUPER + Q", hl.dsp.window.close())\n')
 
+            os.environ["HYPRDECK_BACKUP_DIR"] = self.backup_dir
             os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+            os.environ["HYPRDECK_SIDECAR_PATH"] = self.sidecar_path
             os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
             try:
@@ -491,7 +501,9 @@ class TestPhase3b3Part2CLIAndDryRun(IsolatedTestCase):
                 self.assertIn('hl.bind("SUPER + Return", hl.dsp.exec_cmd("kitty"))', c2)
                 self.assertIn('hl.bind("SUPER + B", hl.dsp.exec_cmd("firefox"))', c2)
             finally:
+                os.environ["HYPRDECK_BACKUP_DIR"] = self.backup_dir
                 os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+                os.environ["HYPRDECK_SIDECAR_PATH"] = self.sidecar_path
                 os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
 

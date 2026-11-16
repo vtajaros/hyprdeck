@@ -1,4 +1,4 @@
-"""Sandbox security, resource limit, and error-recovery tests for HKS Lua recorder."""
+"""Sandbox security, resource limit, and error-recovery tests for HyprDeck Lua recorder."""
 
 from __future__ import annotations
 

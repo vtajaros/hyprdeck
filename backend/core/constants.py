@@ -1,4 +1,4 @@
-"""Single source of truth for HKS app-owned names, markers, and state paths."""
+"""Single source of truth for HyprDeck app-owned names, markers, and state paths."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ SECTION_BEGIN_PREFIX = "-- HKS-SECTION-BEGIN: "
 SECTION_END_PREFIX = "-- HKS-SECTION-END: "
 
 OVERRIDES_HEADER = (
-    "-- Managed by Hyprland Keybind Studio. "
+    "-- Managed by HyprDeck. "
     "Content inside HKS-SECTION markers may be updated automatically.\n"
 )
 

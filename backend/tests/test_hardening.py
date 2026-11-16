@@ -101,12 +101,19 @@ class TestHardeningUndoCompleteness(unittest.TestCase):
         with open(self.entrypoint, "w", encoding="utf-8") as f:
             f.write(self.initial_lua)
 
+        self._prev_env = {k: os.environ.get(k) for k in ("HYPRDECK_BACKUP_DIR", "HKS_BACKUP_DIR", "HYPRDECK_SIDECAR_PATH", "HKS_SIDECAR_PATH", "HKS_SIDECAR")}
+        os.environ["HYPRDECK_BACKUP_DIR"] = self.backup_dir
         os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+        os.environ["HYPRDECK_SIDECAR_PATH"] = self.sidecar_path
+        os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
         os.environ["HKS_SIDECAR"] = self.sidecar_path
 
     def tearDown(self) -> None:
-        os.environ.pop("HKS_BACKUP_DIR", None)
-        os.environ.pop("HKS_SIDECAR", None)
+        for k, v in self._prev_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
         shutil.rmtree(self.root_temp, ignore_errors=True)
 
     def test_2a_replace_migration_and_restore(self) -> None:
@@ -306,12 +313,19 @@ class TestHardeningStructuredWarnings(unittest.TestCase):
         with open(self.entrypoint, "w", encoding="utf-8") as f:
             f.write(self.initial_lua)
 
+        self._prev_env = {k: os.environ.get(k) for k in ("HYPRDECK_BACKUP_DIR", "HKS_BACKUP_DIR", "HYPRDECK_SIDECAR_PATH", "HKS_SIDECAR_PATH", "HKS_SIDECAR")}
+        os.environ["HYPRDECK_BACKUP_DIR"] = self.backup_dir
         os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+        os.environ["HYPRDECK_SIDECAR_PATH"] = self.sidecar_path
+        os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
         os.environ["HKS_SIDECAR"] = self.sidecar_path
 
     def tearDown(self) -> None:
-        os.environ.pop("HKS_BACKUP_DIR", None)
-        os.environ.pop("HKS_SIDECAR", None)
+        for k, v in self._prev_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
         shutil.rmtree(self.root_temp, ignore_errors=True)
 
     def test_sidecar_warning_collision_code(self) -> None:

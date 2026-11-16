@@ -1,4 +1,4 @@
-"""Skeleton sanity test for HKS."""
+"""Skeleton sanity test for HyprDeck."""
 
 from __future__ import annotations
 

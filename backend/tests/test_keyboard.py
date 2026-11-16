@@ -163,7 +163,7 @@ class TestKeyboardOpsAndCLI(_KeyboardTestBase):
         runner.open_timed_out = True
         res = kb_ops.open_hks(script_path=self.fake_script, runner=runner)
         self.assertFalse(res["ok"])
-        self.assertEqual(res["error"], "HKS window did not appear")
+        self.assertEqual(res["error"], "Keybind Studio window did not appear")
 
     def test_open_hks_runner_never_gets_shell_or_string_argv(self) -> None:
         import backend.settings.keyboard.ops as kb_ops

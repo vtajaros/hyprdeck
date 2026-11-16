@@ -450,7 +450,7 @@ Item {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "hyprland.conf is not modified by HKS"
+                    text: "hyprland.conf is not modified by HyprDeck"
                     font.family: Deck.fontFamily
                     font.pixelSize: 10
                     color: Deck.muted

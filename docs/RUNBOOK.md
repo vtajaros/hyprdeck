@@ -1,6 +1,6 @@
-# HyprDeck (formerly Hyprland Keybind Studio / HKS) — Manual Verification Runbook
+# HyprDeck — Manual Verification Runbook
 
-This runbook provides step-by-step procedures to verify the full HKS system manually, covering automated suites, backend CLI workflows, interactive recorder submaps, and the graphical desktop interface.
+This runbook provides step-by-step procedures to verify HyprDeck manually, covering automated suites, backend CLI workflows, interactive recorder submaps, and the graphical desktop interface.
 
 ---
 
@@ -8,15 +8,16 @@ This runbook provides step-by-step procedures to verify the full HKS system manu
 
 Run the consolidated automated test runner:
 ```bash
-./scripts/hks-check
+./scripts/hyprdeck-check
 ```
 **Expected Results**:
-- `[1/6]` Backend unit test suite: 367 tests pass with zero errors or failures.
-- `[2/6]` Frontend & Settings QML unit tests: 38 frontend + 29 settings tests pass in offscreen `qmltestrunner`.
-- `[3/6]` QML static analysis: `qmllint` passes with 0 errors and 0 warnings across all 79 QML files.
-- `[4/6]` HKS theme token guard (`./scripts/hks-token-check`): verifies every `HKS.<token>` used in `frontend/` and `settings/` QML is defined in `frontend/theme/HKS.qml`.
-- `[5/6]` Headless scene-warning guard (`./scripts/hks-scene-check`): visits Display and all Input tabs under `HKS_SETTINGS_DEBUG=1` and asserts 0 scene warnings in `InputPage`, `DisplayPage`, or `SettingRow` (set `HKS_SKIP_SCENE=1` on headless/CI hosts without Quickshell).
-- `[6/6]` Headless responsive layout guard (`./scripts/hks-layout-check`): audits Settings across 10 window sizes (`3400x1380` down to `455x1130`) x 18 page/tab/expanded views under `QT_QPA_PLATFORM=offscreen` and asserts 0 layout violations or binding loops (pass `HKS_LAYOUT_QUICK=1` for the 5-size subset, `HKS_SKIP_LAYOUT=1` to skip in `hks-check`, or `--screenshots` to also render PNGs and ImageMagick contact sheets via `python3 scripts/ui-capture/capture_layout_matrix.py` into `build/layout-shots/`).
+- `[1/7]` Backend unit test suite: 373+ tests pass with zero errors or failures.
+- `[2/7]` Frontend & Settings QML unit tests: 38 frontend + 29 settings tests pass in offscreen `qmltestrunner`.
+- `[3/7]` QML static analysis: `qmllint` passes with 0 errors and 0 warnings across all 79 QML files.
+- `[4/7]` HyprDeck theme token guard (`./scripts/hyprdeck-token-check`): verifies every `Deck.<token>` used in `frontend/` and `settings/` QML is defined in `frontend/theme/Deck.qml`.
+- `[5/7]` Headless scene-warning guard (`./scripts/hyprdeck-scene-check`): visits Display and all Input tabs under `HYPRDECK_SETTINGS_DEBUG=1` and asserts 0 scene warnings in `InputPage`, `DisplayPage`, or `SettingRow` (set `HYPRDECK_SKIP_SCENE=1` on headless/CI hosts without Quickshell).
+- `[6/7]` Headless responsive layout guard (`./scripts/hyprdeck-layout-check`): audits Settings across 10 window sizes (`3400x1380` down to `455x1130`) x 18 page/tab/expanded views under `QT_QPA_PLATFORM=offscreen` and asserts 0 layout violations or binding loops (pass `HYPRDECK_LAYOUT_QUICK=1` for the 5-size subset, `HYPRDECK_SKIP_LAYOUT=1` to skip in `hyprdeck-check`, or `--screenshots` to also render PNGs and ImageMagick contact sheets via `python3 scripts/ui-capture/capture_layout_matrix.py` into `build/layout-shots/`).
+- `[7/7]` Brand guard (`./scripts/hyprdeck-brand-check`): ensures no un-allowlisted legacy `HKS` / `Hyprland Keybind Studio` identifiers were reintroduced.
 - Exit code is `0`.
 
 ---
@@ -27,7 +28,7 @@ Run these checks in a temporary sandbox directory to verify editing, sidecar syn
 
 ```bash
 # Set up sandbox
-SANDBOX=$(mktemp -d /tmp/hks-sandbox-XXXXXX)
+SANDBOX=$(mktemp -d /tmp/hyprdeck-sandbox-XXXXXX)
 mkdir -p "$SANDBOX/config" "$SANDBOX/backups"
 cat << 'EOF' > "$SANDBOX/config/hyprland.lua"
 local mainMod = "SUPER"
@@ -35,8 +36,8 @@ hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("kitty"))
 hl.bind(mainMod .. " + Q",      hl.dsp.window.close())
 EOF
 
-export HKS_BACKUP_DIR="$SANDBOX/backups"
-export HKS_SIDECAR="$SANDBOX/config/descriptions.json"
+export HYPRDECK_BACKUP_DIR="$SANDBOX/backups"
+export HYPRDECK_SIDECAR="$SANDBOX/config/descriptions.json"
 CFG="$SANDBOX/config/hyprland.lua"
 ```
 
@@ -90,7 +91,7 @@ grep "SUPER + Q" "$CFG"
 ### Clean up sandbox:
 ```bash
 rm -rf "$SANDBOX"
-unset HKS_BACKUP_DIR HKS_SIDECAR
+unset HYPRDECK_BACKUP_DIR HYPRDECK_SIDECAR
 ```
 
 ---
@@ -129,7 +130,7 @@ hyprctl dispatch 'hl.dsp.submap("reset")'
 
 ### Test 4.1: Launch Desktop Window
 ```bash
-./scripts/hks-window
+./scripts/hyprdeck-window
 ```
 **Verify Visual Elements**:
 1. Floating window opens centered with rounded corners and Matugen theme colors.

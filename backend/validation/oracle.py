@@ -1,4 +1,4 @@
-"""Oracle comparison between HKS parsed binds and live `hyprctl binds -j` data."""
+"""Oracle comparison between HyprDeck parsed binds and live `hyprctl binds -j` data."""
 
 from __future__ import annotations
 
@@ -135,7 +135,7 @@ def format_oracle_stderr_summary(report: OracleReport) -> str:
     """Format a concise human-readable summary of the oracle comparison for stderr."""
     status = "MATCH" if report.matched else "MISMATCH"
     lines = [
-        f"[HKS Oracle] Status: {status} "
+        f"[HyprDeck Oracle] Status: {status} "
         f"(parser={report.parser_count}, live={report.live_count}, "
         f"count_match={report.count_match}, order_match={report.order_match})"
     ]

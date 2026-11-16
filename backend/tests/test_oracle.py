@@ -132,7 +132,7 @@ class TestOracleAndCLI(unittest.TestCase):
                 rc_err = main(["scan", "--config-dir", empty_dir, "--no-live"])
             self.assertEqual(rc_err, 2)
             self.assertNotIn("Traceback", err_clean.getvalue())
-            self.assertIn("hks: error:", err_clean.getvalue())
+            self.assertIn("hyprdeck: error:", err_clean.getvalue())
 
 
 if __name__ == "__main__":

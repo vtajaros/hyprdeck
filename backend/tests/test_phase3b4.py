@@ -34,12 +34,19 @@ class TestPhase3b4SidecarStore(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.sidecar_path = os.path.join(self.temp_dir, "descriptions.json")
         self.backup_dir = os.path.join(self.temp_dir, "backups")
+        self._prev_env = {k: os.environ.get(k) for k in ("HYPRDECK_BACKUP_DIR", "HKS_BACKUP_DIR", "HYPRDECK_SIDECAR_PATH", "HKS_SIDECAR_PATH", "HKS_SIDECAR")}
+        os.environ["HYPRDECK_BACKUP_DIR"] = self.backup_dir
         os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+        os.environ["HYPRDECK_SIDECAR_PATH"] = self.sidecar_path
+        os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
         os.environ["HKS_SIDECAR"] = self.sidecar_path
 
     def tearDown(self) -> None:
-        os.environ.pop("HKS_BACKUP_DIR", None)
-        os.environ.pop("HKS_SIDECAR", None)
+        for k, v in self._prev_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_sidecar_roundtrip_save_and_get(self) -> None:
@@ -243,11 +250,15 @@ class TestPhase3b4UndoAndCLI(unittest.TestCase):
         self.config_dir = os.path.join(self.temp_dir, "hypr")
         os.makedirs(self.config_dir, exist_ok=True)
         self.entrypoint = os.path.join(self.config_dir, "hyprland.lua")
-        self.hks_dir = os.path.join(self.temp_dir, "hks")
+        self.hks_dir = os.path.join(self.temp_dir, "hyprdeck")
         os.makedirs(self.hks_dir, exist_ok=True)
         self.sidecar_path = os.path.join(self.hks_dir, "descriptions.json")
         self.backup_dir = os.path.join(self.temp_dir, "backups")
+        self._prev_env = {k: os.environ.get(k) for k in ("HYPRDECK_BACKUP_DIR", "HKS_BACKUP_DIR", "HYPRDECK_SIDECAR_PATH", "HKS_SIDECAR_PATH", "HKS_SIDECAR")}
+        os.environ["HYPRDECK_BACKUP_DIR"] = self.backup_dir
         os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+        os.environ["HYPRDECK_SIDECAR_PATH"] = self.sidecar_path
+        os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
         os.environ["HKS_SIDECAR"] = self.sidecar_path
 
         with open(self.entrypoint, "w", encoding="utf-8") as f:
@@ -258,8 +269,11 @@ class TestPhase3b4UndoAndCLI(unittest.TestCase):
             )
 
     def tearDown(self) -> None:
-        os.environ.pop("HKS_BACKUP_DIR", None)
-        os.environ.pop("HKS_SIDECAR", None)
+        for k, v in self._prev_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_replace_with_migration_and_undo(self) -> None:

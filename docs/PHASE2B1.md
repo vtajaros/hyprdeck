@@ -1,3 +1,5 @@
+> Historical document written under the name HKS.
+
 # Phase 2b-1: Quickshell UI Foundation (Read-Only Desktop Client)
 
 Phase 2b-1 introduces a read-only desktop graphical interface for Hyprland Keybind Studio (HKS) built with **Quickshell 0.3.2** (QtQuick / QML) and Qt Quick Controls Basic style.

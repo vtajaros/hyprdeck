@@ -1,7 +1,7 @@
 """Shell-level tests for scripts/hks-window using fake `hyprctl` and `quickshell`.
 
 No compositor is required. The script under test is copied into a throwaway
-fake repo (so its derived FRONTEND_DIR never matches a real HKS instance) and
+fake repo (so its derived FRONTEND_DIR never matches a real Keybind Studio instance) and
 fake executables are placed first on PATH. Nothing here touches ~/.config,
 the sidecar store or real backup paths.
 """
@@ -170,7 +170,7 @@ class HksWindowScriptTests(unittest.TestCase):
         r = self.run_script("--open")
         if r.returncode == 0:
             self.assertTrue(self._mapped_in_file(),
-                            "exit 0 but no HKS window is mapped")
+                            "exit 0 but no Keybind Studio window is mapped")
 
     def test_wedged_daemon_open_recovers_by_restart(self) -> None:
         self.start_daemon()

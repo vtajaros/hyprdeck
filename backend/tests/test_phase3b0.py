@@ -277,7 +277,7 @@ class TestInsertPolicy(unittest.TestCase):
             )
             self.assertFalse(plan.anchor_created)
             self.assertEqual(op.kind, "insert_after")
-            self.assertEqual(op.line_number, 4)  # after last HKS bind line
+            self.assertEqual(op.line_number, 4)  # after last HyprDeck bind line
             res = apply_ops_to_text(content, [op])
             self.assertIn('hl.bind("SUPER + SHIFT + E", hl.dsp.exit())', res)
             # Make sure anchor was NOT duplicated

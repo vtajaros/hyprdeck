@@ -51,7 +51,7 @@ def is_under_path(candidate: str, root: str) -> bool:
 
 
 def assert_path_isolated(path: str, label: str = "path") -> None:
-    """Fail if `path` resolves under $HOME or any of the real Hypr/HKS directories."""
+    """Fail if `path` resolves under $HOME or any of the real Hypr/HyprDeck directories."""
     real = os.path.realpath(os.path.abspath(os.path.expanduser(path)))
     for forbidden in FORBIDDEN_REAL_PATHS:
         if is_under_path(real, forbidden):
@@ -141,7 +141,7 @@ class IsolatedTestCase(unittest.TestCase):
         self._orig_xdg = {k: os.environ.get(k) for k in _XDG_ENV_VARS}
         self._orig_extra = {k: os.environ.get(k) for k in _CLEARED_ENV_VARS}
         self.backup_dir = os.path.join(self._isolated_root, "backups")
-        self.sidecar_path = os.path.join(self._isolated_root, "hks", "descriptions.json")
+        self.sidecar_path = os.path.join(self._isolated_root, "hyprdeck", "descriptions.json")
         self.state_dir = os.path.join(self._isolated_root, "state")
         self.xdg_config_home = os.path.join(self._isolated_root, "xdg_config")
         self.xdg_data_home = os.path.join(self._isolated_root, "xdg_data")

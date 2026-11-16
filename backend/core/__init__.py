@@ -1,1 +1,1 @@
-"""Shared transactional, validation, override, and revert-guard core for HKS."""
+"""Shared transactional, validation, override, and revert-guard core for HyprDeck."""

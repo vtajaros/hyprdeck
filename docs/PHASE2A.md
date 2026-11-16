@@ -1,3 +1,5 @@
+> Historical document written under the name HKS.
+
 # Hyprland Keybind Studio (HKS) — Phase 2a: Human Descriptions, Categories & Sidecar Overrides
 
 ## 1. Overview

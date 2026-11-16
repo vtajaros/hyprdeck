@@ -269,7 +269,7 @@ class TestConflictsCLI(unittest.TestCase):
                 )
             self.assertEqual(rc, 2)
             self.assertNotIn("Traceback", err_buf.getvalue())
-            self.assertIn("hks: error:", err_buf.getvalue())
+            self.assertIn("hyprdeck: error:", err_buf.getvalue())
 
 
 if __name__ == "__main__":

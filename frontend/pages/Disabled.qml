@@ -111,7 +111,7 @@ Item {
                 visible: root.count === 0
                 icon: ""
                 title: "No disabled keybindings"
-                message: "Keybindings disabled via HKS will appear here so you can re-enable them at any time."
+                message: "Keybindings disabled via Keybind Studio will appear here so you can re-enable them at any time."
             }
 
             // List of Disabled Binds

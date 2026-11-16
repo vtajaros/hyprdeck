@@ -1,4 +1,4 @@
-"""Unit tests for the HKS Phase 4a safe edit engine (temp dirs and fixtures only)."""
+"""Unit tests for the HyprDeck Phase 4a safe edit engine (temp dirs and fixtures only)."""
 
 from __future__ import annotations
 

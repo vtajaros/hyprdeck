@@ -1,4 +1,4 @@
-"""Standard-library JSON Schema 2020-12 validator for HKS scan documents."""
+"""Standard-library JSON Schema 2020-12 validator for HyprDeck scan documents."""
 
 from __future__ import annotations
 

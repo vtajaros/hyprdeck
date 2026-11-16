@@ -2,9 +2,9 @@
 # =============================================================================
 # HyprDeck Settings - Window Mode Launcher & Toggle
 #
-#   hks-settings            toggle (decided by whether the window is really mapped)
-#   hks-settings --open     make sure the window is mapped; exit 0 only if it is
-#   hks-settings --daemon   start a hidden keep-alive instance (no-op if running)
+#   hyprdeck-settings            toggle (decided by whether the window is really mapped)
+#   hyprdeck-settings --open     make sure the window is mapped; exit 0 only if it is
+#   hyprdeck-settings --daemon   start a hidden keep-alive instance (no-op if running)
 #
 # Ground truth is `hyprctl clients -j`, never an IPC exit code.
 # =============================================================================
@@ -34,7 +34,7 @@ done
 # Matches only the System Settings instance ("quickshell -p <repo>/settings").
 MATCH_PATTERN="[q]uickshell -p $SETTINGS_DIR"
 
-LOG_FILE="${XDG_RUNTIME_DIR:-/tmp}/hks-settings.log"
+LOG_FILE="${XDG_RUNTIME_DIR:-/tmp}/hyprdeck-settings.log"
 
 now_ms() { echo $(( $(date +%s%N) / 1000000 )); }
 
@@ -85,11 +85,11 @@ kill_settings() {
 
 start_instance() {
     if ! command -v quickshell >/dev/null 2>&1; then
-        echo "hks-settings: quickshell is not installed or not in PATH." >&2
+        echo "hyprdeck-settings: quickshell is not installed or not in PATH." >&2
         return 1
     fi
     if ! command -v python3 >/dev/null 2>&1; then
-        echo "hks-settings: python3 is not installed or not in PATH." >&2
+        echo "hyprdeck-settings: python3 is not installed or not in PATH." >&2
         return 1
     fi
     hyprdeck_env_export_pair ROOT "$REPO_ROOT"
@@ -105,7 +105,7 @@ start_instance() {
 }
 
 fail_open() {
-    echo "hks-settings: HyprDeck Settings window did not appear (see $LOG_FILE)." >&2
+    echo "hyprdeck-settings: HyprDeck Settings window did not appear (see $LOG_FILE)." >&2
     exit 1
 }
 
@@ -135,7 +135,7 @@ do_toggle() {
         poll_state unmapped "$CLOSE_WAIT_MS" && return 0
         kill_settings
         poll_state unmapped "$CLOSE_WAIT_MS" && return 0
-        echo "hks-settings: could not close the HyprDeck Settings window." >&2
+        echo "hyprdeck-settings: could not close the HyprDeck Settings window." >&2
         exit 1
     fi
     do_open

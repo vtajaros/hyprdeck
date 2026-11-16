@@ -78,7 +78,7 @@ class _CleanArgumentParser(argparse.ArgumentParser):
     """ArgumentParser that exits with status 2 without printing a Python traceback."""
 
     def error(self, message: str) -> None:
-        sys.stderr.write(f"hks: error: {message}\n")
+        sys.stderr.write(f"hyprdeck: error: {message}\n")
         raise SystemExit(2)
 
 
@@ -376,7 +376,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         metavar="BIND_ID",
-        help="Uncomment a previously HKS-disabled bind ID (may be specified multiple times).",
+        help="Uncomment a previously disabled bind ID (may be specified multiple times).",
     )
     edit_p.add_argument(
         "--delete",
@@ -469,7 +469,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     # backups subcommand
     bak_p = subparsers.add_parser(
         "backups",
-        help="List configuration backups stored in the HKS backup directory.",
+        help="List configuration backups stored in the HyprDeck backup directory.",
     )
     bak_p.add_argument(
         "--path",
@@ -627,7 +627,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     # overrides subcommand
     ov_p = subparsers.add_parser(
         "overrides",
-        help="Inspect or manage the HKS overrides include block.",
+        help="Inspect or manage the HyprDeck overrides include block.",
     )
     ov_sub = ov_p.add_subparsers(dest="overrides_action", required=True)
 
@@ -638,8 +638,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ov_status.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
     for ov_act, ov_help in [
-        ("install-include", "Install the HKS overrides include block into hyprland.lua (dry-run by default)."),
-        ("uninstall-include", "Remove the HKS overrides include block from hyprland.lua (dry-run by default)."),
+        ("install-include", "Install the HyprDeck overrides include block into hyprland.lua (dry-run by default)."),
+        ("uninstall-include", "Remove the HyprDeck overrides include block from hyprland.lua (dry-run by default)."),
     ]:
         ov_act_p = ov_sub.add_parser(ov_act, help=ov_help)
         ov_act_p.add_argument("--config-dir", dest="config_dir", default=None, help="Override Hyprland config dir.")
@@ -1095,7 +1095,7 @@ def run_scan_pipeline(
                 "parser_count": len(binds),
             }
             sys.stderr.write(
-                "[HKS Oracle] ERROR: `hyprctl binds -j` is unavailable.\n"
+                "[HyprDeck Oracle] ERROR: `hyprctl binds -j` is unavailable.\n"
             )
             exit_code = 1
         else:
@@ -1124,7 +1124,7 @@ def format_apply_result(result: ApplyResult, *, dry_run: bool, reload: bool) -> 
     """Format an ApplyResult into human-readable diff and verification report."""
     lines: list[str] = []
     mode_label = "DRY-RUN (no files modified)" if dry_run else ("APPLY + RELOAD" if reload else "APPLY")
-    lines.append(f"[HKS Edit] Mode: {mode_label}")
+    lines.append(f"[HyprDeck Edit] Mode: {mode_label}")
     lines.append("")
 
     if result.diff:
@@ -1298,7 +1298,7 @@ def _handle_sidecar(args: argparse.Namespace) -> int:
         if is_json:
             sys.stdout.write(json.dumps({"error": msg}, indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks sidecar: error: {msg}\n")
+            sys.stderr.write(f"hyprdeck sidecar: error: {msg}\n")
         return 1
 
     try:
@@ -1341,7 +1341,7 @@ def _handle_sidecar(args: argparse.Namespace) -> int:
                 if is_json:
                     sys.stdout.write(json.dumps({"found": False, "error": msg}, indent=2) + "\n")
                 else:
-                    sys.stderr.write(f"hks sidecar: {msg}\n")
+                    sys.stderr.write(f"hyprdeck sidecar: {msg}\n")
                 return 1
 
             raw_data = _read_sidecar_raw(sidecar_path)
@@ -1369,7 +1369,7 @@ def _handle_sidecar(args: argparse.Namespace) -> int:
                 if is_json:
                     sys.stdout.write(json.dumps({"error": msg}, indent=2) + "\n")
                 else:
-                    sys.stderr.write(f"hks sidecar: {msg}\n")
+                    sys.stderr.write(f"hyprdeck sidecar: {msg}\n")
                 return 1
 
             if not os.path.isfile(sidecar_path):
@@ -1403,7 +1403,7 @@ def _handle_sidecar(args: argparse.Namespace) -> int:
                     if is_json:
                         sys.stdout.write(json.dumps({"error": msg}, indent=2) + "\n")
                     else:
-                        sys.stderr.write(f"hks sidecar: {msg}\n")
+                        sys.stderr.write(f"hyprdeck sidecar: {msg}\n")
                     return 1
             elif getattr(args, "key", None):
                 raw_mods = getattr(args, "mods", "") or ""
@@ -1420,7 +1420,7 @@ def _handle_sidecar(args: argparse.Namespace) -> int:
                 if is_json:
                     sys.stdout.write(json.dumps({"error": msg}, indent=2) + "\n")
                 else:
-                    sys.stderr.write(f"hks sidecar: {msg}\n")
+                    sys.stderr.write(f"hyprdeck sidecar: {msg}\n")
                 return 1
 
             b_rec = None
@@ -1448,14 +1448,14 @@ def _handle_sidecar(args: argparse.Namespace) -> int:
                 if is_json:
                     sys.stdout.write(json.dumps({"error": msg}, indent=2) + "\n")
                 else:
-                    sys.stderr.write(f"hks sidecar: {msg}\n")
+                    sys.stderr.write(f"hyprdeck sidecar: {msg}\n")
                 return 1
             if new_match is None:
                 msg = f"New bind '{args.new_id}' not found."
                 if is_json:
                     sys.stdout.write(json.dumps({"error": msg}, indent=2) + "\n")
                 else:
-                    sys.stderr.write(f"hks sidecar: {msg}\n")
+                    sys.stderr.write(f"hyprdeck sidecar: {msg}\n")
                 return 1
 
             b_rec = None
@@ -1478,19 +1478,19 @@ def _handle_sidecar(args: argparse.Namespace) -> int:
             return 0 if (res.get("migrated") or not res.get("collision")) else 1
 
         else:
-            sys.stderr.write(f"hks sidecar: unknown action '{action}'\n")
+            sys.stderr.write(f"hyprdeck sidecar: unknown action '{action}'\n")
             return 2
     except SidecarStoreError as exc:
         if is_json:
             sys.stdout.write(json.dumps({"error": str(exc)}, indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks sidecar: error: {exc}\n")
+            sys.stderr.write(f"hyprdeck sidecar: error: {exc}\n")
         return 1
     except Exception as exc:
         if is_json:
             sys.stdout.write(json.dumps({"error": str(exc)}, indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks sidecar: error: {exc}\n")
+            sys.stderr.write(f"hyprdeck sidecar: error: {exc}\n")
         return 1
 
 
@@ -1506,7 +1506,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                 warnings=[], backup=None, errors=[msg]
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks: error: {msg}\n")
+            sys.stderr.write(f"hyprdeck: error: {msg}\n")
         return 2
 
     if getattr(args, "reload", False) and not getattr(args, "apply", False):
@@ -1517,7 +1517,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                 warnings=[], backup=None, errors=[msg]
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks: error: {msg}\n")
+            sys.stderr.write(f"hyprdeck: error: {msg}\n")
         return 2
 
     desc_only = (
@@ -1537,7 +1537,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                 warnings=[], backup=None, errors=[msg]
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks: error: {msg}\n")
+            sys.stderr.write(f"hyprdeck: error: {msg}\n")
         return 2
 
     is_dry_run = not getattr(args, "apply", False)
@@ -1569,7 +1569,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                     warnings=[], backup=None, errors=[msg], config_unchanged=True,
                 ), indent=2) + "\n")
             else:
-                sys.stderr.write(f"hks edit: error: {msg}\n")
+                sys.stderr.write(f"hyprdeck edit: error: {msg}\n")
             return 1
 
         if is_dry_run:
@@ -1813,7 +1813,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                             warnings=[], backup=None, errors=[msg]
                         ), indent=2) + "\n")
                     else:
-                        sys.stderr.write(f"hks edit: error: {msg}\n")
+                        sys.stderr.write(f"hyprdeck edit: error: {msg}\n")
                     return 1
                 ops.append(build_op_for_bind(b, "comment_out"))
 
@@ -1827,7 +1827,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                             warnings=[], backup=None, errors=[msg]
                         ), indent=2) + "\n")
                     else:
-                        sys.stderr.write(f"hks edit: error: {msg}\n")
+                        sys.stderr.write(f"hyprdeck edit: error: {msg}\n")
                     return 1
                 op = resolve_uncomment_op(
                     bind_id=bid,
@@ -1861,7 +1861,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                                 warnings=[], backup=None, errors=[msg]
                             ), indent=2) + "\n")
                         else:
-                            sys.stderr.write(f"hks edit: error: {msg}\n")
+                            sys.stderr.write(f"hyprdeck edit: error: {msg}\n")
                         return 1
 
         result = apply_edit(
@@ -1965,7 +1965,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                 warnings=[], backup=None, errors=[msg], **get_extra_fields()
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks edit: {msg}\n")
+            sys.stderr.write(f"hyprdeck edit: {msg}\n")
         return 1
     except EditConflict as exc:
         msg = f"conflict: {exc}"
@@ -1975,7 +1975,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                 warnings=[], backup=None, errors=[msg], **get_extra_fields()
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks edit: {msg}\n")
+            sys.stderr.write(f"hyprdeck edit: {msg}\n")
         return 1
     except ValueError as exc:
         msg = str(exc)
@@ -1985,7 +1985,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                 warnings=[], backup=None, errors=[msg], **get_extra_fields()
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks edit: error: {msg}\n")
+            sys.stderr.write(f"hyprdeck edit: error: {msg}\n")
         return 1
     except KeyError as exc:
         raw_msg = exc.args[0] if exc.args else str(exc)
@@ -1995,7 +1995,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                 warnings=[], backup=None, errors=[raw_msg], **get_extra_fields()
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks edit: error: {raw_msg}\n")
+            sys.stderr.write(f"hyprdeck edit: error: {raw_msg}\n")
         return 1
     except BackupError as exc:
         msg = f"backup error: {exc}"
@@ -2005,7 +2005,7 @@ def _handle_edit(args: argparse.Namespace) -> int:
                 warnings=[], backup=None, errors=[msg], **get_extra_fields()
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks edit: {msg}\n")
+            sys.stderr.write(f"hyprdeck edit: {msg}\n")
         return 1
 
     if is_json:
@@ -2053,7 +2053,7 @@ def _handle_backups(args: argparse.Namespace) -> int:
                 warnings=[], backup=None, errors=[msg], backups=[]
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks backups: error: {msg}\n")
+            sys.stderr.write(f"hyprdeck backups: error: {msg}\n")
         return 1
 
     if is_json:
@@ -2089,7 +2089,7 @@ def _handle_restore(args: argparse.Namespace) -> int:
                     warnings=[], backup=None, errors=[msg]
                 ), indent=2) + "\n")
             else:
-                sys.stderr.write(f"hks restore: error: {msg}\n")
+                sys.stderr.write(f"hyprdeck restore: error: {msg}\n")
             return 1
         if not records:
             msg = "no backups available to restore."
@@ -2099,7 +2099,7 @@ def _handle_restore(args: argparse.Namespace) -> int:
                     warnings=[], backup=None, errors=[msg]
                 ), indent=2) + "\n")
             else:
-                sys.stderr.write(f"hks restore: error: {msg}\n")
+                sys.stderr.write(f"hyprdeck restore: error: {msg}\n")
             return 1
         matched = records[-1]
     else:
@@ -2112,7 +2112,7 @@ def _handle_restore(args: argparse.Namespace) -> int:
                     warnings=[], backup=None, errors=[msg]
                 ), indent=2) + "\n")
             else:
-                sys.stderr.write(f"hks: error: {msg}\n")
+                sys.stderr.write(f"hyprdeck: error: {msg}\n")
             return 2
 
         try:
@@ -2126,7 +2126,7 @@ def _handle_restore(args: argparse.Namespace) -> int:
                         warnings=[], backup=None, errors=[msg]
                     ), indent=2) + "\n")
                 else:
-                    sys.stderr.write(f"hks restore: error: {msg}\n")
+                    sys.stderr.write(f"hyprdeck restore: error: {msg}\n")
                 return 1
         except BackupError as exc:
             msg = str(exc)
@@ -2136,7 +2136,7 @@ def _handle_restore(args: argparse.Namespace) -> int:
                     warnings=[], backup=None, errors=[msg]
                 ), indent=2) + "\n")
             else:
-                sys.stderr.write(f"hks restore: error: {msg}\n")
+                sys.stderr.write(f"hyprdeck restore: error: {msg}\n")
             return 1
 
     # Diff preview between current target file and backup
@@ -2154,7 +2154,7 @@ def _handle_restore(args: argparse.Namespace) -> int:
 
     if not args.apply and not getattr(args, "dry_run", False):
         if not is_json:
-            sys.stderr.write("hks: error: restore requires --apply to write files (use --dry-run to preview)\n")
+            sys.stderr.write("hyprdeck: error: restore requires --apply to write files (use --dry-run to preview)\n")
             return 2
 
     if not args.apply:
@@ -2173,7 +2173,7 @@ def _handle_restore(args: argparse.Namespace) -> int:
             sys.stdout.write(json.dumps(out_data, indent=2, ensure_ascii=False) + "\n")
             sys.stdout.flush()
         else:
-            sys.stdout.write("[HKS Restore] Mode: DRY-RUN (no files modified)\n\n" + diff_text + "\nResult: PREVIEW\n")
+            sys.stdout.write("[HyprDeck Restore] Mode: DRY-RUN (no files modified)\n\n" + diff_text + "\nResult: PREVIEW\n")
             sys.stdout.flush()
         return 0
 
@@ -2191,7 +2191,7 @@ def _handle_restore(args: argparse.Namespace) -> int:
                 warnings=[], backup=matched, errors=[msg]
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks restore: {msg}\n")
+            sys.stderr.write(f"hyprdeck restore: {msg}\n")
         return 1
     except BackupError as exc:
         msg = str(exc)
@@ -2201,7 +2201,7 @@ def _handle_restore(args: argparse.Namespace) -> int:
                 warnings=[], backup=matched, errors=[msg]
             ), indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks restore: error: {msg}\n")
+            sys.stderr.write(f"hyprdeck restore: error: {msg}\n")
         return 1
 
     errors: list[str] = []
@@ -2252,7 +2252,7 @@ def _handle_recorder(args: argparse.Namespace) -> int:
     elif action == "heal":
         res = heal_submap(language=language, submap_name=submap)
     else:
-        sys.stderr.write(f"hks recorder: unknown action {action}\n")
+        sys.stderr.write(f"hyprdeck recorder: unknown action {action}\n")
         return 2
 
     if is_json:
@@ -2346,7 +2346,7 @@ def _handle_overrides(args: argparse.Namespace) -> int:
         if args.json_output:
             sys.stdout.write(json.dumps({"applied": False, "errors": [msg]}, indent=2) + "\n")
         else:
-            sys.stderr.write(f"hks overrides: error: {msg}\n")
+            sys.stderr.write(f"hyprdeck overrides: error: {msg}\n")
         return 2
 
     reload_mode = "none" if args.no_live else "config-only"
@@ -2363,7 +2363,7 @@ def _handle_overrides(args: argparse.Namespace) -> int:
     else:
         if res.errors:
             for e in res.errors:
-                sys.stderr.write(f"hks overrides: error: {e}\n")
+                sys.stderr.write(f"hyprdeck overrides: error: {e}\n")
         if res.diff:
             sys.stdout.write(res.diff)
         else:
@@ -3140,7 +3140,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.subcommand:
         parser.print_usage(sys.stderr)
         sys.stderr.write(
-            "hks: error: subcommand required (choose from 'scan', 'summary', 'sidecar-template', 'conflicts', 'edit', 'backups', 'restore')\n"
+            "hyprdeck: error: subcommand required (choose from 'scan', 'summary', 'sidecar-template', 'conflicts', 'edit', 'backups', 'restore')\n"
         )
         return 2
 
@@ -3258,13 +3258,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.subcommand == "settings":
             return _handle_settings(args)
     except DiscoveryError as exc:
-        sys.stderr.write(f"hks: error: {exc}\n")
+        sys.stderr.write(f"hyprdeck: error: {exc}\n")
         return 2
     except OSError as exc:
-        sys.stderr.write(f"hks: error: {exc}\n")
+        sys.stderr.write(f"hyprdeck: error: {exc}\n")
         return 2
     except Exception as exc:  # pragma: no cover - defensive guard against raw tracebacks
-        sys.stderr.write(f"hks: internal error: {exc}\n")
+        sys.stderr.write(f"hyprdeck: internal error: {exc}\n")
         return 2
 
     return 2

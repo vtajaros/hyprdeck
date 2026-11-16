@@ -1,4 +1,4 @@
-"""Description and category derivation package for HKS Phase 2a."""
+"""Description and category derivation package for HyprDeck Phase 2a."""
 
 from backend.describe.derive import (
     derive_category,

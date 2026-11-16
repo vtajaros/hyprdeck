@@ -1,4 +1,4 @@
-"""Transactional file-change engine for HKS managed configuration files."""
+"""Transactional file-change engine for HyprDeck managed configuration files."""
 
 from __future__ import annotations
 
@@ -606,7 +606,7 @@ def install_include(
     dry_run: bool = True,
     create_overrides_if_absent: bool = True,
 ) -> TransactionResult:
-    """Install the HKS overrides include block into a Lua entrypoint (and create overrides file if absent)."""
+    """Install the HyprDeck overrides include block into a Lua entrypoint (and create overrides file if absent)."""
     abs_config_dir = os.path.abspath(os.path.expanduser(config_dir))
     abs_entrypoint = os.path.abspath(os.path.expanduser(entrypoint))
     err = _ensure_lua_entrypoint(abs_entrypoint)
@@ -699,7 +699,7 @@ def uninstall_include(
     sleep_fn: Callable[[float], None] = time.sleep,
     dry_run: bool = True,
 ) -> TransactionResult:
-    """Remove the HKS overrides include block from a Lua entrypoint."""
+    """Remove the HyprDeck overrides include block from a Lua entrypoint."""
     abs_config_dir = os.path.abspath(os.path.expanduser(config_dir))
     abs_entrypoint = os.path.abspath(os.path.expanduser(entrypoint))
     err = _ensure_lua_entrypoint(abs_entrypoint)

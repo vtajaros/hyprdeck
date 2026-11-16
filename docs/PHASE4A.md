@@ -1,3 +1,5 @@
+> Historical document written under the name HKS.
+
 # Hyprland Keybind Studio (HKS) — Phase 4a: Safe Edit Engine
 
 ## 1. Overview

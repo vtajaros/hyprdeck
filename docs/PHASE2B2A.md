@@ -1,3 +1,5 @@
+> Historical document written under the name HKS.
+
 # Phase 2b-2a: Conflicts Page (Read-Only Desktop Client)
 
 Phase 2b-2a adds a dedicated **Conflicts** inspection view to the Hyprland Keybind Studio (HKS) desktop window client.

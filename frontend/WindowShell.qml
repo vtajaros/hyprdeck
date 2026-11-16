@@ -177,7 +177,7 @@ FloatingWindow {
                                 color: Deck.fg
                             }
                             Text {
-                                text: "Hyprland (HKS)"
+                                text: "HyprDeck"
                                 font.family: Deck.fontFamily
                                 font.pixelSize: 10
                                 color: Deck.muted

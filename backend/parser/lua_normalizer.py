@@ -1,4 +1,4 @@
-"""Normalizer for recorded Lua keybindings into the HKS Phase 1 schema."""
+"""Normalizer for recorded Lua keybindings into the HyprDeck Phase 1 schema."""
 
 from __future__ import annotations
 

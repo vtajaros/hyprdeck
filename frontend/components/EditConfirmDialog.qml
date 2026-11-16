@@ -329,7 +329,7 @@ Item {
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Notice: HKS anchor block ('# HKS: custom binds') will be created in this file."
+                        text: "Notice: custom binds anchor block ('# HKS: custom binds') will be created in this file."
                         font.family: Deck.fontFamily
                         font.pixelSize: 11
                         font.weight: Font.DemiBold

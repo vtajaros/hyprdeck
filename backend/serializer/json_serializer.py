@@ -1,4 +1,4 @@
-"""Deterministic JSON serializer and plain-text summary formatter for HKS."""
+"""Deterministic JSON serializer and plain-text summary formatter for HyprDeck."""
 
 from __future__ import annotations
 

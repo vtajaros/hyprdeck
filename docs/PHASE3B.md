@@ -1,3 +1,5 @@
+> Historical document written under the name HKS.
+
 # Hyprland Keybind Studio (HKS) — Phase 3b: Keybind Modification, Addition & Sidecar Persistence
 
 **Status**: 100% Complete & Verified  

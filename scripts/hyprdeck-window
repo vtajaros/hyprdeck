@@ -2,9 +2,9 @@
 # =============================================================================
 # HyprDeck - Keybind Studio Window Mode Launcher & Toggle
 #
-#   hks-window            toggle (decided by whether the window is really mapped)
-#   hks-window --open     make sure the window is mapped; exit 0 only if it is
-#   hks-window --daemon   start a hidden keep-alive instance (no-op if running)
+#   hyprdeck-window            toggle (decided by whether the window is really mapped)
+#   hyprdeck-window --open     make sure the window is mapped; exit 0 only if it is
+#   hyprdeck-window --daemon   start a hidden keep-alive instance (no-op if running)
 #
 # Ground truth is `hyprctl clients -j`, never an IPC exit code: a Quickshell
 # FloatingWindow can swallow `visible = true` after a compositor-side close.
@@ -32,18 +32,18 @@ for arg in "$@"; do
     esac
 done
 
-# Matches only the HKS instance ("quickshell -p <repo>/frontend"); never the
+# Matches only the Keybind Studio instance ("quickshell -p <repo>/frontend"); never the
 # desktop shell's own quickshell, and never short-lived "quickshell ipc" calls.
 MATCH_PATTERN="[q]uickshell -p $FRONTEND_DIR"
 
-LOG_FILE="${XDG_RUNTIME_DIR:-/tmp}/hks-window.log"
+LOG_FILE="${XDG_RUNTIME_DIR:-/tmp}/hyprdeck-window.log"
 
 now_ms() { echo $(( $(date +%s%N) / 1000000 )); }
 
 hks_running() { pgrep -f "$MATCH_PATTERN" >/dev/null 2>&1; }
 
-# Ground truth: a mapped client whose title EQUALS the HKS title exactly and
-# whose class is the HKS class (python3 stdlib JSON parsing, no grep).
+# Ground truth: a mapped client whose title EQUALS the Keybind Studio title exactly and
+# whose class is the Keybind Studio class (python3 stdlib JSON parsing, no grep).
 window_mapped() {
     hyprctl clients -j 2>/dev/null | HYPRDECK_T="$HYPRDECK_WINDOW_TITLE" HYPRDECK_C="$HYPRDECK_WINDOW_CLASS" python3 -c '
 import json, os, sys
@@ -91,11 +91,11 @@ kill_hks() {
 # start_instance visible|hidden : detached keep-alive instance.
 start_instance() {
     if ! command -v quickshell >/dev/null 2>&1; then
-        echo "hks-window: quickshell is not installed or not in PATH." >&2
+        echo "hyprdeck-window: quickshell is not installed or not in PATH." >&2
         return 1
     fi
     if ! command -v python3 >/dev/null 2>&1; then
-        echo "hks-window: python3 is not installed or not in PATH." >&2
+        echo "hyprdeck-window: python3 is not installed or not in PATH." >&2
         return 1
     fi
     hyprdeck_env_export_pair ROOT "$REPO_ROOT"
@@ -112,7 +112,7 @@ start_instance() {
 }
 
 fail_open() {
-    echo "hks-window: HyprDeck Keybind Studio window did not appear (see $LOG_FILE)." >&2
+    echo "hyprdeck-window: HyprDeck Keybind Studio window did not appear (see $LOG_FILE)." >&2
     exit 1
 }
 
@@ -143,7 +143,7 @@ do_toggle() {
         poll_state unmapped "$CLOSE_WAIT_MS" && return 0
         kill_hks
         poll_state unmapped "$CLOSE_WAIT_MS" && return 0
-        echo "hks-window: could not close the HKS window." >&2
+        echo "hyprdeck-window: could not close the Keybind Studio window." >&2
         exit 1
     fi
     do_open
