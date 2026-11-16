@@ -1,0 +1,121 @@
+{
+  "default_sink": "bluez_output.D4_50_8A_CA_53_FF.1",
+  "default_source": "alsa_input.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Mic1__source",
+  "sinks": [
+    {
+      "index": 59,
+      "state": "SUSPENDED",
+      "name": "alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__HDMI3__sink",
+      "description": "Raptor Lake-P/U/H cAVS HDMI / DisplayPort 3 Output (Stereo)",
+      "mute": false,
+      "volume": {
+        "front-left": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"},
+        "front-right": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"}
+      },
+      "balance": 0.0,
+      "properties": {
+        "device.api": "alsa",
+        "alsa.name": "HDMI 3",
+        "device.profile.name": "HiFi: HDMI3: sink"
+      }
+    },
+    {
+      "index": 62,
+      "state": "SUSPENDED",
+      "name": "alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Speaker__sink",
+      "description": "Raptor Lake-P/U/H cAVS Speaker (Stereo)",
+      "mute": true,
+      "volume": {
+        "front-left": {"value": 32768, "value_percent": "50%", "db": "-18.06 dB"},
+        "front-right": {"value": 39322, "value_percent": "60%", "db": "-13.31 dB"}
+      },
+      "balance": 0.1,
+      "properties": {
+        "device.api": "alsa",
+        "alsa.name": "Speaker",
+        "device.profile.name": "HiFi: Speaker: sink"
+      }
+    },
+    {
+      "index": 109,
+      "state": "RUNNING",
+      "name": "bluez_output.D4_50_8A_CA_53_FF.1",
+      "description": "YSD Speaker",
+      "mute": false,
+      "volume": {
+        "front-left": {"value": 52429, "value_percent": "80%", "db": "-5.81 dB"},
+        "front-right": {"value": 52429, "value_percent": "80%", "db": "-5.81 dB"}
+      },
+      "balance": 0.0,
+      "properties": {
+        "device.api": "bluez5",
+        "media.name": "YSD Speaker"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "index": 59,
+      "state": "SUSPENDED",
+      "name": "alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__HDMI3__sink.monitor",
+      "description": "Monitor of Raptor Lake-P/U/H cAVS HDMI / DisplayPort 3 Output (Stereo)",
+      "mute": false,
+      "volume": {
+        "front-left": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"},
+        "front-right": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"}
+      },
+      "properties": {"device.api": "alsa", "device.class": "monitor"}
+    },
+    {
+      "index": 63,
+      "state": "SUSPENDED",
+      "name": "alsa_input.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Mic2__source",
+      "description": "Raptor Lake-P/U/H cAVS Headphones Stereo Microphone",
+      "mute": false,
+      "volume": {
+        "front-left": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"},
+        "front-right": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"}
+      },
+      "properties": {"device.api": "alsa"}
+    },
+    {
+      "index": 64,
+      "state": "SUSPENDED",
+      "name": "alsa_input.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Mic1__source",
+      "description": "Raptor Lake-P/U/H cAVS Digital Microphone",
+      "mute": false,
+      "volume": {
+        "front-left": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"},
+        "front-right": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"}
+      },
+      "properties": {"device.api": "alsa"}
+    },
+    {
+      "index": 109,
+      "state": "RUNNING",
+      "name": "bluez_output.D4_50_8A_CA_53_FF.1.monitor",
+      "description": "Monitor of YSD Speaker",
+      "mute": false,
+      "volume": {
+        "front-left": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"},
+        "front-right": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"}
+      },
+      "properties": {"device.api": "bluez5"}
+    }
+  ],
+  "sink_inputs": [
+    {
+      "index": 184,
+      "sink": 109,
+      "mute": false,
+      "volume": {
+        "front-left": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"},
+        "front-right": {"value": 65536, "value_percent": "100%", "db": "0.00 dB"}
+      },
+      "properties": {
+        "application.name": "Firefox",
+        "media.name": "YouTube Playback"
+      }
+    }
+  ]
+}

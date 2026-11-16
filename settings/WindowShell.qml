@@ -56,6 +56,9 @@ FloatingWindow {
         if (!InputService.loading && !InputService.hasDraftChanges && !InputService.countdownActive) {
             InputService.reload();
         }
+        if (!AudioService.loading && !AudioService.busy) {
+            AudioService.reload(true);
+        }
     }
 
     function _performClose() {
@@ -106,10 +109,16 @@ FloatingWindow {
         SettingsService.reload();
         DisplayService.reload();
         InputService.reload();
+        AudioService.reload(false);
+    }
+
+    Binding {
+        target: AudioService
+        property: "pollingEnabled"
+        value: win.visible && win.currentPage === "audio"
     }
 
     readonly property var placeholderPages: [
-        { id: "audio", icon: "󰕾", title: "Audio", summary: "Output sinks, input sources, and per-device volume." },
         { id: "bluetooth", icon: "󰂯", title: "Bluetooth", summary: "Adapter power, pairing, and connected devices." },
         { id: "network", icon: "󰖩", title: "Network", summary: "Wi-Fi networks, Ethernet links, and DNS status." },
         { id: "power", icon: "󰁹", title: "Power", summary: "Idle timeouts, sleep behavior, and battery profiles." },
@@ -288,6 +297,18 @@ FloatingWindow {
                             }
                         }
 
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰕾"
+                            text: "Audio"
+                            active: win.currentPage === "audio" && globalSearch.text.trim().length === 0
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.currentPage = "audio";
+                                AudioService.reload(false);
+                            }
+                        }
+
                         Rectangle {
                             width: parent.width
                             height: 1
@@ -331,6 +352,11 @@ FloatingWindow {
                 InputPage {
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "input"
+                }
+
+                AudioPage {
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "audio"
                 }
 
                 PlaceholderPage {

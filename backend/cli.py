@@ -755,6 +755,53 @@ def build_arg_parser() -> argparse.ArgumentParser:
     inp_rev.add_argument("--no-live", dest="no_live", action="store_true", default=False, help="Disable live hyprctl reload during revert.")
     inp_rev.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
+    # settings audio subcommand
+    st_aud = st_sub.add_parser("audio", help="Live PipeWire/PulseAudio device and volume operations.")
+    aud_sub = st_aud.add_subparsers(dest="audio_action", required=True)
+
+    aud_state = aud_sub.add_parser("state", help="Read audio outputs, inputs, and playback streams.")
+    aud_state.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+    aud_state.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+
+    for sub_name, default_kind, help_txt in (
+        ("set-volume", "sink", "Set device volume percentage (clamped 0..100 by default, hard cap 150)."),
+        ("set-sink-volume", "sink", "Set output sink volume percentage."),
+        ("set-source-volume", "source", "Set input source volume percentage."),
+    ):
+        p = aud_sub.add_parser(sub_name, help=help_txt)
+        p.add_argument("name", help="Target node name (never numeric index).")
+        p.add_argument("percent", help="Target volume percentage.")
+        if sub_name == "set-volume":
+            p.add_argument("--kind", choices=("sink", "source"), default=default_kind, help="Device kind (sink or source).")
+        p.add_argument("--max-percent", dest="max_percent", type=int, default=100, help="Upper clamp limit (hard cap 150).")
+        p.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+        p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    for sub_name, default_kind, help_txt in (
+        ("set-mute", "sink", "Set device mute state (1, 0, or toggle)."),
+        ("set-sink-mute", "sink", "Set output sink mute state (1, 0, or toggle)."),
+        ("set-source-mute", "source", "Set input source mute state (1, 0, or toggle)."),
+    ):
+        p = aud_sub.add_parser(sub_name, help=help_txt)
+        p.add_argument("name", help="Target node name (never numeric index).")
+        p.add_argument("mode", help="Mute mode: 1, 0, or toggle.")
+        if sub_name == "set-mute":
+            p.add_argument("--kind", choices=("sink", "source"), default=default_kind, help="Device kind (sink or source).")
+        p.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+        p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    for sub_name, default_kind, help_txt in (
+        ("set-default", "sink", "Set default audio device."),
+        ("set-default-sink", "sink", "Set default output sink."),
+        ("set-default-source", "source", "Set default input source."),
+    ):
+        p = aud_sub.add_parser(sub_name, help=help_txt)
+        p.add_argument("name", help="Target node name (never numeric index).")
+        if sub_name == "set-default":
+            p.add_argument("--kind", choices=("sink", "source"), default=default_kind, help="Device kind (sink or source).")
+        p.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+        p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
     return parser
 
 
@@ -2435,6 +2482,51 @@ def _handle_settings_input(
     return 1 if res.errors else 0
 
 
+def _handle_settings_audio(args: argparse.Namespace) -> int:
+    from backend.settings.audio.ops import (
+        set_default_sink,
+        set_default_source,
+        set_sink_mute,
+        set_sink_volume,
+        set_source_mute,
+        set_source_volume,
+    )
+    from backend.settings.audio.state import get_audio_state
+
+    a_action = args.audio_action
+    timeout = getattr(args, "timeout", 5.0)
+
+    if a_action == "state":
+        st = get_audio_state(timeout=timeout)
+        sys.stdout.write(json.dumps(st, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    if a_action in ("set-volume", "set-sink-volume", "set-source-volume"):
+        kind = "source" if a_action == "set-source-volume" else getattr(args, "kind", "sink")
+        fn = set_source_volume if kind == "source" else set_sink_volume
+        res = fn(args.name, args.percent, max_percent=args.max_percent, timeout=timeout)
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0 if res.get("ok") else 1
+
+    if a_action in ("set-mute", "set-sink-mute", "set-source-mute"):
+        kind = "source" if a_action == "set-source-mute" else getattr(args, "kind", "sink")
+        fn = set_source_mute if kind == "source" else set_sink_mute
+        res = fn(args.name, args.mode, timeout=timeout)
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0 if res.get("ok") else 1
+
+    # set-default, set-default-sink, set-default-source
+    kind = "source" if a_action == "set-default-source" else getattr(args, "kind", "sink")
+    fn = set_default_source if kind == "source" else set_default_sink
+    res = fn(args.name, timeout=timeout)
+    sys.stdout.write(json.dumps(res, indent=2) + "\n")
+    sys.stdout.flush()
+    return 0 if res.get("ok") else 1
+
+
 def _handle_settings(args: argparse.Namespace) -> int:
     from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
     from backend.editor.backups import compute_file_sha256
@@ -2444,6 +2536,9 @@ def _handle_settings(args: argparse.Namespace) -> int:
 
     cfg_dir, reload_override, debug_bdir = _resolve_settings_debug_overrides(args)
     action = args.settings_action
+
+    if action == "audio":
+        return _handle_settings_audio(args)
 
     if action == "display":
         return _handle_settings_display(args, cfg_dir, reload_override, debug_bdir)

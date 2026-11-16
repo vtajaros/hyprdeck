@@ -137,6 +137,7 @@ def install_suite_isolation_guard() -> None:
     _GUARD_INSTALLED = True
 
     import functools
+    import backend.core.live_cmd as live_cmd_mod
     import backend.core.revert_guard as rg_mod
     import backend.core.transaction as tx_mod
     import backend.describe.sidecar_store as sc_mod
@@ -371,3 +372,17 @@ def install_suite_isolation_guard() -> None:
     inp_apply_mod.apply_input_changes = guarded_apply_inp
     inp_apply_mod.confirm_input_changes = guarded_confirm_inp
     inp_apply_mod.revert_input_changes = guarded_revert_inp
+
+    orig_run_live_cmd = live_cmd_mod.run_live_cmd
+
+    @functools.wraps(orig_run_live_cmd)
+    def guarded_run_live_cmd(argv, *, timeout=live_cmd_mod.DEFAULT_LIVE_CMD_TIMEOUT_SECONDS, runner=None, env=None):
+        if runner is None and not isinstance(argv, (str, bytes)):
+            items = list(argv)
+            if items and items[0] in ("pactl", "wpctl"):
+                raise AssertionError(
+                    f"Test isolation violation: real {items[0]!r} called in tests without mock runner"
+                )
+        return orig_run_live_cmd(argv, timeout=timeout, runner=runner, env=env)
+
+    live_cmd_mod.run_live_cmd = guarded_run_live_cmd

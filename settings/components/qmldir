@@ -1,5 +1,6 @@
 SettingControlLogic 1.0 SettingControlLogic.qml
 DisplayControlLogic 1.0 DisplayControlLogic.qml
 InputControlLogic 1.0 InputControlLogic.qml
+AudioControlLogic 1.0 AudioControlLogic.qml
 SettingRow 1.0 SettingRow.qml
 PlaceholderPage 1.0 PlaceholderPage.qml

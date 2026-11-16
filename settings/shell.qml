@@ -41,6 +41,7 @@ ShellRoot {
         function reload() {
             SettingsService.reload();
             DisplayService.reload();
+            AudioService.reload(false);
         }
 
         function navigate(page: string) {
@@ -120,6 +121,46 @@ ShellRoot {
             return JSON.stringify({ ok: true });
         }
 
+        function debugAudioState(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            return JSON.stringify({
+                ok: true,
+                available: AudioService.available,
+                defaultSink: AudioService.defaultSink,
+                defaultSource: AudioService.defaultSource,
+                outputs: AudioService.outputs,
+                inputs: AudioService.inputs,
+                streams: AudioService.streams,
+                loading: AudioService.loading,
+                busy: AudioService.busy,
+                error: AudioService.error,
+                statusMessage: AudioService.statusMessage
+            });
+        }
+
+        function debugAudioSetVolume(kind: string, name: string, percent: int): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            var k = (String(kind || "sink").toLowerCase() === "source") ? "source" : "sink";
+            var n = String(name || "").trim();
+            if (n.length === 0) {
+                return JSON.stringify({ ok: false, error: "name is required" });
+            }
+            AudioService.setVolume(k, n, percent);
+            return JSON.stringify({ ok: true, kind: k, name: n, percent: percent });
+        }
+
+        function debugAudioSetMute(kind: string, name: string, mode: string): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            var k = (String(kind || "sink").toLowerCase() === "source") ? "source" : "sink";
+            var n = String(name || "").trim();
+            var m = String(mode || "toggle").trim();
+            if (n.length === 0) {
+                return JSON.stringify({ ok: false, error: "name is required" });
+            }
+            AudioService.setMute(k, n, m);
+            return JSON.stringify({ ok: true, kind: k, name: n, mode: m });
+        }
+
         function debugState(): string {
             if (!root.debugEnabled) return root._debugDisabledJson();
             var optsMap = ({});
@@ -171,6 +212,18 @@ ShellRoot {
                     error: InputService.error,
                     warningsText: InputService.warningsText,
                     statusMessage: InputService.statusMessage
+                },
+                audio: {
+                    available: AudioService.available,
+                    defaultSink: AudioService.defaultSink,
+                    defaultSource: AudioService.defaultSource,
+                    outputs: AudioService.outputs,
+                    inputs: AudioService.inputs,
+                    streams: AudioService.streams,
+                    busy: AudioService.busy,
+                    loading: AudioService.loading,
+                    error: AudioService.error,
+                    statusMessage: AudioService.statusMessage
                 }
             });
         }

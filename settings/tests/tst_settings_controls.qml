@@ -52,6 +52,10 @@ TestCase {
         id: inputLogic
     }
 
+    AudioControlLogic {
+        id: audioLogic
+    }
+
     function test_close_guard_blocks_when_prompt_open() {
         guard.dialogOpen = false;
         verify(guard.closeAllowed);
@@ -157,5 +161,20 @@ TestCase {
         verify(!inputLogic.canDisableDevice(devs, {}, "at-translated-set-2-keyboard"));
         verify(!inputLogic.canDisableDevice(devs, {}, "elan-touchpad"));
         verify(inputLogic.canDisableDevice(devs, {}, "fcitx5-virtual-kbd"));
+    }
+
+    function test_audio_volume_clamping_and_labels() {
+        compare(audioLogic.clampVolume(-5, 100), 0);
+        compare(audioLogic.clampVolume(120, 100), 100);
+        compare(audioLogic.clampVolume(120, 150), 120);
+        compare(audioLogic.clampVolume(200, 200), 150);
+        compare(audioLogic.kindLabel("bluez"), "Bluetooth");
+        compare(audioLogic.kindLabel("hdmi"), "HDMI");
+        compare(audioLogic.kindLabel("alsa"), "ALSA");
+        compare(audioLogic.kindLabel("other"), "Other");
+        compare(audioLogic.muteLabel(true), "Muted");
+        compare(audioLogic.muteLabel(false), "Mute");
+        compare(audioLogic.balanceWarningText(0), "");
+        compare(audioLogic.balanceWarningText(12), "L/R diff: 12%");
     }
 }
