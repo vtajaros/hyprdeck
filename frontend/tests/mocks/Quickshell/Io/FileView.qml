@@ -7,4 +7,6 @@ Item {
     property bool watchChanges: false
     property bool blockLoading: false
     signal fileChanged()
+    signal loaded()
+    function reload() {}
 }

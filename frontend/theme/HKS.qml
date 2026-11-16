@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "ThemeLogic.js" as ThemeLogic
 
 Singleton {
     id: root
@@ -22,6 +23,14 @@ Singleton {
     // Active theme mode: "system" ("Follow system (Matugen)") | "graphite" ("Fixed graphite")
     // Note: In-memory selection only for now; not persisted to disk.
     property string themeMode: "system"
+
+    // Overridable colors.json path for isolated tests
+    readonly property string colorsPath: Quickshell.env("HKS_THEME_COLORS_PATH")
+        || (Quickshell.env("HOME") + "/.config/quickshell/theme/colors.json")
+
+    // Internal state for atomic-replace diffing & partial-write protection
+    property string _lastAppliedRaw: ""
+    property bool _hasAppliedSystemPalette: false
 
     // Active palette colors
     property color bg: "#141414"
@@ -68,68 +77,80 @@ Singleton {
         return Qt.rgba(col.r, col.g, col.b, opacity);
     }
 
+    function _applyPalette(p) {
+        bg = p.bg;
+        surface = p.surface;
+        elevated = p.elevated;
+        fg = p.fg;
+        muted = p.muted;
+        accent = p.accent;
+        secondary = p.secondary;
+        warning = p.warning;
+        critical = p.critical;
+        borderColor = alpha(accent, 0.5);
+    }
+
+    function refreshTheme() {
+        if (root.themeMode === "system") {
+            colorFile.reload();
+        }
+    }
+
     FileView {
         id: colorFile
-        path: Quickshell.env("HOME") + "/.config/quickshell/theme/colors.json"
+        path: root.colorsPath
         blockLoading: true
         watchChanges: true
-        onFileChanged: {
-            colorFile.reload();
+        onFileChanged: root.refreshTheme()
+        onLoaded: {
             if (root.themeMode === "system") {
                 root.applyTheme();
             }
         }
     }
 
+    // Poll every 1s while following system theme so atomic renames (write + mv) are detected
+    Timer {
+        id: atomicPollTimer
+        interval: 1000
+        repeat: true
+        running: root.themeMode === "system"
+        onTriggered: root.refreshTheme()
+    }
+
     function applyTheme() {
         if (themeMode === "graphite") {
-            bg = fallbackPalette.bg;
-            surface = fallbackPalette.surface;
-            elevated = fallbackPalette.elevated;
-            fg = fallbackPalette.fg;
-            muted = fallbackPalette.muted;
-            accent = fallbackPalette.accent;
-            secondary = fallbackPalette.secondary;
-            warning = fallbackPalette.warning;
-            critical = fallbackPalette.critical;
-            borderColor = alpha(accent, 0.5);
+            _applyPalette(fallbackPalette);
             return;
         }
 
-        // themeMode === "system": read live colors.json with fallback
-        try {
-            var raw = colorFile.text();
-            if (raw && raw.trim().startsWith("{")) {
-                var data = JSON.parse(raw);
-                bg = data.bg || fallbackPalette.bg;
-                surface = data.surface || fallbackPalette.surface;
-                elevated = data.elevated || fallbackPalette.elevated;
-                fg = data.fg || fallbackPalette.fg;
-                muted = data.muted || fallbackPalette.muted;
-                accent = data.accent || fallbackPalette.accent;
-                secondary = data.secondary || fallbackPalette.secondary;
-                warning = data.warning || fallbackPalette.warning;
-                critical = data.critical || fallbackPalette.critical;
-                borderColor = alpha(accent, 0.5);
-                return;
-            }
-        } catch(e) {
-            // Silently fall back to defaults
+        // themeMode === "system": validate before applying; keep previous palette on partial/invalid writes
+        var raw = (typeof colorFile.text === "function") ? colorFile.text() : String(colorFile.text || "");
+        var res = ThemeLogic.evaluateThemeText(raw, root._lastAppliedRaw);
+        if (!res.changed) {
+            return;
+        }
+        if (res.valid && res.palette) {
+            root._lastAppliedRaw = String(raw);
+            root._hasAppliedSystemPalette = true;
+            _applyPalette(res.palette);
+            return;
         }
 
-        bg = fallbackPalette.bg;
-        surface = fallbackPalette.surface;
-        elevated = fallbackPalette.elevated;
-        fg = fallbackPalette.fg;
-        muted = fallbackPalette.muted;
-        accent = fallbackPalette.accent;
-        secondary = fallbackPalette.secondary;
-        warning = fallbackPalette.warning;
-        critical = fallbackPalette.critical;
-        borderColor = alpha(accent, 0.5);
+        if (!root._hasAppliedSystemPalette) {
+            _applyPalette(fallbackPalette);
+        }
     }
 
-    onThemeModeChanged: applyTheme()
+    onThemeModeChanged: {
+        if (themeMode === "system") {
+            _lastAppliedRaw = "";
+            applyTheme();
+            refreshTheme();
+        } else {
+            applyTheme();
+        }
+    }
 
     Component.onCompleted: applyTheme()
 }

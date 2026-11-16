@@ -32,6 +32,11 @@ FloatingWindow {
             win.visible = false;
         }
     }
+    onVisibleChanged: {
+        if (win.visible) {
+            HKS.refreshTheme();
+        }
+    }
 
     Timer {
         id: reopenTimer

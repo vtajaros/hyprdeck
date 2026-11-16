@@ -32,6 +32,11 @@ FloatingWindow {
             win.visible = false;
         }
     }
+    onVisibleChanged: {
+        if (win.visible) {
+            HKS.refreshTheme();
+        }
+    }
     property string currentPage: Quickshell.env("HKS_PAGE") || "all" // "all" | "conflicts" | "disabled" | "backups" | "settings"
 
     Timer {
