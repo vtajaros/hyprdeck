@@ -16,7 +16,8 @@ import time
 import unittest
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-REAL_SCRIPT = os.path.join(REPO_ROOT, "scripts", "hks-window")
+REAL_SCRIPT = os.path.join(REPO_ROOT, "scripts", "hyprdeck-window")
+REAL_SHIM = os.path.join(REPO_ROOT, "scripts", "hks-window")
 
 TITLE = "HyprDeck Keybind Studio"
 
@@ -67,9 +68,12 @@ class HksWindowScriptTests(unittest.TestCase):
         os.makedirs(self.fake)
         os.makedirs(os.path.join(self.repo, "scripts"))
         os.makedirs(os.path.join(self.repo, "frontend"))
-        self.script = os.path.join(self.repo, "scripts", "hks-window")
+        self.script = os.path.join(self.repo, "scripts", "hyprdeck-window")
         shutil.copy(REAL_SCRIPT, self.script)
         os.chmod(self.script, 0o755)
+        self.shim = os.path.join(self.repo, "scripts", "hks-window")
+        shutil.copy(REAL_SHIM, self.shim)
+        os.chmod(self.shim, 0o755)
         env_lib_src = os.path.join(os.path.dirname(REAL_SCRIPT), "lib-hyprdeck-env.sh")
         env_lib_dst = os.path.join(self.repo, "scripts", "lib-hyprdeck-env.sh")
         shutil.copy(env_lib_src, env_lib_dst)
@@ -278,6 +282,73 @@ class HksWindowScriptTests(unittest.TestCase):
             time.sleep(0.05)
         self.assertIn("hidden=1", self._qs_log())
         self.assertFalse(self._mapped_in_file())
+
+    # -- compatibility shims ---------------------------------------------
+    def test_hks_window_shim_delegates_open_and_daemon_silently(self) -> None:
+        p = subprocess.Popen(
+            [self.shim, "--daemon"], env=self.env(),
+            start_new_session=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        self.procs.append(p)
+        rc = p.wait(timeout=5)
+        self.assertEqual(rc, 0)
+        self.assertEqual(p.stdout.read(), "")
+        self.assertEqual(p.stderr.read(), "")
+        for _ in range(60):
+            if "START" in self._qs_log():
+                break
+            time.sleep(0.05)
+        self.assertIn("hidden=1", self._qs_log())
+        self.assertFalse(self._mapped_in_file())
+
+        r_open = subprocess.run(
+            [self.shim, "--open"], env=self.env(),
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(r_open.returncode, 0, r_open.stderr)
+        self.assertEqual(r_open.stderr, "")
+        self.assertTrue(self._mapped_in_file())
+
+        # Failing open preserves non-zero exit code through shim
+        r_fail = subprocess.run(
+            [self.shim, "--open"], env=self.env(FAKE_COLD_MAPS="0"),
+            capture_output=True, text=True, timeout=10,
+        )
+        # Window is already mapped from above; test fresh wedged daemon failure:
+        self.tearDown()
+        self.setUp()
+        r_cold_fail = subprocess.run(
+            [self.shim, "--open"], env=self.env(FAKE_COLD_MAPS="0"),
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertNotEqual(r_cold_fail.returncode, 0)
+
+    def test_hks_window_shim_warns_only_when_deprecated_env_set(self) -> None:
+        r = subprocess.run(
+            [self.shim, "--open"],
+            env=self.env(HYPRDECK_WARN_DEPRECATED="1"),
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("deprecated", r.stderr)
+        self.assertIn("hyprdeck-window", r.stderr)
+
+    def test_all_script_shims_exist_executable_and_target_new_scripts(self) -> None:
+        scripts_dir = os.path.join(REPO_ROOT, "scripts")
+        for suffix in (
+            "window", "settings", "popup", "check",
+            "scene-check", "layout-check", "token-check", "recorder-test",
+        ):
+            shim = os.path.join(scripts_dir, f"hks-{suffix}")
+            target = os.path.join(scripts_dir, f"hyprdeck-{suffix}")
+            self.assertTrue(os.path.isfile(shim), f"Missing shim {shim}")
+            self.assertTrue(os.access(shim, os.X_OK), f"Shim not executable: {shim}")
+            self.assertTrue(os.path.isfile(target), f"Missing target {target}")
+            self.assertTrue(os.access(target, os.X_OK), f"Target not executable: {target}")
+            with open(shim, "r", encoding="utf-8") as f:
+                content = f.read()
+            self.assertIn(f"exec \"$SELF_DIR/hyprdeck-{suffix}\" \"$@\"", content)
 
 
 if __name__ == "__main__":

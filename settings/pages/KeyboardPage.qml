@@ -77,7 +77,7 @@ Item {
             height: 220
             icon: "󰌌"
             title: "Keybind Studio unavailable"
-            message: KeyboardService.error || ("Launcher script not found or not executable: " + (KeyboardService.scriptPath || "scripts/hks-window"))
+            message: KeyboardService.error || ("Launcher script not found or not executable: " + (KeyboardService.scriptPath || "scripts/hyprdeck-window"))
         }
 
         // Launcher card

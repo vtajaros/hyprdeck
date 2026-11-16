@@ -56,7 +56,10 @@ class TestHardeningMockIsolation(unittest.TestCase):
 
     def test_production_scripts_do_not_inject_test_mocks(self) -> None:
         # Scripts that launch quickshell in production
-        prod_scripts = ["hks-window", "hks-popup", "hks-recorder-test"]
+        prod_scripts = [
+            "hyprdeck-window", "hyprdeck-popup", "hyprdeck-recorder-test",
+            "hks-window", "hks-popup", "hks-recorder-test",
+        ]
         scripts_dir = os.path.join(self.repo_root, "scripts")
 
         for s_name in prod_scripts:

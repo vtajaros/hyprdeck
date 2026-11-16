@@ -1,37 +1,7 @@
 #!/usr/bin/env bash
-# =============================================================================
-# HyprDeck - Dev Keybind Recorder Test Harness
-# =============================================================================
 set -euo pipefail
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FRONTEND_DIR="$REPO_ROOT/frontend"
-
-# Toggle: close if already open
-MATCH_PATTERN="[q]uickshell.*$FRONTEND_DIR"
-
-if pgrep -f "$MATCH_PATTERN" >/dev/null 2>&1; then
-    quickshell ipc -p "$FRONTEND_DIR" call hks close >/dev/null 2>&1 || true
-    for _ in {1..8}; do
-        if ! pgrep -f "$MATCH_PATTERN" >/dev/null 2>&1; then
-            exit 0
-        fi
-        sleep 0.04
-    done
-    pkill -f "$MATCH_PATTERN" 2>/dev/null || true
-    exit 0
+SELF_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+if [ "${HYPRDECK_WARN_DEPRECATED:-0}" = "1" ]; then
+    echo "$(basename "${BASH_SOURCE[0]}") is deprecated; use hyprdeck-recorder-test instead." >&2
 fi
-
-if ! command -v quickshell >/dev/null 2>&1; then
-    echo "Error: quickshell is not installed or not in PATH." >&2
-    exit 1
-fi
-
-# shellcheck source=scripts/lib-hyprdeck-env.sh
-source "$REPO_ROOT/scripts/lib-hyprdeck-env.sh"
-
-hyprdeck_env_export_pair ROOT "$REPO_ROOT"
-hyprdeck_env_export_pair MODE "recorder-test"
-export QML_XHR_ALLOW_FILE_READ=1
-
-exec quickshell -p "$FRONTEND_DIR" "$@"
+exec "$SELF_DIR/hyprdeck-recorder-test" "$@"

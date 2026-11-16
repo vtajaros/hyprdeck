@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+# =============================================================================
+# HyprDeck Settings - Window Mode Launcher & Toggle
+#
+#   hks-settings            toggle (decided by whether the window is really mapped)
+#   hks-settings --open     make sure the window is mapped; exit 0 only if it is
+#   hks-settings --daemon   start a hidden keep-alive instance (no-op if running)
+#
+# Ground truth is `hyprctl clients -j`, never an IPC exit code.
+# =============================================================================
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SETTINGS_DIR="$REPO_ROOT/settings"
+# shellcheck source=scripts/lib-hyprdeck-env.sh
+source "$REPO_ROOT/scripts/lib-hyprdeck-env.sh"
+
+SETTINGS_WINDOW_TITLE="$(hyprdeck_env_get SETTINGS_TITLE "HyprDeck Settings")"
+SETTINGS_WINDOW_CLASS="$(hyprdeck_env_get SETTINGS_CLASS "org.quickshell")"
+OPEN_WAIT_MS="$(hyprdeck_env_get OPEN_WAIT_MS 1500)"
+COLD_WAIT_MS="$(hyprdeck_env_get COLD_WAIT_MS 3000)"
+CLOSE_WAIT_MS="$(hyprdeck_env_get CLOSE_WAIT_MS 1500)"
+
+ACTION="toggle"
+PASSTHROUGH_ARGS=()
+for arg in "$@"; do
+    case "$arg" in
+        --open)   ACTION="open" ;;
+        --daemon) ACTION="daemon" ;;
+        *)        PASSTHROUGH_ARGS+=("$arg") ;;
+    esac
+done
+
+# Matches only the System Settings instance ("quickshell -p <repo>/settings").
+MATCH_PATTERN="[q]uickshell -p $SETTINGS_DIR"
+
+LOG_FILE="${XDG_RUNTIME_DIR:-/tmp}/hks-settings.log"
+
+now_ms() { echo $(( $(date +%s%N) / 1000000 )); }
+
+settings_running() { pgrep -f "$MATCH_PATTERN" >/dev/null 2>&1; }
+
+window_mapped() {
+    hyprctl clients -j 2>/dev/null | HYPRDECK_T="$SETTINGS_WINDOW_TITLE" HYPRDECK_C="$SETTINGS_WINDOW_CLASS" python3 -c '
+import json, os, sys
+try:
+    clients = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+t, c = os.environ["HYPRDECK_T"], os.environ["HYPRDECK_C"]
+sys.exit(0 if any(
+    isinstance(x, dict) and x.get("title") == t and x.get("class") == c
+    and x.get("mapped", True) for x in clients) else 1)
+'
+}
+
+poll_state() {
+    local want="$1" end
+    end=$(( $(now_ms) + $2 ))
+    while :; do
+        if [ "$want" = "mapped" ]; then
+            window_mapped && return 0
+        else
+            window_mapped || return 0
+        fi
+        [ "$(now_ms)" -ge "$end" ] && return 1
+        sleep 0.05
+    done
+}
+
+ipc_call() {
+    timeout 2 quickshell ipc -p "$SETTINGS_DIR" call settings "$@" >/dev/null 2>&1
+}
+
+kill_settings() {
+    pkill -f "$MATCH_PATTERN" 2>/dev/null || true
+    local i
+    for i in $(seq 1 40); do
+        settings_running || return 0
+        sleep 0.05
+    done
+    pkill -9 -f "$MATCH_PATTERN" 2>/dev/null || true
+    sleep 0.1
+}
+
+start_instance() {
+    if ! command -v quickshell >/dev/null 2>&1; then
+        echo "hks-settings: quickshell is not installed or not in PATH." >&2
+        return 1
+    fi
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "hks-settings: python3 is not installed or not in PATH." >&2
+        return 1
+    fi
+    hyprdeck_env_export_pair ROOT "$REPO_ROOT"
+    hyprdeck_env_export_pair KEEP_ALIVE "1"
+    export QML_XHR_ALLOW_FILE_READ=1
+    if [ "$1" = "hidden" ]; then
+        hyprdeck_env_export_pair START_HIDDEN "1"
+    else
+        hyprdeck_env_unset_pair START_HIDDEN
+    fi
+    setsid quickshell -p "$SETTINGS_DIR" "${PASSTHROUGH_ARGS[@]}" \
+        >>"$LOG_FILE" 2>&1 </dev/null &
+}
+
+fail_open() {
+    echo "hks-settings: HyprDeck Settings window did not appear (see $LOG_FILE)." >&2
+    exit 1
+}
+
+cold_start_visible() {
+    start_instance visible || exit 1
+    poll_state mapped "$COLD_WAIT_MS"
+}
+
+do_open() {
+    if ! settings_running; then
+        cold_start_visible && return 0
+        fail_open
+    fi
+    local attempt
+    for attempt in 1 2; do
+        ipc_call open || true
+        poll_state mapped "$OPEN_WAIT_MS" && return 0
+    done
+    kill_settings
+    cold_start_visible && return 0
+    fail_open
+}
+
+do_toggle() {
+    if window_mapped; then
+        ipc_call close || true
+        poll_state unmapped "$CLOSE_WAIT_MS" && return 0
+        kill_settings
+        poll_state unmapped "$CLOSE_WAIT_MS" && return 0
+        echo "hks-settings: could not close the HyprDeck Settings window." >&2
+        exit 1
+    fi
+    do_open
+}
+
+case "$ACTION" in
+    daemon)
+        settings_running && exit 0
+        start_instance hidden || exit 1
+        exit 0
+        ;;
+    open)   do_open ;;
+    toggle) do_toggle ;;
+esac
+exit 0

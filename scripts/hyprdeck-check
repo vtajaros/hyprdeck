@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# =============================================================================
+# HyprDeck - Verification & Linter Runner
+# =============================================================================
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+# shellcheck source=scripts/lib-hyprdeck-env.sh
+source "$REPO_ROOT/scripts/lib-hyprdeck-env.sh"
+
+echo "=== HyprDeck: Verification Check ==="
+echo
+
+# 1. Backend Unit Tests
+echo "[1/6] Running backend test suite..."
+python3 -m unittest discover -s backend/tests -t . -v
+echo
+
+# 2. Frontend QML Unit Tests
+echo "[2/6] Running frontend & settings QML unit tests..."
+if [ -x /usr/lib/qt6/bin/qmltestrunner ]; then
+    QMLTESTRUNNER="/usr/lib/qt6/bin/qmltestrunner"
+elif command -v qmltestrunner >/dev/null 2>&1; then
+    QMLTESTRUNNER="qmltestrunner"
+else
+    QMLTESTRUNNER=""
+fi
+
+if [ -n "$QMLTESTRUNNER" ]; then
+    QT_QPA_PLATFORM=offscreen "$QMLTESTRUNNER" -import "$REPO_ROOT/frontend/tests/mocks" -input "$REPO_ROOT/frontend/tests/"
+    if [ -d "$REPO_ROOT/settings/tests" ]; then
+        QT_QPA_PLATFORM=offscreen "$QMLTESTRUNNER" -import "$REPO_ROOT/frontend/tests/mocks" -input "$REPO_ROOT/settings/tests/"
+    fi
+    echo "QML unit tests passed successfully."
+else
+    echo "qmltestrunner not found; skipping QML unit tests."
+fi
+echo
+
+# 3. Frontend & Settings QML Lint
+echo "[3/6] Running qmllint on frontend and settings files..."
+if command -v qmllint >/dev/null 2>&1; then
+    QML_FILES=($(find frontend settings -name "*.qml" | sort))
+    echo "Found ${#QML_FILES[@]} QML files."
+    qmllint "${QML_FILES[@]}"
+    echo "qmllint passed with 0 errors/warnings."
+else
+    echo "qmllint not found; skipping QML static analysis."
+fi
+echo
+
+# 4. HyprDeck Theme Token Guard
+echo "[4/6] Running HyprDeck theme token check..."
+"$REPO_ROOT/scripts/hyprdeck-token-check"
+echo
+
+# 5. Headless Scene-Warning Regression Guard (optional via HYPRDECK_SKIP_SCENE=1 / HKS_SKIP_SCENE=1)
+echo "[5/6] Running headless QML scene-warning check..."
+if [ "$(hyprdeck_env_get SKIP_SCENE 0)" = "1" ]; then
+    echo "SKIP_SCENE=1 set; skipping headless scene check."
+elif command -v quickshell >/dev/null 2>&1 && [ -x "$REPO_ROOT/scripts/hyprdeck-scene-check" ]; then
+    "$REPO_ROOT/scripts/hyprdeck-scene-check"
+else
+    echo "quickshell or scripts/hyprdeck-scene-check unavailable; skipping scene check."
+fi
+echo
+
+# 6. Headless Responsive Layout Check (optional via HYPRDECK_SKIP_LAYOUT=1 / HKS_SKIP_LAYOUT=1)
+echo "[6/6] Running headless responsive layout check..."
+if [ "$(hyprdeck_env_get SKIP_LAYOUT 0)" = "1" ]; then
+    echo "SKIP_LAYOUT=1 set; skipping headless layout check."
+elif command -v quickshell >/dev/null 2>&1 && [ -x "$REPO_ROOT/scripts/hyprdeck-layout-check" ]; then
+    "$REPO_ROOT/scripts/hyprdeck-layout-check"
+else
+    echo "quickshell or scripts/hyprdeck-layout-check unavailable; skipping layout check."
+fi
+echo
+
+echo "=== All checks passed successfully! ==="

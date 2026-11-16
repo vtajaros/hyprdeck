@@ -499,9 +499,9 @@ def install_suite_isolation_guard() -> None:
                     "gsettings", "hyprctl", "awww", "xfconf-query",
                     "upower", "pkexec", "pgrep", "pkill", "hypridle", "systemd-analyze",
                     "hostnamectl", "uname", "lscpu", "free", "df", "lspci", "uptime", "quickshell",
-                    "hks-window", "hks-settings",
+                    "hks-window", "hks-settings", "hyprdeck-window", "hyprdeck-settings",
                 )
-                or os.path.basename(items[0]) in ("hks-window", "hks-settings")
+                or os.path.basename(items[0]) in ("hks-window", "hks-settings", "hyprdeck-window", "hyprdeck-settings")
             ):
                 raise AssertionError(
                     f"Test isolation violation: real {items[0]!r} called in tests without mock runner"

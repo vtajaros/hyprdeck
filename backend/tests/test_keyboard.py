@@ -35,7 +35,7 @@ class FakeKeyboardRunner:
             return LiveCmdResult(ok=True, rc=0, out=out, err="")
         if len(argv) >= 2 and argv[0] == "pgrep":
             return LiveCmdResult(ok=self.pgrep_ok, rc=0 if self.pgrep_ok else 1, out="1234\n" if self.pgrep_ok else "", err="")
-        if argv and os.path.basename(argv[0]) == "hks-window":
+        if argv and os.path.basename(argv[0]) in ("hyprdeck-window", "hks-window"):
             if self.open_timed_out:
                 return LiveCmdResult(ok=False, rc=-1, out="", err="timed out", timed_out=True)
             if self.open_rc != 0:
@@ -48,7 +48,7 @@ class FakeKeyboardRunner:
 class _KeyboardTestBase(IsolatedTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.fake_script = os.path.join(self._isolated_root, "hks-window")
+        self.fake_script = os.path.join(self._isolated_root, "hyprdeck-window")
         with open(self.fake_script, "w", encoding="utf-8") as f:
             f.write("#!/bin/sh\nexit 0\n")
         os.chmod(self.fake_script, 0o755)

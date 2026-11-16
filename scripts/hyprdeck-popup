@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# =============================================================================
+# HyprDeck - Keybind Studio Popup Mode Launcher & Toggle
+# =============================================================================
+set -euo pipefail
+
+# If quickshell desktop shell is running with native HKS popup, toggle via IPC
+if quickshell ipc call popups toggle hks 2>/dev/null | grep -q '"open":true'; then
+    exit 0
+fi
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FRONTEND_DIR="$REPO_ROOT/frontend"
+# shellcheck source=scripts/lib-hyprdeck-env.sh
+source "$REPO_ROOT/scripts/lib-hyprdeck-env.sh"
+
+# Toggle: close if already open (graceful IPC dismissal with fallback)
+MATCH_PATTERN="[q]uickshell.*$FRONTEND_DIR"
+
+if pgrep -f "$MATCH_PATTERN" >/dev/null 2>&1; then
+    quickshell ipc -p "$FRONTEND_DIR" call hks close >/dev/null 2>&1 || true
+    for _ in {1..8}; do
+        if ! pgrep -f "$MATCH_PATTERN" >/dev/null 2>&1; then
+            exit 0
+        fi
+        sleep 0.04
+    done
+    pkill -f "$MATCH_PATTERN" 2>/dev/null || true
+    exit 0
+fi
+
+# Verify quickshell is installed
+if ! command -v quickshell >/dev/null 2>&1; then
+    echo "Error: quickshell is not installed or not in PATH." >&2
+    exit 1
+fi
+
+# Verify python3 is installed
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: python3 is not installed or not in PATH." >&2
+    exit 1
+fi
+
+hyprdeck_env_export_pair ROOT "$REPO_ROOT"
+hyprdeck_env_export_pair MODE "popup"
+export QML_XHR_ALLOW_FILE_READ=1
+
+# Pass through optional popup anchor margins if set
+POPUP_LEFT_VAL="$(hyprdeck_env_get POPUP_LEFT "")"
+if [[ -n "$POPUP_LEFT_VAL" ]]; then
+    hyprdeck_env_export_pair POPUP_LEFT "$POPUP_LEFT_VAL"
+fi
+POPUP_TOP_VAL="$(hyprdeck_env_get POPUP_TOP "")"
+if [[ -n "$POPUP_TOP_VAL" ]]; then
+    hyprdeck_env_export_pair POPUP_TOP "$POPUP_TOP_VAL"
+fi
+
+exec quickshell -p "$FRONTEND_DIR" "$@"

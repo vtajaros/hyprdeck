@@ -22,7 +22,7 @@ def resolve_keyboard_paths(
     script_path: str | None = None,
     env: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
-    """Resolve repo root, frontend dir, and hks-window launcher script path."""
+    """Resolve repo root, frontend dir, and hyprdeck-window launcher script path."""
     repo_root = str(Path(__file__).resolve().parents[3])
     frontend_dir = str(Path(repo_root) / "frontend")
     if script_path is not None:
@@ -31,7 +31,7 @@ def resolve_keyboard_paths(
         env_map = os.environ if env is None else env
         raw_script = get_env("WINDOW_SCRIPT", environ=env_map)
         if not raw_script:
-            raw_script = str(Path(repo_root) / "scripts" / "hks-window")
+            raw_script = str(Path(repo_root) / "scripts" / "hyprdeck-window")
 
     resolved_script = os.path.abspath(raw_script) if raw_script else ""
     return {
