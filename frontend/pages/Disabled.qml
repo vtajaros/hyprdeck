@@ -88,6 +88,8 @@ Item {
         }
 
         Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
             text: "Keybindings disabled with Deck. Click 'Enable' to restore any keybinding to your active configuration."
             font.family: Deck.fontFamily
             font.pixelSize: Deck.fontSizeSmall
@@ -146,48 +148,39 @@ Item {
                         anchors.margins: 12
                         spacing: 10
 
-                        // Top Row: Key hint + Description hint + Source + Enable Button
-                        Item {
+                        // Top Row: Shortcut hint + Description + Source + Enable button (wrapping Flow)
+                        Flow {
                             width: parent.width
-                            height: 30
+                            spacing: 10
 
-                            Row {
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 10
-
-                                // Key Hint (ShortcutKeys)
-                                ShortcutKeys {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    parts: KeybindData.parseShortcutString(modelData.key_hint)
-                                }
-
-                                // Description Hint
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.description_hint || "Disabled keybinding"
-                                    font.family: Deck.fontFamily
-                                    font.pixelSize: Deck.fontSizeSmall
-                                    font.weight: Font.DemiBold
-                                    color: Deck.fg
-                                    elide: Text.ElideRight
-                                    width: Math.min(implicitWidth, 260)
-                                }
-
-                                // Source Path
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: root.formatSource(modelData.file, modelData.line)
-                                    font.family: Deck.fontFamily
-                                    font.pixelSize: 10
-                                    color: Deck.muted
-                                }
+                            ShortcutKeys {
+                                width: Math.min(implicitWidth, parent.width)
+                                wrap: true
+                                parts: KeybindData.parseShortcutString(modelData.key_hint)
                             }
 
-                            // Enable Action Button
+                            Text {
+                                objectName: "elideOk"
+                                text: modelData.description_hint || "Disabled keybinding"
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                font.weight: Font.DemiBold
+                                color: Deck.fg
+                                elide: Text.ElideRight
+                                width: Math.min(implicitWidth, Math.min(260, parent.width))
+                            }
+
+                            Text {
+                                objectName: "elideOk"
+                                text: root.formatSource(modelData.file, modelData.line)
+                                font.family: Deck.fontFamily
+                                font.pixelSize: 10
+                                color: Deck.muted
+                                elide: Text.ElideLeft
+                                width: Math.min(implicitWidth, parent.width)
+                            }
+
                             ActionButton {
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
                                 variant: "accent"
                                 iconText: ""
                                 text: "Enable"
@@ -206,6 +199,7 @@ Item {
 
                             Text {
                                 id: rawTxt
+                                objectName: "elideOk"
                                 anchors.left: parent.left
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter

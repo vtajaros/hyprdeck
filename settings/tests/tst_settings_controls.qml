@@ -476,4 +476,25 @@ TestCase {
         compare(ResponsiveLogic.shouldWrapDeviceActions(680, 240, 210, 12), false);
         compare(ResponsiveLogic.shouldWrapDeviceActions(420, 240, 210, 12), true);
     }
+
+    function test_keybind_row_and_dialog_responsive_decisions() {
+        compare(ResponsiveLogic.keybindRowModeForClass("compact"), "stacked");
+        compare(ResponsiveLogic.keybindRowModeForClass("medium"), "two-line");
+        compare(ResponsiveLogic.keybindRowModeForClass("cozy"), "two-line");
+        compare(ResponsiveLogic.keybindRowModeForClass("wide"), "columns");
+        compare(ResponsiveLogic.keybindRowModeForClass("expanded"), "columns");
+
+        compare(ResponsiveLogic.keybindActionsCollapsed("compact"), true);
+        compare(ResponsiveLogic.keybindActionsCollapsed("medium"), true);
+        compare(ResponsiveLogic.keybindActionsCollapsed("wide"), false);
+        compare(ResponsiveLogic.keybindActionsCollapsed("expanded"), false);
+
+        var c1 = ResponsiveLogic.clampDialogSize(640, 580, 1000, 700);
+        compare(c1.width, 640);
+        compare(c1.height, 580);
+
+        var c2 = ResponsiveLogic.clampDialogSize(640, 580, 455, 560);
+        compare(c2.width, 431);
+        compare(c2.height, 536);
+    }
 }

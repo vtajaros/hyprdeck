@@ -801,8 +801,9 @@ Item {
                     color: Deck.muted
                 }
 
-                Row {
-                    spacing: 24
+                Flow {
+                    width: parent.width
+                    spacing: 16
 
                     // Locked Checkbox
                     Row {

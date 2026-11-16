@@ -126,13 +126,13 @@ def main() -> int:
 
     if offending:
         sys.stderr.write(
-            f"hks-scene-check: FAILED ({len(offending)} scene warning(s) in InputPage/DisplayPage/SettingRow):\n"
+            f"hyprdeck-scene-check: FAILED ({len(offending)} scene warning(s) in InputPage/DisplayPage/SettingRow):\n"
         )
         for ln in offending:
             sys.stderr.write(f"  {ln}\n")
         return 1
 
-    print("hks-scene-check: passed (0 scene warnings in InputPage, DisplayPage, SettingRow).")
+    print("hyprdeck-scene-check: passed (0 scene warnings in InputPage, DisplayPage, SettingRow).")
     return 0
 
 

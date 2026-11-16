@@ -60,7 +60,7 @@ FloatingWindow {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Hyprland Keybind Studio"
+                        text: "Keybind Studio"
                         font.family: Deck.fontFamily
                         font.pixelSize: Deck.fontSize
                         font.weight: Font.Bold

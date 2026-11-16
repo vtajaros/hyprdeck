@@ -40,13 +40,11 @@ Item {
         spacing: Deck.space16
 
         // Page Header
-        Item {
+        Flow {
             width: parent.width
-            height: 36
+            spacing: 12
 
             Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
                 spacing: 12
 
                 Text {
@@ -89,8 +87,6 @@ Item {
 
             // Refresh Button
             ActionButton {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
                 variant: "neutral"
                 iconText: ""
                 text: "Refresh"
@@ -99,6 +95,8 @@ Item {
         }
 
         Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
             text: "Automatic snapshots saved to ~/.local/share/hyprdeck/backups before modifications. Click 'Restore' to preview and rollback."
             font.family: Deck.fontFamily
             font.pixelSize: Deck.fontSizeSmall
@@ -182,57 +180,50 @@ Item {
                         anchors.margins: 12
                         spacing: 8
 
-                        // Top Row: Timestamp + Short SHA + Restore Button
-                        Item {
+                        // Top Row: Timestamp + Short SHA + Restore Button (wrapping Flow)
+                        Flow {
                             width: parent.width
-                            height: 30
+                            spacing: 10
 
-                            Row {
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 10
+                            Text {
+                                height: 28
+                                verticalAlignment: Text.AlignVCenter
+                                text: ""
+                                font.family: Deck.fontFamily
+                                font.pixelSize: 12
+                                color: Deck.muted
+                            }
+
+                            Text {
+                                height: 28
+                                verticalAlignment: Text.AlignVCenter
+                                text: modelData.created_at || "-"
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                font.weight: Font.DemiBold
+                                color: Deck.fg
+                            }
+
+                            Rectangle {
+                                height: 20
+                                width: shaTxt.implicitWidth + 10
+                                radius: 3
+                                color: Deck.alpha(Deck.muted, 0.15)
+                                border.width: 1
+                                border.color: Deck.alpha(Deck.muted, 0.25)
 
                                 Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: ""
+                                    id: shaTxt
+                                    anchors.centerIn: parent
+                                    text: (modelData.sha256 ? modelData.sha256.slice(0, 12) : "-")
                                     font.family: Deck.fontFamily
-                                    font.pixelSize: 12
+                                    font.pixelSize: 10
                                     color: Deck.muted
-                                }
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.created_at || "-"
-                                    font.family: Deck.fontFamily
-                                    font.pixelSize: Deck.fontSizeSmall
-                                    font.weight: Font.DemiBold
-                                    color: Deck.fg
-                                }
-
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    height: 20
-                                    width: shaTxt.implicitWidth + 10
-                                    radius: 3
-                                    color: Deck.alpha(Deck.muted, 0.15)
-                                    border.width: 1
-                                    border.color: Deck.alpha(Deck.muted, 0.25)
-
-                                    Text {
-                                        id: shaTxt
-                                        anchors.centerIn: parent
-                                        text: (modelData.sha256 ? modelData.sha256.slice(0, 12) : "-")
-                                        font.family: Deck.fontFamily
-                                        font.pixelSize: 10
-                                        color: Deck.muted
-                                    }
                                 }
                             }
 
                             // Restore Action Button
                             ActionButton {
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
                                 variant: "accent"
                                 iconText: ""
                                 text: "Restore"
@@ -240,20 +231,39 @@ Item {
                             }
                         }
 
-                        // Bottom Row: Details path & ID
-                        Row {
-                            spacing: 16
+                        // Bottom Row: Details path & ID (wrapping Flow)
+                        Flow {
+                            width: parent.width
+                            spacing: 12
 
                             Row {
                                 spacing: 6
+                                width: Math.min(implicitWidth, parent.width)
                                 Text { text: "File:"; font.family: Deck.fontFamily; font.pixelSize: 10; color: Deck.muted; font.weight: Font.Bold }
-                                Text { text: root.formatSource(modelData.original_path); font.family: Deck.fontFamily; font.pixelSize: 10; color: Deck.fg }
+                                Text {
+                                    objectName: "elideOk"
+                                    width: Math.min(implicitWidth, Math.max(40, parent.width - 30))
+                                    elide: Text.ElideLeft
+                                    text: root.formatSource(modelData.original_path)
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: 10
+                                    color: Deck.fg
+                                }
                             }
 
                             Row {
                                 spacing: 6
+                                width: Math.min(implicitWidth, parent.width)
                                 Text { text: "ID:"; font.family: Deck.fontFamily; font.pixelSize: 10; color: Deck.muted; font.weight: Font.Bold }
-                                Text { text: modelData.id || "-"; font.family: Deck.fontFamily; font.pixelSize: 10; color: Deck.muted }
+                                Text {
+                                    objectName: "elideOk"
+                                    width: Math.min(implicitWidth, Math.max(40, parent.width - 20))
+                                    elide: Text.ElideRight
+                                    text: modelData.id || "-"
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: 10
+                                    color: Deck.muted
+                                }
                             }
                         }
                     }

@@ -19,7 +19,6 @@ power_helper          | *                                       | hks-power-help
 # Compatibility script shims & shim tests
 script_shims          | scripts/hks-*                           | HKS|hks|Hyprland Keybind Studio
 script_shims          | backend/tests/*                         | hks-(?:window|settings|popup|check|scene-check|layout-check|token-check|recorder-test)|hkswtest_|f"hks-\{suffix\}"
-script_shims          | scripts/hyprdeck-scene-check            | hks-scene-check
 
 # Environment variable fallbacks (HYPRDECK_* > HKS_*)
 env_fallbacks         | *                                       | HKS_[A-Z0-9_]+|HYPRDECK_/\s*HKS_|\bHKS_\*
@@ -28,4 +27,4 @@ env_fallbacks         | *                                       | HKS_[A-Z0-9_]+
 data_dir_fallbacks    | *                                       | (?:\.config|\.local/share|/hks)/hks\b|LEGACY_STATE_DIR_NAME\s*=\s*"hks"|"\.(?:config|local)",\s*(?:"share",\s*)?"hks"|/hks"|hks/descriptions\.json|hks directories|hks/revert-guard|\(hks -> hyprdeck\)|legacy hks/
 
 # Runtime IPC target, Wayland layer namespace, recorder submap, logger/temp prefixes
-ipc_or_submap         | *                                       | \bhks_record\b|call hks\b|popups toggle hks\b|(?:ipcTarget|target):\s*"hks"|"hks-popup"|hks\.(?:recorder|revert)|hks_test_iso_|hks_sandbox_cwd_|__HKS_INSTRUCTION_LIMIT__|definitely_missing_hks_sidecar|hks-tmp-
+ipc_or_submap         | *                                       | \bhks_record\b|call hks\b|popups toggle hks\b|(?:ipcTarget|target):\s*"hks"|"hks-popup"|hks\.(?:recorder|revert)|hks_test_iso_|hks_sandbox_cwd_|__HKS_INSTRUCTION_LIMIT__|definitely_missing_hks_sidecar|hks-tmp-|target hks|"hks",|_wait_ipc\([^)]*"hks"\)

@@ -774,5 +774,55 @@ class TestEnvPrecedence(unittest.TestCase):
         )
 
 
+class TestLegacyOverridesCompatibility(unittest.TestCase):
+    """Verify legacy overrides header & markers are detected, parsed, and updated cleanly."""
+
+    def test_legacy_header_and_markers_preserved_on_update(self) -> None:
+        from backend.core.include_block import has_include, insert_include
+        from backend.core.overrides import parse_sections, replace_section, remove_section
+
+        with tempfile.TemporaryDirectory() as td:
+            entry = os.path.join(td, "hyprland.lua")
+            ovr = os.path.join(td, "hks-overrides.lua")
+
+            legacy_entry_text = (
+                'local mainMod = "SUPER"\n'
+                "-- HKS-OVERRIDES-BEGIN\n"
+                'pcall(dofile, os.getenv("HOME") .. "/.config/hypr/hks-overrides.lua")\n'
+                "-- HKS-OVERRIDES-END\n"
+            )
+            legacy_ovr_text = (
+                "-- Managed by Hyprland Keybind Studio. Do not remove the section markers.\n"
+                "-- Content inside HKS-SECTION markers may be updated automatically.\n"
+                "\n"
+                "-- HKS-SECTION-BEGIN: input\n"
+                "hl.config({ input = { kb_layout = 'us' } })\n"
+                "-- HKS-SECTION-END: input\n"
+            )
+            with open(entry, "w", encoding="utf-8") as f:
+                f.write(legacy_entry_text)
+            with open(ovr, "w", encoding="utf-8") as f:
+                f.write(legacy_ovr_text)
+
+            # Include block with legacy comment is detected and insert_include is idempotent
+            self.assertTrue(has_include(legacy_entry_text))
+            self.assertEqual(insert_include(legacy_entry_text), legacy_entry_text)
+
+            # Existing legacy overrides file is parsed and updated in-place without clobbering legacy header
+            sections = parse_sections(legacy_ovr_text)
+            self.assertIn("input", sections)
+            self.assertIn("kb_layout", sections["input"])
+
+            updated = replace_section(legacy_ovr_text, "input", "hl.config({ input = { kb_layout = 'de' } })")
+            self.assertIn("-- Managed by Hyprland Keybind Studio.", updated)
+            self.assertIn("-- HKS-SECTION-BEGIN: input", updated)
+            self.assertIn("kb_layout = 'de'", updated)
+            self.assertIn("-- HKS-SECTION-END: input", updated)
+
+            removed = remove_section(updated, "input")
+            self.assertIn("-- Managed by Hyprland Keybind Studio.", removed)
+            self.assertEqual(parse_sections(removed), {})
+
+
 if __name__ == "__main__":
     unittest.main()

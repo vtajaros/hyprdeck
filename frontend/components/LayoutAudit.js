@@ -47,6 +47,20 @@ function _insideVerticalScrollView(pageRoot, it) {
     return false;
 }
 
+function _clippedOutByScrollView(pageRoot, it, pt, h) {
+    var p = it ? it.parent : null;
+    while (p && p !== pageRoot) {
+        if (p.clip === true && p.contentWidth !== undefined && p.contentHeight !== undefined && p.interactive !== undefined) {
+            var svPt = p.mapToItem(pageRoot, 0, 0);
+            if ((pt.y + h) <= svPt.y + 1 || pt.y >= svPt.y + p.height - 1) {
+                return true;
+            }
+        }
+        p = p.parent;
+    }
+    return false;
+}
+
 function _isDescendant(anc, node) {
     var p = node ? node.parent : null;
     while (p) {
@@ -121,7 +135,7 @@ function auditItem(pageRoot, textEnums) {
                     });
                 }
             }
-            if (!inOpaque && (isOpaqueControl || isTxt)) {
+            if (!inOpaque && (isOpaqueControl || isTxt) && !_clippedOutByScrollView(pageRoot, node, pt, node.height)) {
                 overlapLeaves.push({ node: node, label: label, path: curPath, x1: pt.x, y1: pt.y, x2: pt.x + node.width, y2: pt.y + node.height });
             }
         }

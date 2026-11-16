@@ -41,10 +41,16 @@ Item {
             ? Deck.alpha(Deck.critical, 0.5)
             : Deck.alpha(Deck.accent, 0.45)
 
-        Column {
+        Item {
             anchors.fill: parent
             anchors.margins: 20
-            spacing: 12
+
+            Column {
+                id: topSection
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                spacing: 12
 
             // Header Bar
             Item {
@@ -488,12 +494,17 @@ Item {
                 font.weight: Font.DemiBold
                 color: Deck.muted
             }
+            }
 
             // Diff Viewer Box
             Rectangle {
                 id: diffBox
-                width: parent.width
-                height: Math.max(120, parent.height - y - bottomControlArea.height - 12)
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: topSection.bottom
+                anchors.topMargin: 10
+                anchors.bottom: bottomControlArea.top
+                anchors.bottomMargin: 12
                 radius: 6
                 color: Deck.alpha(Deck.elevated, 0.6)
                 border.width: 1
@@ -504,6 +515,7 @@ Item {
                     id: diffListView
                     anchors.fill: parent
                     anchors.margins: 10
+                    clip: true
                     model: (EditService.previewData && EditService.previewData.diff)
                         ? EditService.previewData.diff.split("\n")
                         : ["(no diff generated)"]
@@ -517,6 +529,7 @@ Item {
 
                     delegate: Text {
                         width: diffListView.width - 12
+                        wrapMode: Text.WrapAnywhere
                         text: modelData
                         font.family: Deck.fontFamily
                         font.pixelSize: 11
@@ -535,11 +548,14 @@ Item {
             // Bottom Control Area (Delete checkbox confirmation + Action buttons)
             Column {
                 id: bottomControlArea
-                width: parent.width
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
                 spacing: 10
 
                 // Second confirmation for Delete
                 Row {
+                    width: parent.width
                     spacing: 8
                     visible: !!(EditService.activeOp && EditService.activeOp.action === "delete")
 
@@ -569,7 +585,8 @@ Item {
                     }
 
                     Text {
-                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, parent.width - 26)
+                        wrapMode: Text.WordWrap
                         text: "I understand this permanently deletes the keybinding line"
                         font.family: Deck.fontFamily
                         font.pixelSize: Deck.fontSizeSmall
@@ -584,15 +601,13 @@ Item {
                     }
                 }
 
-                // Action Buttons Row
-                Item {
+                // Action Buttons Flow
+                Flow {
                     width: parent.width
-                    height: 32
+                    spacing: 10
 
-                    // Left side: Dry run indicator if active
+                    // Dry run indicator if active
                     Row {
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
                         spacing: 6
                         visible: EditService.dryRunOnly
 

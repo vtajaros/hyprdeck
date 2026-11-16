@@ -183,3 +183,15 @@
 | Rename `scripts/hks-*` -> `scripts/hyprdeck-*` with silent shims + tests | `scripts/hyprdeck-*`, `scripts/hks-*`, `backend/tests/test_hyprdeck_window.py` | [x] Complete |
 | Canonical `~/.config/hyprdeck` & `~/.local/share/hyprdeck` + `migrate-data` CLI | `backend/core/data_migration.py`, `backend/cli.py`, `backend/tests/test_data_migration.py` | [x] Complete |
 | Legacy inventory, brand guard (`[7/7]`), and live-switch preparation | `docs/LEGACY_NAMES.md`, `scripts/hyprdeck-brand-check`, `scripts/hyprdeck-check` | [x] Complete |
+
+---
+
+## Milestone S17 (Responsive Keybind Studio, Popup & Bar Card + S16 Hardening)
+
+| Deliverable | Component | Status |
+| :--- | :--- | :--- |
+| Adaptive `WindowShell` (`full`/`narrow`/`rail` sidebar, ~1100px cap, `<320px` horizontal safety) & shared `LayoutAudit.js` | `frontend/WindowShell.qml`, `frontend/components/LayoutAudit.js`, `settings/shell.qml` | [x] Complete |
+| Responsive `KeybindRow`, wrapping `ShortcutKeys`/`CategoryChips`, `AllKeybindings` toolbar, and `Conflicts` view | `frontend/components/{KeybindRow,ShortcutKeys,CategoryChips,ResponsiveLogic}.qml`, `frontend/pages/{AllKeybindings,Conflicts}.qml` | [x] Complete |
+| Responsive dialogs (`KeybindEditDialog`, `KeybindRecorder`, `EditConfirmDialog`) clamped to `viewport - 24` with internal scroll & wrapping actions | `frontend/components/{KeybindEditDialog,KeybindRecorder,EditConfirmDialog}.qml` | [x] Complete |
+| Responsive `PopupShell` & Bar-embedded `HksCard` (`760x560`) compatibility harness + QML tests | `frontend/PopupShell.qml`, `frontend/dev/CardHarness.qml`, `frontend/tests/tst_hkscard_compat.qml`, `settings/tests/tst_settings_controls.qml` | [x] Complete |
+| Multi-target `--target {settings,keybind-studio,popup,card,all}` layout audit & screenshots + S16 hardening (legacy overrides test, `hyprdeck-scene-check` label/docs) | `scripts/hyprdeck-layout-check`, `scripts/ui-capture/capture_layout_matrix.py`, `scripts/hyprdeck-scene-check`, `backend/tests/test_core.py` | [x] Complete |

@@ -57,11 +57,13 @@ Rectangle {
                 clip: true
 
                 Text {
+                    objectName: "elideOk"
                     anchors.fill: parent
                     text: root.placeholder
                     font.family: Deck.fontFamily
                     font.pixelSize: Deck.fontSize
                     color: Deck.alpha(Deck.muted, 0.6)
+                    elide: Text.ElideRight
                     visible: !input.text && !input.inputMethodComposing
                 }
             }

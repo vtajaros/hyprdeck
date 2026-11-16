@@ -3,7 +3,7 @@ import Quickshell
 import Quickshell.Io
 import "services"
 import "theme"
-import "../frontend/components/LayoutAudit.js" as LayoutAudit
+import "shared_components/LayoutAudit.js" as LayoutAudit
 
 ShellRoot {
     id: root

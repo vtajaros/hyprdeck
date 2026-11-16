@@ -16,7 +16,6 @@ Item {
         id: chipFlow
         width: parent.width
         spacing: 6
-        rowSpacing: 6
 
             // "All" chip
             Rectangle {

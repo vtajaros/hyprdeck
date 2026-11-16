@@ -87,9 +87,111 @@ def _wait_services(pid: int) -> None:
         time.sleep(0.15)
 
 
+def _grab_and_wait(pid: int, target: str, png_path: Path) -> bool:
+    grab_res = subprocess.run(
+        ["quickshell", "ipc", "--pid", str(pid), "call", target, "debugGrabWindowToFile", str(png_path)],
+        check=True, capture_output=True, text=True, timeout=5,
+    )
+    grab_data = json.loads(grab_res.stdout.strip())
+    if not grab_data.get("ok"):
+        sys.stderr.write(f"capture_layout_matrix: grab failed to start for {png_path.name}: {grab_data}\n")
+        return False
+    target_seq = int(grab_data.get("seq", 0))
+    for _ in range(40):
+        st_res = subprocess.run(
+            ["quickshell", "ipc", "--pid", str(pid), "call", target, "debugGrabStatus"],
+            check=True, capture_output=True, text=True, timeout=5,
+        )
+        st_data = json.loads(st_res.stdout.strip())
+        status_str = str(st_data.get("status", ""))
+        if int(st_data.get("seq", 0)) >= target_seq and status_str.startswith(f"ok:{target_seq}:"):
+            dims = _png_dimensions(png_path)
+            return png_path.exists() and png_path.stat().st_size > 0 and dims is not None
+        if status_str.startswith(f"fail:{target_seq}:"):
+            return False
+        time.sleep(0.05)
+    return False
+
+
+def _make_contact(montage_bin: str | None, pngs: list[Path], contact_path: Path) -> bool:
+    if not montage_bin or not Path(montage_bin).is_file() or not pngs:
+        return False
+    cmd = [
+        montage_bin, *[str(p) for p in pngs],
+        "-tile", f"{len(pngs)}x1", "-geometry", "380x260+8+8",
+        "-background", "#0b0e10", "-border", "1", "-bordercolor", "#2b303b",
+        str(contact_path),
+    ]
+    subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=30)
+    return contact_path.exists() and contact_path.stat().st_size > 0
+
+
+def _capture_frontend(repo_root: Path, out_dir: Path, montage_bin: str | None, mode: str, sizes: tuple[tuple[int, int], ...], views: tuple[str, ...], prefix: str) -> tuple[int, int]:
+    shell_qml = repo_root / "frontend" / "shell.qml"
+    env = {
+        **os.environ,
+        "QT_QPA_PLATFORM": "offscreen",
+        "HYPRDECK_KEEP_ALIVE": "1",
+        "HKS_KEEP_ALIVE": "1",
+        "HYPRDECK_SETTINGS_DEBUG": "1",
+        "HKS_SETTINGS_DEBUG": "1",
+        "HYPRDECK_MODE": mode,
+        "HKS_MODE": mode,
+        "HYPRDECK_ROOT": str(repo_root),
+        "HKS_ROOT": str(repo_root),
+    }
+    env.pop("HYPRDECK_START_HIDDEN", None)
+    env.pop("HKS_START_HIDDEN", None)
+    proc = subprocess.Popen(["quickshell", "-p", str(shell_qml)], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    captured = 0
+    contacts = 0
+    try:
+        ready = False
+        for _ in range(40):
+            r = subprocess.run(["quickshell", "ipc", "--pid", str(proc.pid), "show"], capture_output=True, text=True, timeout=3)
+            if r.returncode == 0 and "target hks" in r.stdout:
+                ready = True
+                break
+            time.sleep(0.15)
+        if not ready:
+            raise RuntimeError(f"frontend IPC ({mode}) did not become ready")
+        for _ in range(40):
+            r = subprocess.run(["quickshell", "ipc", "--pid", str(proc.pid), "call", "hks", "debugState"], capture_output=True, text=True, timeout=5)
+            if r.returncode == 0 and not json.loads(r.stdout.strip()).get("loading", True):
+                break
+            time.sleep(0.15)
+
+        for v in views:
+            pngs: list[Path] = []
+            for w, h in sizes:
+                subprocess.run(
+                    ["quickshell", "ipc", "--pid", str(proc.pid), "call", "hks", "debugConfigureLayoutProbe", str(w), str(h), v, "", "All"],
+                    check=True, capture_output=True, text=True, timeout=5,
+                )
+                time.sleep(0.14)
+                png_path = out_dir / f"{prefix}-{v}-{w}x{h}.png"
+                if png_path.exists():
+                    png_path.unlink()
+                if not _grab_and_wait(proc.pid, "hks", png_path):
+                    raise RuntimeError(f"Failed capturing {png_path.name}")
+                captured += 1
+                pngs.append(png_path)
+            if _make_contact(montage_bin, pngs, out_dir / f"contact-{prefix}-{v}.png"):
+                contacts += 1
+    finally:
+        proc.terminate()
+        try:
+            proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.communicate(timeout=5)
+    return captured, contacts
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Capture headless offscreen layout matrix PNGs.")
     parser.add_argument("--out-dir", default="", help="Output directory (default: <repo>/build/layout-shots)")
+    parser.add_argument("--target", choices=("settings", "keybind-studio", "popup", "card", "all"), default="all")
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parent.parent.parent
@@ -99,6 +201,26 @@ def main() -> int:
 
     montage_bin = shutil.which("montage") or "/usr/bin/montage"
     has_montage = Path(montage_bin).is_file()
+
+    captured_count = 0
+    contact_count = 0
+
+    if args.target in ("keybind-studio", "all"):
+        c, ct = _capture_frontend(repo_root, out_dir, montage_bin, "window", CAPTURE_SIZES, ("all", "conflicts", "add", "edit", "recorder", "confirm"), "ks")
+        captured_count += c
+        contact_count += ct
+    if args.target in ("popup", "all"):
+        c, ct = _capture_frontend(repo_root, out_dir, montage_bin, "popup", ((760, 560), (420, 560)), ("all",), "popup")
+        captured_count += c
+        contact_count += ct
+    if args.target in ("card", "all"):
+        c, ct = _capture_frontend(repo_root, out_dir, montage_bin, "card", ((760, 560),), ("all",), "card")
+        captured_count += c
+        contact_count += ct
+
+    if args.target not in ("settings", "all"):
+        print(f"capture_layout_matrix: wrote {captured_count} PNGs and {contact_count} contact sheets in {out_dir}")
+        return 0
 
     env = {
         **os.environ,
@@ -120,8 +242,6 @@ def main() -> int:
         stderr=subprocess.STDOUT,
         text=True,
     )
-    captured_count = 0
-    contact_count = 0
     try:
         if not _wait_ready(proc.pid):
             sys.stderr.write("capture_layout_matrix: Quickshell IPC did not become ready.\n")

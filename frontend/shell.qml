@@ -90,8 +90,11 @@ ShellRoot {
                 if (item.editDialogRef && item.editDialogRef.recorderRef && item.editDialogRef.recorderRef.opened) {
                     item.editDialogRef.recorderRef.close();
                 }
-                if (EditService.dialogOpen || EditService.editDialogOpen) {
+                if (EditService.dialogOpen) {
                     EditService.cancelDialog();
+                }
+                if (EditService.editDialogOpen) {
+                    EditService.closeEditDialog();
                 }
                 var v = String(viewName || "all");
                 if (v === "all" || v === "filters") {

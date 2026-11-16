@@ -548,18 +548,18 @@ Popup {
         }
 
         // 4. Footnote & Mode Toggle
-        Row {
+        Flow {
             width: parent.width
+            spacing: 8
 
             Text {
+                width: Math.min(implicitWidth, parent.width)
+                wrapMode: Text.WordWrap
                 text: "Bare Escape cancels. Combos with Escape (e.g. SUPER + Escape) are recordable."
                 font.family: Deck.fontFamily
                 font.pixelSize: 11
                 color: Deck.muted
-                anchors.verticalCenter: parent.verticalCenter
             }
-
-            Item { Layout.fillWidth: true; width: 1 }
 
             Rectangle {
                 width: toggleText.implicitWidth + 16
@@ -568,7 +568,6 @@ Popup {
                 color: "transparent"
                 border.width: 1
                 border.color: Deck.alpha(Deck.muted, 0.3)
-                anchors.verticalCenter: parent.verticalCenter
 
                 Text {
                     id: toggleText

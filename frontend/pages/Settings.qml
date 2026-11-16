@@ -316,31 +316,35 @@ Item {
                     anchors.margins: 12
                     spacing: 8
 
-                    Row {
+                    Flow {
+                        width: parent.width
                         spacing: 8
-                        Text { width: 140; text: "Repository Root:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
-                        Text { text: KeybindData.rootPath; color: Deck.fg; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall }
+                        Text { width: Math.min(140, parent.width); text: "Repository Root:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
+                        Text { width: Math.min(implicitWidth, parent.width); wrapMode: Text.WrapAnywhere; text: KeybindData.rootPath; color: Deck.fg; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall }
                     }
-                    Row {
+                    Flow {
+                        width: parent.width
                         spacing: 8
-                        Text { width: 140; text: "Entrypoint:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
-                        Text { text: KeybindData.environment ? (KeybindData.environment.entrypoint || "-") : "-"; color: Deck.fg; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall }
+                        Text { width: Math.min(140, parent.width); text: "Entrypoint:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
+                        Text { width: Math.min(implicitWidth, parent.width); wrapMode: Text.WrapAnywhere; text: KeybindData.environment ? (KeybindData.environment.entrypoint || "-") : "-"; color: Deck.fg; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall }
                     }
-                    Row {
+                    Flow {
+                        width: parent.width
                         spacing: 8
-                        Text { width: 140; text: "Language:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
+                        Text { width: Math.min(140, parent.width); text: "Language:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
                         Text { text: KeybindData.environment ? (KeybindData.environment.language || "-") : "-"; color: Deck.accent; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall }
                     }
-                    Row {
+                    Flow {
+                        width: parent.width
                         spacing: 8
-                        Text { width: 140; text: "Hyprland Version:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
+                        Text { width: Math.min(140, parent.width); text: "Hyprland Version:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
                         Text { text: KeybindData.environment ? (KeybindData.environment.hyprland_version || "unknown") : "unknown"; color: Deck.fg; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall }
                     }
-                    Row {
+                    Flow {
+                        width: parent.width
                         spacing: 8
                         Text {
-                            width: 140
-                            anchors.verticalCenter: parent.verticalCenter
+                            width: Math.min(140, parent.width)
                             text: "Theme:"
                             color: Deck.muted
                             font.family: Deck.fontFamily
@@ -348,9 +352,9 @@ Item {
                             font.weight: Font.Bold
                         }
 
-                        Row {
+                        Flow {
+                            width: Math.min(implicitWidth, parent.width)
                             spacing: 8
-                            anchors.verticalCenter: parent.verticalCenter
 
                             Rectangle {
                                 height: 26
@@ -403,7 +407,8 @@ Item {
                             }
 
                             Text {
-                                anchors.verticalCenter: parent.verticalCenter
+                                height: 26
+                                verticalAlignment: Text.AlignVCenter
                                 text: "(in-memory only)"
                                 font.family: Deck.fontFamily
                                 font.pixelSize: 10
@@ -411,10 +416,13 @@ Item {
                             }
                         }
                     }
-                    Row {
+                    Flow {
+                        width: parent.width
                         spacing: 8
-                        Text { width: 140; text: "Theme Source:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
+                        Text { width: Math.min(140, parent.width); text: "Theme Source:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
                         Text {
+                            width: Math.min(implicitWidth, parent.width)
+                            wrapMode: Text.WrapAnywhere
                             text: Deck.themeMode === "system"
                                 ? "~/.config/quickshell/theme/colors.json (Matugen / Quickshell)"
                                 : "Fixed graphite palette (offline defaults)"
@@ -435,7 +443,8 @@ Item {
                 color: Deck.fg
             }
 
-            Row {
+            Flow {
+                width: parent.width
                 spacing: 8
                 Repeater {
                     model: [

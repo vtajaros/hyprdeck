@@ -444,8 +444,10 @@ Item {
 
             Row {
                 id: companionRow
-                anchors.centerIn: parent
-                width: Math.min(implicitWidth, parent.width - 16)
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: 8
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: 6
 
                 Text {
