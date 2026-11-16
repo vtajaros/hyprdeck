@@ -649,6 +649,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
         ov_act_p.add_argument("--scan-sha256", dest="scan_sha256", default=None, help="Expected SHA-256 of the entrypoint before editing.")
         ov_act_p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
+    # migrate-data subcommand
+    md_p = subparsers.add_parser(
+        "migrate-data",
+        help="Migrate legacy ~/.config/hks and ~/.local/share/hks directories to hyprdeck (dry-run by default).",
+    )
+    md_mode = md_p.add_mutually_exclusive_group()
+    md_mode.add_argument("--dry-run", dest="apply", action="store_false", default=False, help="Preview moves without modifying disk (default).")
+    md_mode.add_argument("--apply", dest="apply", action="store_true", help="Atomically rename legacy directories and leave symlinks.")
+    md_p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
     # settings subcommand
     st_p = subparsers.add_parser(
         "settings",
@@ -3097,6 +3107,29 @@ def _handle_settings(args: argparse.Namespace) -> int:
     return 1 if res.errors else 0
 
 
+def _handle_migrate_data(args: argparse.Namespace) -> int:
+    from backend.core.data_migration import migrate_data
+
+    res = migrate_data(apply=bool(args.apply))
+    if getattr(args, "json_output", False):
+        sys.stdout.write(json.dumps(res, indent=2) + "\n")
+        sys.stdout.flush()
+    else:
+        if not res.get("ok"):
+            sys.stderr.write(f"migrate-data: {res.get('error', 'failed')}\n")
+        else:
+            mode = "APPLIED" if res.get("applied") else "DRY-RUN"
+            sys.stdout.write(f"migrate-data ({mode}):\n")
+            for pair in res.get("pairs", []):
+                sys.stdout.write(f"  [{pair['kind']}] {pair['source']} -> {pair['destination']} ({pair['status']}, {len(pair.get('files', {}))} file(s))\n")
+            if res.get("undo_commands"):
+                sys.stdout.write("Undo command(s):\n")
+                for cmd in res["undo_commands"]:
+                    sys.stdout.write(f"  {cmd}\n")
+        sys.stdout.flush()
+    return 0 if res.get("ok") else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_arg_parser()
     try:
@@ -3218,6 +3251,9 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.subcommand == "overrides":
             return _handle_overrides(args)
+
+        if args.subcommand == "migrate-data":
+            return _handle_migrate_data(args)
 
         if args.subcommand == "settings":
             return _handle_settings(args)

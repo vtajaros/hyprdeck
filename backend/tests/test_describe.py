@@ -236,13 +236,13 @@ class TestSidecarOverrides(unittest.TestCase):
         env_no_hks = {"XDG_CONFIG_HOME": "/tmp/xdg_cfg", "HOME": "/tmp/home_dir"}
         self.assertEqual(
             resolve_sidecar_path(env=env_no_hks),
-            "/tmp/xdg_cfg/hks/descriptions.json",
+            "/tmp/xdg_cfg/hyprdeck/descriptions.json",
         )
 
         env_home_only = {"HOME": "/tmp/home_dir"}
         self.assertEqual(
             resolve_sidecar_path(env=env_home_only),
-            "/tmp/home_dir/.config/hks/descriptions.json",
+            "/tmp/home_dir/.config/hyprdeck/descriptions.json",
         )
 
     def test_missing_sidecar_is_silent(self) -> None:

@@ -34,7 +34,13 @@ from backend.editor.backups import resolve_backup_dir
 REAL_HOME = os.path.realpath(os.path.expanduser("~"))
 FORBIDDEN_REAL_PATHS = tuple(
     os.path.realpath(os.path.expanduser(p))
-    for p in ("~/.config/hypr", "~/.config/hks", "~/.local/share/hks")
+    for p in (
+        "~/.config/hypr",
+        "~/.config/hks",
+        "~/.config/hyprdeck",
+        "~/.local/share/hks",
+        "~/.local/share/hyprdeck",
+    )
 )
 
 
@@ -193,7 +199,10 @@ class IsolatedTestCase(unittest.TestCase):
 _GUARD_INSTALLED = False
 _REAL_SNAPSHOT_DIRS = (
     os.path.realpath(os.path.join(REAL_HOME, ".config", "hks")),
+    os.path.realpath(os.path.join(REAL_HOME, ".config", "hyprdeck")),
     os.path.realpath(os.path.join(REAL_HOME, ".config", "hypr")),
+    os.path.realpath(os.path.join(REAL_HOME, ".local", "share", "hks")),
+    os.path.realpath(os.path.join(REAL_HOME, ".local", "share", "hyprdeck")),
 )
 
 

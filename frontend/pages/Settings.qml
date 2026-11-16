@@ -97,7 +97,7 @@ Item {
 
                     Text {
                         width: parent.width
-                        text: "Sidecar overrides store custom descriptions and categories in ~/.config/hks/descriptions.json without modifying your Hyprland configuration files."
+                        text: "Sidecar overrides store custom descriptions and categories in ~/.config/hyprdeck/descriptions.json without modifying your Hyprland configuration files."
                         font.family: Deck.fontFamily
                         font.pixelSize: Deck.fontSizeSmall
                         color: Deck.muted

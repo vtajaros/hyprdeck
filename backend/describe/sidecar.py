@@ -43,8 +43,11 @@ def resolve_sidecar_path(
     env: dict[str, str] | None = None,
 ) -> str | None:
     """Resolve sidecar file path following strict precedence:
-    --sidecar PATH > $HKS_SIDECAR > $XDG_CONFIG_HOME/hks/descriptions.json > ~/.config/hks/descriptions.json
+    --sidecar PATH > $HYPRDECK_SIDECAR > $HKS_SIDECAR > $XDG_CONFIG_HOME/hyprdeck/descriptions.json
+    (falling back to legacy hks/ if hyprdeck/ does not yet exist).
     """
+    from backend.core.data_migration import resolve_config_app_dir
+
     if no_sidecar:
         return None
     if cli_path is not None and cli_path.strip() != "":
@@ -60,12 +63,7 @@ def resolve_sidecar_path(
     if env_sidecar:
         return os.path.abspath(os.path.expanduser(env_sidecar))
 
-    xdg = src_env.get("XDG_CONFIG_HOME", "").strip()
-    if xdg:
-        return os.path.abspath(os.path.join(os.path.expanduser(xdg), "hks", "descriptions.json"))
-
-    home = src_env.get("HOME", "").strip() or os.path.expanduser("~")
-    return os.path.abspath(os.path.join(home, ".config", "hks", "descriptions.json"))
+    return os.path.abspath(os.path.join(resolve_config_app_dir(src_env), "descriptions.json"))
 
 
 def _strip_underscore_keys(obj: dict[str, Any]) -> dict[str, Any]:
@@ -340,8 +338,8 @@ def build_sidecar_template(
     if not include_all or binds is None:
         return {
             "_note": (
-                "Hyprland Keybind Studio (HKS) sidecar overrides. "
-                "Save to ~/.config/hks/descriptions.json or pass via --sidecar PATH. "
+                "HyprDeck Keybind Studio sidecar overrides. "
+                "Save to ~/.config/hyprdeck/descriptions.json or pass via --sidecar PATH. "
                 "Keys starting with '_' are ignored by the validator."
             ),
             "version": 1,
@@ -388,8 +386,8 @@ def build_sidecar_template(
 
     return {
         "_note": (
-            "Hyprland Keybind Studio (HKS) full sidecar template (--all). "
-            "Edit descriptions/categories as desired and save to ~/.config/hks/descriptions.json."
+            "HyprDeck Keybind Studio full sidecar template (--all). "
+            "Edit descriptions/categories as desired and save to ~/.config/hyprdeck/descriptions.json."
         ),
         "version": 1,
         "overrides": overrides,

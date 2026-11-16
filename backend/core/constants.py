@@ -19,7 +19,8 @@ OVERRIDES_HEADER = (
     "Content inside HKS-SECTION markers may be updated automatically.\n"
 )
 
-STATE_DIR_NAME = "hks"
+STATE_DIR_NAME = "hyprdeck"
+LEGACY_STATE_DIR_NAME = "hks"
 REVERT_GUARD_SUBDIR = "revert-guard"
 ENV_STATE_DIR = "HYPRDECK_STATE_DIR"
 WATCHDOG_LOG_FILENAME = "revert-watchdog.log"

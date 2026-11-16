@@ -99,7 +99,7 @@ Item {
         }
 
         Text {
-            text: "Automatic snapshots saved to ~/.local/share/hks/backups before modifications. Click 'Restore' to preview and rollback."
+            text: "Automatic snapshots saved to ~/.local/share/hyprdeck/backups before modifications. Click 'Restore' to preview and rollback."
             font.family: Deck.fontFamily
             font.pixelSize: Deck.fontSizeSmall
             color: Deck.muted

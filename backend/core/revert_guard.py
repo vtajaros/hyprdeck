@@ -56,7 +56,8 @@ def resolve_state_dir(
     state_dir: str | None = None,
     env: Mapping[str, str] | None = None,
 ) -> str:
-    """Resolve the revert-guard state directory ($HYPRDECK_STATE_DIR > $HKS_STATE_DIR > default)."""
+    """Resolve the revert-guard state directory ($HYPRDECK_STATE_DIR > $HKS_STATE_DIR > data_dir/revert-guard)."""
+    from backend.core.data_migration import resolve_data_app_dir
     from backend.core.env import get_env, get_env_flag
 
     if state_dir:
@@ -69,10 +70,7 @@ def resolve_state_dir(
         dbg_cfg = get_env("SETTINGS_CONFIG_DIR", environ=environ)
         if dbg_cfg:
             return resolve_debug_companion_dir(dbg_cfg, REVERT_GUARD_SUBDIR)
-    home = environ.get("HOME", "").strip() or os.path.expanduser("~")
-    return os.path.abspath(
-        os.path.join(home, ".local", "share", STATE_DIR_NAME, REVERT_GUARD_SUBDIR)
-    )
+    return os.path.abspath(os.path.join(resolve_data_app_dir(environ), REVERT_GUARD_SUBDIR))
 
 
 def _write_private_bytes(path: str, data: bytes) -> None:

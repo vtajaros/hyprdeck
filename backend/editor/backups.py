@@ -61,7 +61,8 @@ def resolve_backup_dir(
     backup_dir: str | None = None,
     env: dict[str, str] | None = None,
 ) -> str:
-    """Resolve the backup directory ($HYPRDECK_BACKUP_DIR > $HKS_BACKUP_DIR > default)."""
+    """Resolve the backup directory ($HYPRDECK_BACKUP_DIR > $HKS_BACKUP_DIR > data_dir/backups)."""
+    from backend.core.data_migration import resolve_data_app_dir
     from backend.core.env import get_env
 
     if backup_dir:
@@ -70,8 +71,7 @@ def resolve_backup_dir(
     override = get_env("BACKUP_DIR", environ=environ)
     if override:
         return os.path.abspath(os.path.expanduser(override))
-    home = environ.get("HOME", "").strip() or os.path.expanduser("~")
-    return os.path.abspath(os.path.join(home, ".local", "share", "hks", "backups"))
+    return os.path.abspath(os.path.join(resolve_data_app_dir(environ), "backups"))
 
 
 def _ensure_not_inside_config_dir(backup_dir: str, target_dir: str) -> None:
