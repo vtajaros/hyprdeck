@@ -7,16 +7,16 @@ Rectangle {
     property string title: ""
     property string subtitle: ""
     property bool highlighted: false
-    property real cardPadding: HKS.space12
+    property real cardPadding: Deck.space12
     property alias spacing: innerCol.spacing
     default property alias content: innerCol.data
 
     implicitHeight: innerCol.implicitHeight + (root.cardPadding * 2)
     height: implicitHeight
-    radius: HKS.radiusMedium
-    color: HKS.surface
+    radius: Deck.radiusMedium
+    color: Deck.surface
     border.width: 1
-    border.color: root.highlighted ? HKS.accent : HKS.alpha(HKS.muted, 0.18)
+    border.color: root.highlighted ? Deck.accent : Deck.alpha(Deck.muted, 0.18)
 
     Column {
         id: innerCol
@@ -24,24 +24,24 @@ Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: root.cardPadding
-        spacing: HKS.space8
+        spacing: Deck.space8
 
         Text {
             visible: root.title.length > 0
             text: root.title
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSize
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSize
             font.weight: Font.DemiBold
-            color: HKS.fg
+            color: Deck.fg
         }
 
         Text {
             visible: root.subtitle.length > 0
             width: parent.width
             text: root.subtitle
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeSmall
-            color: HKS.muted
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSizeSmall
+            color: Deck.muted
             wrapMode: Text.WordWrap
         }
     }

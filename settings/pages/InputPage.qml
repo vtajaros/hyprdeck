@@ -137,7 +137,7 @@ Item {
             width: viewport.innerWidth
             layoutClass: viewport.layoutClass
             layoutShort: viewport.layoutShort
-            spacing: HKS.space8
+            spacing: Deck.space8
 
             Repeater {
                 model: [
@@ -161,19 +161,19 @@ Item {
             visible: !InputService.loading && !InputService.includeInstalled
             width: viewport.innerWidth
             height: incWarnTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.warning, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.warning, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.warning, 0.5)
+            border.color: Deck.alpha(Deck.warning, 0.5)
 
             Text {
                 id: incWarnTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: "Include block not installed in hyprland.lua. Apply requires installing overrides include first."
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.warning
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.warning
                 wrapMode: Text.WordWrap
             }
         }
@@ -183,19 +183,19 @@ Item {
             visible: InputService.error.length > 0
             width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.critical, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.critical, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.critical, 0.5)
+            border.color: Deck.alpha(Deck.critical, 0.5)
 
             Text {
                 id: errTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: InputService.error
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.critical
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.critical
                 wrapMode: Text.WordWrap
             }
         }
@@ -205,19 +205,19 @@ Item {
             visible: InputService.warningsText.length > 0
             width: viewport.innerWidth
             height: warnTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.warning, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.warning, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.warning, 0.5)
+            border.color: Deck.alpha(Deck.warning, 0.5)
 
             Text {
                 id: warnTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: InputService.warningsText
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.warning
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.warning
                 wrapMode: Text.WordWrap
             }
         }
@@ -227,19 +227,19 @@ Item {
             visible: InputService.statusMessage.length > 0 && InputService.error.length === 0
             width: viewport.innerWidth
             height: statusTxt.implicitHeight + 14
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.accent, 0.12)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.accent, 0.12)
             border.width: 1
-            border.color: HKS.alpha(HKS.accent, 0.4)
+            border.color: Deck.alpha(Deck.accent, 0.4)
 
             Text {
                 id: statusTxt
                 anchors.fill: parent
                 anchors.margins: 7
                 text: InputService.statusMessage
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.accent
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.accent
                 wrapMode: Text.WordWrap
             }
         }
@@ -247,17 +247,17 @@ Item {
         // KEYBOARD TAB
         Column {
             width: viewport.innerWidth
-            spacing: HKS.space12
+            spacing: Deck.space12
             visible: root.activeTab === "keyboard"
 
             // Layouts & Variants Card
             Rectangle {
                 width: parent.width
                 height: layoutCol.implicitHeight + 24
-                radius: HKS.radiusMedium
-                color: HKS.surface
+                radius: Deck.radiusMedium
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.alpha(HKS.muted, 0.16)
+                border.color: Deck.alpha(Deck.muted, 0.16)
 
                 Column {
                     id: layoutCol
@@ -265,15 +265,15 @@ Item {
                     anchors.right: parent.right
                     anchors.top: parent.top
                     anchors.margins: 12
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     Text {
                         width: parent.width
                         text: "Keyboard Layouts & Variants"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSize
                         font.weight: Font.Medium
-                        color: HKS.fg
+                        color: Deck.fg
                         wrapMode: Text.WordWrap
                     }
 
@@ -289,25 +289,25 @@ Item {
                                 : Math.max(80, layoutCol.width - 22 - 64 - btnsWidth - 32)
 
                             width: layoutCol.width
-                            spacing: HKS.space8
+                            spacing: Deck.space8
 
                             Text {
                                 width: 22
                                 height: 28
                                 verticalAlignment: Text.AlignVCenter
                                 text: (index + 1) + "."
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.muted
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                color: Deck.muted
                             }
 
                             Rectangle {
                                 width: 64
                                 height: 28
-                                radius: HKS.radiusSmall
-                                color: HKS.elevated
+                                radius: Deck.radiusSmall
+                                color: Deck.elevated
                                 border.width: 1
-                                border.color: HKS.alpha(HKS.accent, 0.35)
+                                border.color: Deck.alpha(Deck.accent, 0.35)
 
                                 Text {
                                     objectName: "elideOk"
@@ -315,10 +315,10 @@ Item {
                                     width: Math.min(implicitWidth, parent.width - 8)
                                     horizontalAlignment: Text.AlignHCenter
                                     text: modelData
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
                                     font.weight: Font.Medium
-                                    color: HKS.fg
+                                    color: Deck.fg
                                     elide: Text.ElideRight
                                 }
                             }
@@ -327,22 +327,22 @@ Item {
                                 width: parent.variantW
                                 height: 28
                                 placeholderText: "variant (optional)"
-                                placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
+                                placeholderTextColor: Deck.alpha(Deck.muted, 0.6)
                                 text: root._keyboardVariants()[index] || ""
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.fg
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                color: Deck.fg
                                 verticalAlignment: TextInput.AlignVCenter
                                 selectByMouse: true
-                                selectionColor: HKS.alpha(HKS.accent, 0.35)
-                                selectedTextColor: HKS.fg
+                                selectionColor: Deck.alpha(Deck.accent, 0.35)
+                                selectedTextColor: Deck.fg
                                 leftPadding: 8
                                 rightPadding: 8
                                 background: Rectangle {
-                                    radius: HKS.radiusSmall
-                                    color: HKS.bg
+                                    radius: Deck.radiusSmall
+                                    color: Deck.bg
                                     border.width: 1
-                                    border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                    border.color: parent.activeFocus ? Deck.accent : Deck.alpha(Deck.muted, 0.3)
                                 }
                                 onEditingFinished: {
                                     var ls = root._keyboardLayouts();
@@ -393,32 +393,32 @@ Item {
                         readonly property bool stackedBtn: layoutCol.width < 420
                         readonly property real fieldPairWidth: stackedBtn
                             ? layoutCol.width
-                            : Math.max(200, layoutCol.width - addLayoutBtn.width - HKS.space8)
-                        readonly property real eachInputW: Math.max(90, Math.floor((fieldPairWidth - HKS.space8) / 2))
+                            : Math.max(200, layoutCol.width - addLayoutBtn.width - Deck.space8)
+                        readonly property real eachInputW: Math.max(90, Math.floor((fieldPairWidth - Deck.space8) / 2))
 
                         width: layoutCol.width
-                        spacing: HKS.space8
+                        spacing: Deck.space8
 
                         TextField {
                             id: addLayoutInput
                             width: parent.eachInputW
                             height: 28
                             placeholderText: "code (e.g. de)"
-                            placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.fg
+                            placeholderTextColor: Deck.alpha(Deck.muted, 0.6)
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.fg
                             verticalAlignment: TextInput.AlignVCenter
                             selectByMouse: true
-                            selectionColor: HKS.alpha(HKS.accent, 0.35)
-                            selectedTextColor: HKS.fg
+                            selectionColor: Deck.alpha(Deck.accent, 0.35)
+                            selectedTextColor: Deck.fg
                             leftPadding: 8
                             rightPadding: 8
                             background: Rectangle {
-                                radius: HKS.radiusSmall
-                                color: HKS.bg
+                                radius: Deck.radiusSmall
+                                color: Deck.bg
                                 border.width: 1
-                                border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                border.color: parent.activeFocus ? Deck.accent : Deck.alpha(Deck.muted, 0.3)
                             }
                         }
 
@@ -427,21 +427,21 @@ Item {
                             width: parent.eachInputW
                             height: 28
                             placeholderText: "variant (optional)"
-                            placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.fg
+                            placeholderTextColor: Deck.alpha(Deck.muted, 0.6)
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.fg
                             verticalAlignment: TextInput.AlignVCenter
                             selectByMouse: true
-                            selectionColor: HKS.alpha(HKS.accent, 0.35)
-                            selectedTextColor: HKS.fg
+                            selectionColor: Deck.alpha(Deck.accent, 0.35)
+                            selectedTextColor: Deck.fg
                             leftPadding: 8
                             rightPadding: 8
                             background: Rectangle {
-                                radius: HKS.radiusSmall
-                                color: HKS.bg
+                                radius: Deck.radiusSmall
+                                color: Deck.bg
                                 border.width: 1
-                                border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                border.color: parent.activeFocus ? Deck.accent : Deck.alpha(Deck.muted, 0.3)
                             }
                         }
 
@@ -493,10 +493,10 @@ Item {
             Rectangle {
                 width: parent.width
                 height: xkbCol.implicitHeight + 24
-                radius: HKS.radiusMedium
-                color: HKS.surface
+                radius: Deck.radiusMedium
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.alpha(HKS.muted, 0.16)
+                border.color: Deck.alpha(Deck.muted, 0.16)
                 visible: (InputService.xkb.option_groups || []).length > 0
 
                 Column {
@@ -505,23 +505,23 @@ Item {
                     anchors.right: parent.right
                     anchors.top: parent.top
                     anchors.margins: 12
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     Item {
                         id: xkbHdrBox
                         width: parent.width
                         readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
-                            xkbHdrBox.width, xkbHdrMetrics.advanceWidth, xkbToggleBtn.implicitWidth, HKS.space8
+                            xkbHdrBox.width, xkbHdrMetrics.advanceWidth, xkbToggleBtn.implicitWidth, Deck.space8
                         )
                         implicitHeight: wrapped
-                            ? (xkbHdrTxt.implicitHeight + HKS.space8 + xkbToggleBtn.height)
+                            ? (xkbHdrTxt.implicitHeight + Deck.space8 + xkbToggleBtn.height)
                             : Math.max(xkbHdrTxt.implicitHeight, xkbToggleBtn.height)
                         height: implicitHeight
 
                         TextMetrics {
                             id: xkbHdrMetrics
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSize
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSize
                             font.weight: Font.Medium
                             text: xkbHdrTxt.text
                         }
@@ -532,12 +532,12 @@ Item {
                             y: xkbHdrBox.wrapped ? 0 : Math.max(0, Math.round((xkbHdrBox.height - height) / 2))
                             width: xkbHdrBox.wrapped
                                 ? xkbHdrBox.width
-                                : Math.max(0, xkbHdrBox.width - xkbToggleBtn.width - HKS.space8)
+                                : Math.max(0, xkbHdrBox.width - xkbToggleBtn.width - Deck.space8)
                             text: "Advanced: XKB options (" + root._parseCsv(InputService.effectiveOptionValue("input.kb_options") || "").length + " selected)"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSize
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSize
                             font.weight: Font.Medium
-                            color: HKS.fg
+                            color: Deck.fg
                             wrapMode: Text.WordWrap
                         }
 
@@ -545,7 +545,7 @@ Item {
                             id: xkbToggleBtn
                             x: xkbHdrBox.wrapped ? 0 : Math.max(0, xkbHdrBox.width - width)
                             y: xkbHdrBox.wrapped
-                                ? (xkbHdrTxt.implicitHeight + HKS.space8)
+                                ? (xkbHdrTxt.implicitHeight + Deck.space8)
                                 : Math.max(0, Math.round((xkbHdrBox.height - height) / 2))
                             text: root.xkbExpanded ? "Hide" : "Show"
                             compact: true
@@ -556,7 +556,7 @@ Item {
                     Column {
                         visible: root.xkbExpanded
                         width: parent.width
-                        spacing: HKS.space8
+                        spacing: Deck.space8
 
                         // Selected row
                         Column {
@@ -566,10 +566,10 @@ Item {
 
                             Text {
                                 text: "Selected"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
                                 font.weight: Font.Medium
-                                color: HKS.accent
+                                color: Deck.accent
                             }
 
                             ChipFlow {
@@ -596,32 +596,32 @@ Item {
                         Flow {
                             readonly property bool stacked: xkbCol.width < 380
                             width: xkbCol.width
-                            spacing: HKS.space8
+                            spacing: Deck.space8
 
                             TextField {
                                 id: xkbSearchField
                                 width: (parent.stacked || !xkbAllBtn.visible)
                                     ? xkbCol.width
-                                    : Math.max(120, xkbCol.width - xkbAllBtn.width - HKS.space8)
+                                    : Math.max(120, xkbCol.width - xkbAllBtn.width - Deck.space8)
                                 height: 28
                                 placeholderText: "Search XKB options..."
-                                placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.fg
+                                placeholderTextColor: Deck.alpha(Deck.muted, 0.6)
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                color: Deck.fg
                                 verticalAlignment: TextInput.AlignVCenter
                                 selectByMouse: true
-                                selectionColor: HKS.alpha(HKS.accent, 0.35)
-                                selectedTextColor: HKS.fg
+                                selectionColor: Deck.alpha(Deck.accent, 0.35)
+                                selectedTextColor: Deck.fg
                                 leftPadding: 8
                                 rightPadding: 8
                                 text: root.xkbQuery
                                 onTextChanged: root.xkbQuery = text
                                 background: Rectangle {
-                                    radius: HKS.radiusSmall
-                                    color: HKS.bg
+                                    radius: Deck.radiusSmall
+                                    color: Deck.bg
                                     border.width: 1
-                                    border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                    border.color: parent.activeFocus ? Deck.accent : Deck.alpha(Deck.muted, 0.3)
                                 }
                             }
 
@@ -651,10 +651,10 @@ Item {
                                 Text {
                                     width: parent.width
                                     text: modelData.description || modelData.group || ""
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
                                     font.weight: Font.Medium
-                                    color: HKS.accent
+                                    color: Deck.accent
                                     wrapMode: Text.WordWrap
                                 }
 
@@ -689,10 +689,10 @@ Item {
             Rectangle {
                 width: parent.width
                 height: testCol.implicitHeight + 20
-                radius: HKS.radiusMedium
-                color: HKS.surface
+                radius: Deck.radiusMedium
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.alpha(HKS.muted, 0.16)
+                border.color: Deck.alpha(Deck.muted, 0.16)
 
                 Column {
                     id: testCol
@@ -705,31 +705,31 @@ Item {
                     Text {
                         width: parent.width
                         text: "Keyboard Test Area"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
                         font.weight: Font.Medium
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     TextField {
                         width: parent.width
                         height: 32
                         placeholderText: "Type here to test layout..."
-                        placeholderTextColor: HKS.alpha(HKS.muted, 0.6)
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
-                        color: HKS.fg
+                        placeholderTextColor: Deck.alpha(Deck.muted, 0.6)
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSize
+                        color: Deck.fg
                         verticalAlignment: TextInput.AlignVCenter
                         selectByMouse: true
-                        selectionColor: HKS.alpha(HKS.accent, 0.35)
-                        selectedTextColor: HKS.fg
+                        selectionColor: Deck.alpha(Deck.accent, 0.35)
+                        selectedTextColor: Deck.fg
                         leftPadding: 8
                         rightPadding: 8
                         background: Rectangle {
-                            radius: HKS.radiusSmall
-                            color: HKS.bg
+                            radius: Deck.radiusSmall
+                            color: Deck.bg
                             border.width: 1
-                            border.color: parent.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                            border.color: parent.activeFocus ? Deck.accent : Deck.alpha(Deck.muted, 0.3)
                         }
                     }
                 }
@@ -739,7 +739,7 @@ Item {
         // MOUSE TAB
         Column {
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
             visible: root.activeTab === "mouse"
 
             EmptyState {
@@ -774,7 +774,7 @@ Item {
         // TOUCHPAD TAB
         Column {
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
             visible: root.activeTab === "touchpad"
 
             EmptyState {
@@ -809,13 +809,13 @@ Item {
         // DEVICES TAB
         Column {
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
             visible: root.activeTab === "devices"
 
             Flow {
                 visible: root._hiddenVirtualCount() > 0 || root.showVirtualDevices
                 width: parent.width
-                spacing: HKS.space12
+                spacing: Deck.space12
 
                 ActionButton {
                     text: root.showVirtualDevices
@@ -838,8 +838,8 @@ Item {
                     badges: [
                         {
                             text: "[" + (modelData.category || "other") + (modelData.virtual ? ", virtual" : "") + "]",
-                            textColor: HKS.muted,
-                            bgColor: HKS.elevated
+                            textColor: Deck.muted,
+                            bgColor: Deck.elevated
                         }
                     ]
 

@@ -141,10 +141,10 @@ Item {
                     visible: !modelData.isKey
                     anchors.centerIn: parent
                     text: "+"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
                     font.weight: Font.DemiBold
-                    color: HKS.muted
+                    color: Deck.muted
                 }
             }
         }

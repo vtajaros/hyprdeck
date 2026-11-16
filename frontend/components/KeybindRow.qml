@@ -31,17 +31,17 @@ Rectangle {
 
     radius: 8
     color: isJustEdited
-        ? HKS.alpha(HKS.accent, 0.3)
+        ? Deck.alpha(Deck.accent, 0.3)
         : (isExpanded
-            ? HKS.alpha(HKS.elevated, 0.75)
-            : (mouseArea.containsMouse ? HKS.alpha(HKS.surface, 0.8) : HKS.alpha(HKS.surface, 0.4)))
+            ? Deck.alpha(Deck.elevated, 0.75)
+            : (mouseArea.containsMouse ? Deck.alpha(Deck.surface, 0.8) : Deck.alpha(Deck.surface, 0.4)))
 
     border.width: 1
     border.color: isJustEdited
-        ? HKS.accent
+        ? Deck.accent
         : (isExpanded
-            ? HKS.alpha(HKS.accent, 0.5)
-            : (isSelected ? HKS.alpha(HKS.accent, 0.3) : HKS.alpha(HKS.muted, 0.12)))
+            ? Deck.alpha(Deck.accent, 0.5)
+            : (isSelected ? Deck.alpha(Deck.accent, 0.3) : Deck.alpha(Deck.muted, 0.12)))
 
     Behavior on color { ColorAnimation { duration: 100 } }
     Behavior on border.color { ColorAnimation { duration: 100 } }
@@ -101,18 +101,18 @@ Rectangle {
                     height: 22
                     width: Math.min(parent.width, catLabel.implicitWidth + 14)
                     radius: 11
-                    color: HKS.alpha(HKS.accent, 0.15)
+                    color: Deck.alpha(Deck.accent, 0.15)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.accent, 0.3)
+                    border.color: Deck.alpha(Deck.accent, 0.3)
 
                     Text {
                         id: catLabel
                         anchors.centerIn: parent
                         text: root.bindData ? (root.bindData.category || "Other") : ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 10
                         font.weight: Font.DemiBold
-                        color: HKS.accent
+                        color: Deck.accent
                         elide: Text.ElideRight
                     }
                 }
@@ -147,21 +147,21 @@ Rectangle {
                         width: badgeText.implicitWidth + (modelData.type === "stacked" ? 10 : 8)
                         radius: 4
                         color: modelData.type === "stacked"
-                            ? HKS.alpha(HKS.warning, 0.2)
-                            : (modelData.type === "loop" ? HKS.alpha(HKS.muted, 0.15) : HKS.alpha(HKS.muted, 0.12))
+                            ? Deck.alpha(Deck.warning, 0.2)
+                            : (modelData.type === "loop" ? Deck.alpha(Deck.muted, 0.15) : Deck.alpha(Deck.muted, 0.12))
                         border.width: 1
                         border.color: modelData.type === "stacked"
-                            ? HKS.alpha(HKS.warning, 0.6)
-                            : (modelData.type === "loop" ? HKS.alpha(HKS.muted, 0.3) : HKS.alpha(HKS.muted, 0.22))
+                            ? Deck.alpha(Deck.warning, 0.6)
+                            : (modelData.type === "loop" ? Deck.alpha(Deck.muted, 0.3) : Deck.alpha(Deck.muted, 0.22))
 
                         Text {
                             id: badgeText
                             anchors.centerIn: parent
                             text: modelData.text
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 9
                             font.weight: modelData.type === "stacked" ? Font.Bold : Font.Normal
-                            color: modelData.type === "stacked" ? HKS.warning : HKS.muted
+                            color: modelData.type === "stacked" ? Deck.warning : Deck.muted
                         }
                     }
                 }
@@ -184,10 +184,10 @@ Rectangle {
 
                     Text {
                         text: root.bindData ? KeybindData.descriptionText(root.bindData) : ""
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSize
                         font.weight: Font.DemiBold
-                        color: HKS.fg
+                        color: Deck.fg
                         elide: Text.ElideRight
                         width: Math.min(implicitWidth, parent.width - 24)
                     }
@@ -197,14 +197,14 @@ Rectangle {
                         height: 18
                         radius: 3
                         anchors.verticalCenter: parent.verticalCenter
-                        color: pencilMa.containsMouse ? HKS.alpha(HKS.accent, 0.2) : "transparent"
+                        color: pencilMa.containsMouse ? Deck.alpha(Deck.accent, 0.2) : "transparent"
 
                         Text {
                             anchors.centerIn: parent
                             text: ""
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
-                            color: pencilMa.containsMouse ? HKS.accent : HKS.alpha(HKS.muted, 0.6)
+                            color: pencilMa.containsMouse ? Deck.accent : Deck.alpha(Deck.muted, 0.6)
                         }
 
                         MouseArea {
@@ -220,9 +220,9 @@ Rectangle {
                 Text {
                     width: parent.width
                     text: root.bindData ? KeybindData.actionText(root.bindData) : ""
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.muted
                     elide: Text.ElideRight
                 }
             }
@@ -235,9 +235,9 @@ Rectangle {
             visible: root.isExpanded
             clip: true
             radius: 6
-            color: HKS.alpha(HKS.bg, 0.7)
+            color: Deck.alpha(Deck.bg, 0.7)
             border.width: 1
-            border.color: HKS.alpha(HKS.muted, 0.18)
+            border.color: Deck.alpha(Deck.muted, 0.18)
 
             Column {
                 id: detailsCol
@@ -255,22 +255,22 @@ Rectangle {
                     Text {
                         width: 80
                         text: "Source:"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
                         font.weight: Font.Bold
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     TextEdit {
                         width: parent.width - 88
                         text: root.displaySource
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.fg
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.fg
                         readOnly: true
                         selectByMouse: true
-                        selectionColor: HKS.alpha(HKS.accent, 0.4)
-                        selectedTextColor: HKS.fg
+                        selectionColor: Deck.alpha(Deck.accent, 0.4)
+                        selectedTextColor: Deck.fg
                         wrapMode: TextEdit.WrapAnywhere
                     }
                 }
@@ -283,22 +283,22 @@ Rectangle {
                     Text {
                         width: 80
                         text: "Config:"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
                         font.weight: Font.Bold
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     TextEdit {
                         width: parent.width - 88
                         text: root.bindData ? (root.bindData.original_line || "") : ""
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.accent
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.accent
                         readOnly: true
                         selectByMouse: true
-                        selectionColor: HKS.alpha(HKS.accent, 0.4)
-                        selectedTextColor: HKS.fg
+                        selectionColor: Deck.alpha(Deck.accent, 0.4)
+                        selectedTextColor: Deck.fg
                         wrapMode: TextEdit.WrapAnywhere
                     }
                 }
@@ -312,22 +312,22 @@ Rectangle {
                     Text {
                         width: 80
                         text: "Submap:"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
                         font.weight: Font.Bold
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     TextEdit {
                         width: parent.width - 88
                         text: root.bindData ? (root.bindData.submap || "") : ""
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.fg
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.fg
                         readOnly: true
                         selectByMouse: true
-                        selectionColor: HKS.alpha(HKS.accent, 0.4)
-                        selectedTextColor: HKS.fg
+                        selectionColor: Deck.alpha(Deck.accent, 0.4)
+                        selectedTextColor: Deck.fg
                     }
                 }
 
@@ -376,21 +376,21 @@ Rectangle {
                                 width: 22
                                 height: 22
                                 radius: 4
-                                color: HKS.alpha(HKS.muted, 0.15)
+                                color: Deck.alpha(Deck.muted, 0.15)
                                 Text {
                                     anchors.centerIn: parent
                                     text: ""
-                                    font.family: HKS.fontFamily
+                                    font.family: Deck.fontFamily
                                     font.pixelSize: 11
-                                    color: HKS.muted
+                                    color: Deck.muted
                                 }
                             }
 
                             Text {
                                 text: "generated by a loop at " + root.displaySource + " (only description can be edited)"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.muted
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                color: Deck.muted
                                 font.italic: true
                             }
                         }

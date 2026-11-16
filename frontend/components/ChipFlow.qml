@@ -8,5 +8,5 @@ Flow {
     property bool layoutShort: false
 
     width: parent ? parent.width : implicitWidth
-    spacing: HKS.scaledSpace(HKS.space8, root.layoutClass, root.layoutShort)
+    spacing: Deck.scaledSpace(Deck.space8, root.layoutClass, root.layoutShort)
 }

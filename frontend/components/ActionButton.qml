@@ -15,8 +15,8 @@ Rectangle {
 
     TextMetrics {
         id: textMetrics
-        font.family: HKS.fontFamily
-        font.pixelSize: HKS.fontSizeSmall
+        font.family: Deck.fontFamily
+        font.pixelSize: Deck.fontSizeSmall
         font.weight: Font.DemiBold
         text: root.text
     }
@@ -26,7 +26,7 @@ Rectangle {
     width: implicitWidth
     height: implicitHeight
 
-    radius: Math.max(4, HKS.radius - 2)
+    radius: Math.max(4, Deck.radius - 2)
     border.width: 1
     clip: false
 
@@ -41,39 +41,39 @@ Rectangle {
 
     color: {
         if (root.variant === "accent") {
-            if (isPressed) return HKS.alpha(HKS.accent, 0.38);
-            if (isHovered) return HKS.alpha(HKS.accent, 0.25);
-            return HKS.alpha(HKS.accent, 0.15);
+            if (isPressed) return Deck.alpha(Deck.accent, 0.38);
+            if (isHovered) return Deck.alpha(Deck.accent, 0.25);
+            return Deck.alpha(Deck.accent, 0.15);
         }
         if (root.variant === "danger") {
-            if (isPressed) return HKS.alpha(HKS.critical, 0.38);
-            if (isHovered) return HKS.alpha(HKS.critical, 0.25);
-            return HKS.alpha(HKS.critical, 0.15);
+            if (isPressed) return Deck.alpha(Deck.critical, 0.38);
+            if (isHovered) return Deck.alpha(Deck.critical, 0.25);
+            return Deck.alpha(Deck.critical, 0.15);
         }
         // neutral
-        if (isPressed) return Qt.darker(HKS.elevated, 1.25);
-        if (isHovered) return Qt.lighter(HKS.elevated, 1.2);
-        return HKS.elevated;
+        if (isPressed) return Qt.darker(Deck.elevated, 1.25);
+        if (isHovered) return Qt.lighter(Deck.elevated, 1.2);
+        return Deck.elevated;
     }
 
     border.color: {
         if (root.activeFocus) {
-            return (root.variant === "danger") ? HKS.critical : HKS.accent;
+            return (root.variant === "danger") ? Deck.critical : Deck.accent;
         }
         if (root.variant === "accent") {
-            return isHovered ? HKS.accent : HKS.alpha(HKS.accent, 0.45);
+            return isHovered ? Deck.accent : Deck.alpha(Deck.accent, 0.45);
         }
         if (root.variant === "danger") {
-            return isHovered ? HKS.critical : HKS.alpha(HKS.critical, 0.45);
+            return isHovered ? Deck.critical : Deck.alpha(Deck.critical, 0.45);
         }
         // neutral
-        return isHovered ? HKS.alpha(HKS.muted, 0.5) : HKS.alpha(HKS.muted, 0.28);
+        return isHovered ? Deck.alpha(Deck.muted, 0.5) : Deck.alpha(Deck.muted, 0.28);
     }
 
     readonly property color contentColor: {
-        if (root.variant === "accent") return HKS.accent;
-        if (root.variant === "danger") return HKS.critical;
-        return isHovered ? HKS.fg : HKS.alpha(HKS.fg, 0.9);
+        if (root.variant === "accent") return Deck.accent;
+        if (root.variant === "danger") return Deck.critical;
+        return isHovered ? Deck.fg : Deck.alpha(Deck.fg, 0.9);
     }
 
     Behavior on color { ColorAnimation { duration: 100 } }
@@ -89,7 +89,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.iconText.length > 0
             text: root.iconText
-            font.family: HKS.fontFamily
+            font.family: Deck.fontFamily
             font.pixelSize: root.compact ? 11 : 13
             color: root.contentColor
         }
@@ -104,8 +104,8 @@ Rectangle {
                 return Math.min(Math.ceil(textMetrics.advanceWidth) + 2, maxW);
             }
             text: root.text
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeSmall
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSizeSmall
             font.weight: Font.DemiBold
             color: root.contentColor
             elide: Text.ElideRight

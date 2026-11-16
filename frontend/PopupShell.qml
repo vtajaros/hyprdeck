@@ -89,9 +89,9 @@ Item {
             width: parent.width > 0 ? Math.min(parent.width - root.popupLeft - 20, 760) : 760
             height: parent.height > 0 ? Math.min(parent.height - root.popupTop - 20, 560) : 560
             radius: 10
-            color: HKS.bg
+            color: Deck.bg
             border.width: 1
-            border.color: HKS.borderColor
+            border.color: Deck.borderColor
 
             opacity: root.appeared ? 1.0 : 0.0
 
@@ -116,14 +116,14 @@ Item {
                     width: parent.width
                     height: 44
                     radius: 10
-                    color: HKS.surface
+                    color: Deck.surface
 
                     // Square off bottom corners so only top corners of the header are rounded
                     Rectangle {
                         anchors.bottom: parent.bottom
                         width: parent.width
                         height: 10
-                        color: HKS.surface
+                        color: Deck.surface
                     }
 
                     // Bottom border
@@ -131,30 +131,30 @@ Item {
                         anchors.bottom: parent.bottom
                         width: parent.width
                         height: 1
-                        color: HKS.alpha(HKS.muted, 0.2)
+                        color: Deck.alpha(Deck.muted, 0.2)
                     }
 
                     Row {
                         anchors.left: parent.left
-                        anchors.leftMargin: HKS.space16
+                        anchors.leftMargin: Deck.space16
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 10
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: ""
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 15
-                            color: HKS.accent
+                            color: Deck.accent
                         }
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: AppInfo.windowTitle
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSize
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSize
                             font.weight: Font.Bold
-                            color: HKS.fg
+                            color: Deck.fg
                         }
 
                         Rectangle {
@@ -162,16 +162,16 @@ Item {
                             width: modeBadge.implicitWidth + 8
                             height: 16
                             radius: 4
-                            color: HKS.alpha(HKS.accent, 0.15)
+                            color: Deck.alpha(Deck.accent, 0.15)
 
                             Text {
                                 id: modeBadge
                                 anchors.centerIn: parent
                                 text: "popup"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 9
                                 font.weight: Font.DemiBold
-                                color: HKS.accent
+                                color: Deck.accent
                             }
                         }
                     }

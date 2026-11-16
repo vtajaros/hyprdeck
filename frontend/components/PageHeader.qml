@@ -6,13 +6,13 @@ Item {
 
     property string title: ""
     property string subtitle: ""
-    property real spacing: HKS.space12
+    property real spacing: Deck.space12
     default property alias actions: actionsFlow.data
 
     TextMetrics {
         id: titleMetrics
-        font.family: HKS.fontFamily
-        font.pixelSize: HKS.fontSizeTitle
+        font.family: Deck.fontFamily
+        font.pixelSize: Deck.fontSizeTitle
         font.weight: Font.Bold
         text: root.title
     }
@@ -45,7 +45,7 @@ Item {
     width: parent ? parent.width : implicitWidth
     implicitWidth: Math.max(titleCol.implicitWidth + (hasActions ? root.spacing + actionsNaturalWidth : 0), 200)
     implicitHeight: root.wrapped
-        ? (titleCol.implicitHeight + (root.hasActions ? HKS.space8 + actionsFlow.implicitHeight : 0))
+        ? (titleCol.implicitHeight + (root.hasActions ? Deck.space8 + actionsFlow.implicitHeight : 0))
         : root._rowMaxHeight
     height: implicitHeight
 
@@ -62,10 +62,10 @@ Item {
             id: titleTxt
             width: parent.width
             text: root.title
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeTitle
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSizeTitle
             font.weight: Font.Bold
-            color: HKS.fg
+            color: Deck.fg
             wrapMode: Text.WordWrap
         }
 
@@ -74,9 +74,9 @@ Item {
             visible: root.subtitle.length > 0
             width: parent.width
             text: root.subtitle
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeSmall
-            color: HKS.muted
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSizeSmall
+            color: Deck.muted
             wrapMode: Text.WordWrap
         }
     }
@@ -87,9 +87,9 @@ Item {
         onChildrenChanged: _rev++
         x: root.wrapped ? 0 : Math.max(0, root.width - width)
         y: root.wrapped
-            ? (titleCol.implicitHeight + HKS.space8)
+            ? (titleCol.implicitHeight + Deck.space8)
             : Math.max(0, Math.round((root._rowMaxHeight - height) / 2))
         width: root.wrapped ? root.width : root.inlineActionsWidth
-        spacing: HKS.space8
+        spacing: Deck.space8
     }
 }

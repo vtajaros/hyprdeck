@@ -59,19 +59,19 @@ Item {
             visible: !SettingsService.loading && !SettingsService.includeInstalled
             width: viewport.innerWidth
             height: incWarnTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.warning, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.warning, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.warning, 0.5)
+            border.color: Deck.alpha(Deck.warning, 0.5)
 
             Text {
                 id: incWarnTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: "Include block not installed in hyprland.lua. Live preview works, but Save/Reset require running: python3 -m backend.cli overrides install-include --apply --scan-sha256 <sha>"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.warning
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.warning
                 wrapMode: Text.WordWrap
             }
         }
@@ -81,19 +81,19 @@ Item {
             visible: SettingsService.error.length > 0
             width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.critical, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.critical, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.critical, 0.5)
+            border.color: Deck.alpha(Deck.critical, 0.5)
 
             Text {
                 id: errTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: SettingsService.error
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.critical
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.critical
                 wrapMode: Text.WordWrap
             }
         }

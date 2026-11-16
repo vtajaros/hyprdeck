@@ -55,10 +55,10 @@ Item {
             visible: !BluetoothService.loading && (BluetoothService.rfkill.hard_blocked || BluetoothService.rfkill.soft_blocked)
             width: viewport.innerWidth
             height: rfTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.warning, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.warning, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.warning, 0.5)
+            border.color: Deck.alpha(Deck.warning, 0.5)
 
             Text {
                 id: rfTxt
@@ -67,9 +67,9 @@ Item {
                 text: BluetoothService.rfkill.hard_blocked
                     ? "Bluetooth is hardware-blocked (rfkill hard block). Use your hardware switch to unblock."
                     : "Bluetooth is software-blocked (rfkill soft block). Click Power: On to unblock and power on."
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.warning
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.warning
                 wrapMode: Text.WordWrap
             }
         }
@@ -79,10 +79,10 @@ Item {
             visible: !BluetoothService.loading && !BluetoothService.noController && (!BluetoothService.available || BluetoothService.error.length > 0)
             width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.critical, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.critical, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.critical, 0.5)
+            border.color: Deck.alpha(Deck.critical, 0.5)
 
             Text {
                 id: errTxt
@@ -91,9 +91,9 @@ Item {
                 text: BluetoothService.error.length > 0
                     ? BluetoothService.error
                     : "Bluetooth daemon (bluetoothd) unavailable."
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.critical
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.critical
                 wrapMode: Text.WordWrap
             }
         }
@@ -102,7 +102,7 @@ Item {
         DeviceCard {
             visible: BluetoothService.needsManualPairing
             width: viewport.innerWidth
-            cardPadding: HKS.space12
+            cardPadding: Deck.space12
             highlighted: true
             subtitle: "This device requires passkey or PIN confirmation."
             actions: [
@@ -129,15 +129,15 @@ Item {
         Column {
             visible: BluetoothService.available && !BluetoothService.noController
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
 
             Text {
                 width: parent.width
                 text: "Paired Devices (" + root.pairedList.length + ")"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.Bold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -145,9 +145,9 @@ Item {
                 visible: root.pairedList.length === 0
                 width: parent.width
                 text: "No paired devices."
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
 
@@ -165,16 +165,16 @@ Item {
                         if (pairedCard.modelData.connected) {
                             b.push({
                                 text: pairedCard.modelData.is_default_sink ? "Connected · Default Audio" : "Connected",
-                                textColor: HKS.accent,
-                                bgColor: HKS.alpha(HKS.accent, 0.18),
-                                borderColor: HKS.alpha(HKS.accent, 0.4)
+                                textColor: Deck.accent,
+                                bgColor: Deck.alpha(Deck.accent, 0.18),
+                                borderColor: Deck.alpha(Deck.accent, 0.4)
                             });
                         }
                         if (pairedCard.modelData.trusted) {
                             b.push({
                                 text: "Trusted",
-                                textColor: HKS.muted,
-                                bgColor: HKS.elevated
+                                textColor: Deck.muted,
+                                bgColor: Deck.elevated
                             });
                         }
                         return b;
@@ -217,23 +217,23 @@ Item {
         Column {
             visible: BluetoothService.available && !BluetoothService.noController
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
 
             Item {
                 id: scanHdrBox
                 width: parent.width
                 readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
-                    scanHdrBox.width, scanLblMetrics.advanceWidth, scanBtn.implicitWidth, HKS.space12
+                    scanHdrBox.width, scanLblMetrics.advanceWidth, scanBtn.implicitWidth, Deck.space12
                 )
                 implicitHeight: wrapped
-                    ? (scanLbl.implicitHeight + HKS.space8 + scanBtn.height)
+                    ? (scanLbl.implicitHeight + Deck.space8 + scanBtn.height)
                     : Math.max(scanLbl.implicitHeight, scanBtn.height)
                 height: implicitHeight
 
                 TextMetrics {
                     id: scanLblMetrics
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.Bold
                     text: scanLbl.text
                 }
@@ -242,19 +242,19 @@ Item {
                     id: scanLbl
                     x: 0
                     y: scanHdrBox.wrapped ? 0 : Math.max(0, Math.round((scanHdrBox.height - height) / 2))
-                    width: scanHdrBox.wrapped ? scanHdrBox.width : Math.max(0, scanHdrBox.width - scanBtn.width - HKS.space12)
+                    width: scanHdrBox.wrapped ? scanHdrBox.width : Math.max(0, scanHdrBox.width - scanBtn.width - Deck.space12)
                     text: "Nearby Devices (" + root.discoveredList.length + ")" + (BluetoothService.scanning ? " — Scanning..." : "")
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                     wrapMode: Text.WordWrap
                 }
 
                 ActionButton {
                     id: scanBtn
                     x: scanHdrBox.wrapped ? 0 : Math.max(0, scanHdrBox.width - width)
-                    y: scanHdrBox.wrapped ? (scanLbl.implicitHeight + HKS.space8) : Math.max(0, Math.round((scanHdrBox.height - height) / 2))
+                    y: scanHdrBox.wrapped ? (scanLbl.implicitHeight + Deck.space8) : Math.max(0, Math.round((scanHdrBox.height - height) / 2))
                     text: BluetoothService.scanning ? "Stop Scan" : "Scan"
                     variant: BluetoothService.scanning ? "neutral" : "accent"
                     compact: true
@@ -275,9 +275,9 @@ Item {
                 text: BluetoothService.scanning
                     ? "Listening for nearby Bluetooth devices..."
                     : "Click Scan to discover nearby unpaired devices."
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
 
@@ -311,41 +311,41 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: BluetoothService.confirmOpen
-        color: HKS.alpha(HKS.bg, 0.72)
+        color: Deck.alpha(Deck.bg, 0.72)
         z: 30
 
         MouseArea { anchors.fill: parent }
 
         Rectangle {
             anchors.centerIn: parent
-            width: Math.min(440, parent.width - HKS.space24)
+            width: Math.min(440, parent.width - Deck.space24)
             height: modalCol.implicitHeight + 36
-            radius: HKS.radius
-            color: HKS.surface
+            radius: Deck.radius
+            color: Deck.surface
             border.width: 1
-            border.color: HKS.warning
+            border.color: Deck.warning
 
             Column {
                 id: modalCol
                 anchors.fill: parent
                 anchors.margins: 18
-                spacing: HKS.space12
+                spacing: Deck.space12
 
                 Text {
                     text: BluetoothService.confirmTitle
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeMedium
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeMedium
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                     width: parent.width
                     wrapMode: Text.WordWrap
                 }
 
                 Text {
                     text: BluetoothService.confirmMessage
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.warning
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.warning
                     width: parent.width
                     wrapMode: Text.WordWrap
                 }
@@ -353,7 +353,7 @@ Item {
                 Flow {
                     width: parent.width
                     layoutDirection: Qt.RightToLeft
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     ActionButton {
                         text: "Confirm"

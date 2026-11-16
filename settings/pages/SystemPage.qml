@@ -106,10 +106,10 @@ Item {
 
                     width: viewport.innerWidth
                     height: rowContent.implicitHeight + 20
-                    radius: HKS.radiusSmall
-                    color: HKS.surface
+                    radius: Deck.radiusSmall
+                    color: Deck.surface
                     border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.14)
+                    border.color: Deck.alpha(Deck.muted, 0.14)
 
                     Item {
                         id: rowContent
@@ -128,10 +128,10 @@ Item {
                             y: 0
                             width: infoCard.stacked ? infoCard.innerW : 160
                             text: String(infoCard.modelData.label || "")
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.DemiBold
-                            color: HKS.muted
+                            color: Deck.muted
                             wrapMode: Text.WordWrap
                         }
 
@@ -141,9 +141,9 @@ Item {
                             y: infoCard.stacked ? (lblTxt.implicitHeight + 4) : 0
                             width: infoCard.stacked ? infoCard.innerW : Math.max(0, infoCard.innerW - 172)
                             text: String(infoCard.modelData.value || "")
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.fg
                             wrapMode: Text.WrapAnywhere
                         }
                     }

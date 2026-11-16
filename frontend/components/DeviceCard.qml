@@ -10,7 +10,7 @@ Rectangle {
     // Array of badge objects: { text, textColor?, bgColor?, borderColor? } or strings
     property var badges: []
     property bool highlighted: false
-    property real cardPadding: HKS.space12
+    property real cardPadding: Deck.space12
     property real minInfoWidth: 210
     property alias actions: actionsFlow.data
     property alias extraContent: extraSlot.data
@@ -18,10 +18,10 @@ Rectangle {
     width: parent ? parent.width : implicitWidth
     implicitHeight: innerBox.implicitHeight + (root.cardPadding * 2)
     height: implicitHeight
-    radius: HKS.radiusMedium
-    color: root.highlighted ? HKS.alpha(HKS.accent, 0.06) : HKS.surface
+    radius: Deck.radiusMedium
+    color: root.highlighted ? Deck.alpha(Deck.accent, 0.06) : Deck.surface
     border.width: 1
-    border.color: root.highlighted ? HKS.accent : HKS.alpha(HKS.muted, 0.18)
+    border.color: root.highlighted ? Deck.accent : Deck.alpha(Deck.muted, 0.18)
 
     Item {
         id: innerBox
@@ -47,13 +47,13 @@ Rectangle {
         }
         readonly property bool hasActions: actionsNaturalWidth > 0
         readonly property bool actionsWrapped: ResponsiveLogic.shouldWrapDeviceActions(
-            innerBox.width, root.minInfoWidth, innerBox.actionsNaturalWidth, HKS.space12
+            innerBox.width, root.minInfoWidth, innerBox.actionsNaturalWidth, Deck.space12
         )
         readonly property real inlineActionsWidth: (!actionsWrapped && hasActions)
             ? Math.min(actionsNaturalWidth, innerBox.width)
             : 0
         readonly property real headerHeight: actionsWrapped
-            ? (infoCol.implicitHeight + (hasActions ? HKS.space8 + actionsFlow.implicitHeight : 0))
+            ? (infoCol.implicitHeight + (hasActions ? Deck.space8 + actionsFlow.implicitHeight : 0))
             : Math.max(infoCol.implicitHeight, actionsFlow.implicitHeight)
         readonly property bool hasExtra: {
             var _trigger = extraSlot._rev;
@@ -64,7 +64,7 @@ Rectangle {
             return false;
         }
 
-        implicitHeight: headerHeight + (hasExtra ? HKS.space8 + extraSlot.implicitHeight : 0)
+        implicitHeight: headerHeight + (hasExtra ? Deck.space8 + extraSlot.implicitHeight : 0)
         height: implicitHeight
 
         Column {
@@ -73,17 +73,17 @@ Rectangle {
             y: 0
             width: innerBox.actionsWrapped
                 ? innerBox.width
-                : Math.max(0, innerBox.width - innerBox.inlineActionsWidth - (innerBox.hasActions ? HKS.space12 : 0))
-            spacing: HKS.space4
+                : Math.max(0, innerBox.width - innerBox.inlineActionsWidth - (innerBox.hasActions ? Deck.space12 : 0))
+            spacing: Deck.space4
 
             Text {
                 visible: root.title.length > 0
                 width: parent.width
                 text: root.title
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.DemiBold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -103,18 +103,18 @@ Rectangle {
                             : String(modelData && modelData.text ? modelData.text : "")
                         readonly property color bFg: (modelData && modelData.textColor !== undefined)
                             ? modelData.textColor
-                            : HKS.fg
+                            : Deck.fg
                         readonly property color bBg: (modelData && modelData.bgColor !== undefined)
                             ? modelData.bgColor
-                            : HKS.elevated
+                            : Deck.elevated
                         readonly property color bBorder: (modelData && modelData.borderColor !== undefined)
                             ? modelData.borderColor
-                            : HKS.alpha(HKS.muted, 0.25)
+                            : Deck.alpha(Deck.muted, 0.25)
 
                         TextMetrics {
                             id: badgeMetrics
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.Medium
                             text: badgePill.bText
                         }
@@ -122,7 +122,7 @@ Rectangle {
                         visible: bText.length > 0
                         width: Math.min(Math.ceil(badgeMetrics.advanceWidth) + 14, Math.max(28, infoCol.width))
                         height: 20
-                        radius: HKS.radiusSmall
+                        radius: Deck.radiusSmall
                         color: bBg
                         border.width: 1
                         border.color: bBorder
@@ -135,8 +135,8 @@ Rectangle {
                             anchors.rightMargin: 7
                             verticalAlignment: Text.AlignVCenter
                             text: badgePill.bText
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.Medium
                             color: badgePill.bFg
                             elide: Text.ElideRight
@@ -149,9 +149,9 @@ Rectangle {
                 visible: root.subtitle.length > 0
                 width: parent.width
                 text: root.subtitle
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
 
@@ -160,9 +160,9 @@ Rectangle {
                 visible: root.detailText.length > 0
                 width: parent.width
                 text: root.detailText
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.alpha(HKS.muted, 0.85)
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.alpha(Deck.muted, 0.85)
                 elide: Text.ElideRight
             }
         }
@@ -172,9 +172,9 @@ Rectangle {
             property int _rev: 0
             onChildrenChanged: _rev++
             x: innerBox.actionsWrapped ? 0 : Math.max(0, innerBox.width - width)
-            y: innerBox.actionsWrapped ? (infoCol.implicitHeight + HKS.space8) : 0
+            y: innerBox.actionsWrapped ? (infoCol.implicitHeight + Deck.space8) : 0
             width: innerBox.actionsWrapped ? innerBox.width : innerBox.inlineActionsWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
         }
 
         Column {
@@ -182,9 +182,9 @@ Rectangle {
             property int _rev: 0
             onChildrenChanged: _rev++
             x: 0
-            y: innerBox.headerHeight + HKS.space8
+            y: innerBox.headerHeight + Deck.space8
             width: innerBox.width
-            spacing: HKS.space8
+            spacing: Deck.space8
         }
     }
 }

@@ -37,10 +37,10 @@ Popup {
     property int lastScanCode: 0
 
     background: Rectangle {
-        color: HKS.bg
-        radius: HKS.radiusMedium
+        color: Deck.bg
+        radius: Deck.radiusMedium
         border.width: 1
-        border.color: root.recorderState === "listening" ? HKS.alpha(HKS.accent, 0.6) : HKS.border
+        border.color: root.recorderState === "listening" ? Deck.alpha(Deck.accent, 0.6) : Deck.border
 
         Behavior on border.color {
             ColorAnimation { duration: 150 }
@@ -218,15 +218,15 @@ Popup {
                 width: 32
                 height: 32
                 radius: 6
-                color: HKS.alpha(HKS.accent, 0.15)
+                color: Deck.alpha(Deck.accent, 0.15)
                 anchors.verticalCenter: parent.verticalCenter
 
                 Text {
                     anchors.centerIn: parent
                     text: ""
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 16
-                    color: HKS.accent
+                    color: Deck.accent
                 }
             }
 
@@ -236,19 +236,19 @@ Popup {
 
                 Text {
                     text: root.manualMode ? "Enter Keybinding Manually" : "Record Keybinding"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeMedium
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeMedium
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                 }
 
                 Text {
                     text: root.manualMode
                         ? "Select modifiers and type the key name"
                         : (root.recorderState === "captured" ? "Keybinding captured. Press Accept to apply." : "Press the desired key combination...")
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.muted
                 }
             }
 
@@ -260,16 +260,16 @@ Popup {
                 width: timerLabel.implicitWidth + 14
                 height: 22
                 radius: 11
-                color: HKS.alpha(HKS.muted, 0.15)
+                color: Deck.alpha(Deck.muted, 0.15)
                 anchors.verticalCenter: parent.verticalCenter
 
                 Text {
                     id: timerLabel
                     anchors.centerIn: parent
                     text: root.watchdogSeconds + "s"
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 11
-                    color: HKS.muted
+                    color: Deck.muted
                 }
             }
         }
@@ -280,9 +280,9 @@ Popup {
             width: parent.width
             height: limitedRow.implicitHeight + 14
             radius: 6
-            color: HKS.alpha(HKS.amber, 0.12)
+            color: Deck.alpha(Deck.amber, 0.12)
             border.width: 1
-            border.color: HKS.alpha(HKS.amber, 0.35)
+            border.color: Deck.alpha(Deck.amber, 0.35)
 
             Row {
                 id: limitedRow
@@ -292,17 +292,17 @@ Popup {
 
                 Text {
                     text: ""
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 13
-                    color: HKS.amber
+                    color: Deck.amber
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Text {
                     text: "Limited mode: some global compositor shortcuts may be intercepted by Hyprland."
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 11
-                    color: HKS.fg
+                    color: Deck.fg
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -312,10 +312,10 @@ Popup {
         Rectangle {
             width: parent.width
             height: 120
-            radius: HKS.radius
-            color: HKS.surface
+            radius: Deck.radius
+            color: Deck.surface
             border.width: 1
-            border.color: root.recorderState === "listening" ? HKS.alpha(HKS.accent, 0.4) : HKS.border
+            border.color: root.recorderState === "listening" ? Deck.alpha(Deck.accent, 0.4) : Deck.border
 
             // Unrecognised Key Notice
             Column {
@@ -326,17 +326,17 @@ Popup {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "Unrecognized Key"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeMedium
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeMedium
                     font.weight: Font.Bold
-                    color: HKS.amber
+                    color: Deck.amber
                 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "Qt Key: " + root.lastRawKey + " | ScanCode: " + root.lastScanCode
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 11
-                    color: HKS.muted
+                    color: Deck.muted
                 }
             }
 
@@ -357,9 +357,9 @@ Popup {
                         spacing: 8
                         Text {
                             text: "Preparing submap..."
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeMedium
-                            color: HKS.muted
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeMedium
+                            color: Deck.muted
                         }
                     }
 
@@ -369,9 +369,9 @@ Popup {
                         spacing: 8
                         Text {
                             text: "Listening for keys..."
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeMedium
-                            color: HKS.muted
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeMedium
+                            color: Deck.muted
                         }
                     }
 
@@ -391,25 +391,25 @@ Popup {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "+"
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 14
-                            color: HKS.muted
+                            color: Deck.muted
                         }
 
                         Rectangle {
                             width: 24
                             height: 24
                             radius: 4
-                            color: HKS.alpha(HKS.muted, 0.15)
+                            color: Deck.alpha(Deck.muted, 0.15)
                             border.width: 1
-                            border.color: HKS.alpha(HKS.accent, 0.5)
+                            border.color: Deck.alpha(Deck.accent, 0.5)
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "?"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 13
-                                color: HKS.accent
+                                color: Deck.accent
                             }
                         }
                     }
@@ -431,9 +431,9 @@ Popup {
                             visible: root.capturedModmask !== 0 && root.capturedKey !== ""
                             anchors.verticalCenter: parent.verticalCenter
                             text: "+"
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 14
-                            color: HKS.muted
+                            color: Deck.muted
                         }
 
                         Keycap {
@@ -470,18 +470,18 @@ Popup {
                             width: chipText.implicitWidth + 18
                             height: 28
                             radius: 5
-                            color: isSelected ? HKS.alpha(HKS.accent, 0.25) : HKS.surface
+                            color: isSelected ? Deck.alpha(Deck.accent, 0.25) : Deck.surface
                             border.width: 1
-                            border.color: isSelected ? HKS.accent : HKS.border
+                            border.color: isSelected ? Deck.accent : Deck.border
 
                             Text {
                                 id: chipText
                                 anchors.centerIn: parent
                                 text: modelData.name
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
-                                color: modChip.isSelected ? HKS.accent : HKS.muted
+                                color: modChip.isSelected ? Deck.accent : Deck.muted
                             }
 
                             MouseArea {
@@ -503,18 +503,18 @@ Popup {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Key:"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 12
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     Rectangle {
                         width: 180
                         height: 30
                         radius: 5
-                        color: HKS.bg
+                        color: Deck.bg
                         border.width: 1
-                        border.color: keyInput.activeFocus ? HKS.accent : HKS.border
+                        border.color: keyInput.activeFocus ? Deck.accent : Deck.border
 
                         TextInput {
                             id: keyInput
@@ -522,9 +522,9 @@ Popup {
                             anchors.leftMargin: 8
                             anchors.rightMargin: 8
                             verticalAlignment: TextInput.AlignVCenter
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 12
-                            color: HKS.fg
+                            color: Deck.fg
                             text: root.manualKeyText
                             onTextChanged: {
                                 root.manualKeyText = text;
@@ -544,9 +544,9 @@ Popup {
 
             Text {
                 text: "Bare Escape cancels. Combos with Escape (e.g. SUPER + Escape) are recordable."
-                font.family: HKS.fontFamily
+                font.family: Deck.fontFamily
                 font.pixelSize: 11
-                color: HKS.muted
+                color: Deck.muted
                 anchors.verticalCenter: parent.verticalCenter
             }
 
@@ -558,16 +558,16 @@ Popup {
                 radius: 4
                 color: "transparent"
                 border.width: 1
-                border.color: HKS.alpha(HKS.muted, 0.3)
+                border.color: Deck.alpha(Deck.muted, 0.3)
                 anchors.verticalCenter: parent.verticalCenter
 
                 Text {
                     id: toggleText
                     anchors.centerIn: parent
                     text: root.manualMode ? "Record keys" : "Type it instead"
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 11
-                    color: HKS.muted
+                    color: Deck.muted
                 }
 
                 MouseArea {
@@ -594,17 +594,17 @@ Popup {
                 width: rerecordText.implicitWidth + 20
                 height: 32
                 radius: 5
-                color: HKS.surface
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.border
+                border.color: Deck.border
 
                 Text {
                     id: rerecordText
                     anchors.centerIn: parent
                     text: "Re-record"
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 12
-                    color: HKS.fg
+                    color: Deck.fg
                 }
 
                 MouseArea {
@@ -621,17 +621,17 @@ Popup {
                 width: cancelText.implicitWidth + 20
                 height: 32
                 radius: 5
-                color: HKS.surface
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.border
+                border.color: Deck.border
 
                 Text {
                     id: cancelText
                     anchors.centerIn: parent
                     text: "Cancel"
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 12
-                    color: HKS.fg
+                    color: Deck.fg
                 }
 
                 MouseArea {
@@ -651,16 +651,16 @@ Popup {
                 width: acceptText.implicitWidth + 24
                 height: 32
                 radius: 5
-                color: canAccept ? HKS.accent : HKS.alpha(HKS.muted, 0.2)
+                color: canAccept ? Deck.accent : Deck.alpha(Deck.muted, 0.2)
 
                 Text {
                     id: acceptText
                     anchors.centerIn: parent
                     text: "Accept"
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
-                    color: parent.canAccept ? "#ffffff" : HKS.muted
+                    color: parent.canAccept ? "#ffffff" : Deck.muted
                 }
 
                 MouseArea {

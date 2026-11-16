@@ -36,8 +36,8 @@ Item {
 
     Column {
         anchors.fill: parent
-        anchors.margins: HKS.space24
-        spacing: HKS.space16
+        anchors.margins: Deck.space24
+        spacing: Deck.space16
 
         // Page Header
         Item {
@@ -52,18 +52,18 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: ""
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 20
-                    color: HKS.accent
+                    color: Deck.accent
                 }
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Backups & History"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeLarge
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeLarge
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                 }
 
                 Rectangle {
@@ -71,18 +71,18 @@ Item {
                     height: 22
                     width: countTxt.implicitWidth + 14
                     radius: 11
-                    color: HKS.alpha(HKS.accent, 0.15)
+                    color: Deck.alpha(Deck.accent, 0.15)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.accent, 0.3)
+                    border.color: Deck.alpha(Deck.accent, 0.3)
 
                     Text {
                         id: countTxt
                         anchors.centerIn: parent
                         text: root.count + " snapshots"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 10
                         font.weight: Font.DemiBold
-                        color: HKS.accent
+                        color: Deck.accent
                     }
                 }
             }
@@ -100,15 +100,15 @@ Item {
 
         Text {
             text: "Automatic snapshots saved to ~/.local/share/hks/backups before modifications. Click 'Restore' to preview and rollback."
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeSmall
-            color: HKS.muted
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSizeSmall
+            color: Deck.muted
         }
 
         Rectangle {
             width: parent.width
             height: 1
-            color: HKS.alpha(HKS.muted, 0.15)
+            color: Deck.alpha(Deck.muted, 0.15)
         }
 
         // Main List Area
@@ -127,16 +127,16 @@ Item {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 28
-                        color: HKS.accent
+                        color: Deck.accent
                     }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Loading backups..."
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSize
+                        color: Deck.muted
                     }
                 }
             }
@@ -169,10 +169,10 @@ Item {
                     id: card
                     width: listView.width - (listView.ScrollBar.vertical.visible ? 10 : 0)
                     height: cardCol.implicitHeight + 24
-                    radius: HKS.radiusSmall
-                    color: HKS.alpha(HKS.surface, 0.7)
+                    radius: Deck.radiusSmall
+                    color: Deck.alpha(Deck.surface, 0.7)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.2)
+                    border.color: Deck.alpha(Deck.muted, 0.2)
 
                     Column {
                         id: cardCol
@@ -195,18 +195,18 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: ""
-                                    font.family: HKS.fontFamily
+                                    font.family: Deck.fontFamily
                                     font.pixelSize: 12
-                                    color: HKS.muted
+                                    color: Deck.muted
                                 }
 
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: modelData.created_at || "-"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
                                     font.weight: Font.DemiBold
-                                    color: HKS.fg
+                                    color: Deck.fg
                                 }
 
                                 Rectangle {
@@ -214,17 +214,17 @@ Item {
                                     height: 20
                                     width: shaTxt.implicitWidth + 10
                                     radius: 3
-                                    color: HKS.alpha(HKS.muted, 0.15)
+                                    color: Deck.alpha(Deck.muted, 0.15)
                                     border.width: 1
-                                    border.color: HKS.alpha(HKS.muted, 0.25)
+                                    border.color: Deck.alpha(Deck.muted, 0.25)
 
                                     Text {
                                         id: shaTxt
                                         anchors.centerIn: parent
                                         text: (modelData.sha256 ? modelData.sha256.slice(0, 12) : "-")
-                                        font.family: HKS.fontFamily
+                                        font.family: Deck.fontFamily
                                         font.pixelSize: 10
-                                        color: HKS.muted
+                                        color: Deck.muted
                                     }
                                 }
                             }
@@ -246,14 +246,14 @@ Item {
 
                             Row {
                                 spacing: 6
-                                Text { text: "File:"; font.family: HKS.fontFamily; font.pixelSize: 10; color: HKS.muted; font.weight: Font.Bold }
-                                Text { text: root.formatSource(modelData.original_path); font.family: HKS.fontFamily; font.pixelSize: 10; color: HKS.fg }
+                                Text { text: "File:"; font.family: Deck.fontFamily; font.pixelSize: 10; color: Deck.muted; font.weight: Font.Bold }
+                                Text { text: root.formatSource(modelData.original_path); font.family: Deck.fontFamily; font.pixelSize: 10; color: Deck.fg }
                             }
 
                             Row {
                                 spacing: 6
-                                Text { text: "ID:"; font.family: HKS.fontFamily; font.pixelSize: 10; color: HKS.muted; font.weight: Font.Bold }
-                                Text { text: modelData.id || "-"; font.family: HKS.fontFamily; font.pixelSize: 10; color: HKS.muted }
+                                Text { text: "ID:"; font.family: Deck.fontFamily; font.pixelSize: 10; color: Deck.muted; font.weight: Font.Bold }
+                                Text { text: modelData.id || "-"; font.family: Deck.fontFamily; font.pixelSize: 10; color: Deck.muted }
                             }
                         }
                     }

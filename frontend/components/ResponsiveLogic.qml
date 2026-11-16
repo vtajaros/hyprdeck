@@ -48,19 +48,19 @@ QtObject {
         var w = Number(winWidth);
         if (isNaN(w) || w <= 0)
             return "rail";
-        if (w >= HKS.sidebarFullThreshold)
+        if (w >= Deck.sidebarFullThreshold)
             return "full";
-        if (w >= HKS.sidebarCompactThreshold)
+        if (w >= Deck.sidebarCompactThreshold)
             return "narrow";
         return "rail";
     }
 
     function sidebarWidthForMode(mode) {
         if (mode === "rail")
-            return HKS.sidebarRailWidth;
+            return Deck.sidebarRailWidth;
         if (mode === "narrow")
-            return HKS.sidebarNarrowWidth;
-        return HKS.sidebarFullWidth;
+            return Deck.sidebarNarrowWidth;
+        return Deck.sidebarFullWidth;
     }
 
     function shouldWrapHeaderActions(availableWidth, titleWidth, actionsWidth, spacing) {
@@ -70,7 +70,7 @@ QtObject {
             return false;
         if (isNaN(avail) || avail <= 0)
             return true;
-        var gap = (spacing !== undefined && !isNaN(Number(spacing))) ? Number(spacing) : HKS.space12;
+        var gap = (spacing !== undefined && !isNaN(Number(spacing))) ? Number(spacing) : Deck.space12;
         var titleW = (!isNaN(Number(titleWidth))) ? Number(titleWidth) : 0;
         var minLeft = Math.max(titleW, 180);
         return (minLeft + gap + actW) > avail;
@@ -83,7 +83,7 @@ QtObject {
             return false;
         if (isNaN(avail) || avail <= 0)
             return true;
-        var gap = (spacing !== undefined && !isNaN(Number(spacing))) ? Number(spacing) : HKS.space12;
+        var gap = (spacing !== undefined && !isNaN(Number(spacing))) ? Number(spacing) : Deck.space12;
         var minLeft = (labelMinWidth !== undefined && !isNaN(Number(labelMinWidth))) ? Number(labelMinWidth) : 200;
         return (minLeft + gap + ctrlW) > avail;
     }
@@ -95,7 +95,7 @@ QtObject {
             return false;
         if (isNaN(avail) || avail <= 0)
             return true;
-        var gap = (spacing !== undefined && !isNaN(Number(spacing))) ? Number(spacing) : HKS.space12;
+        var gap = (spacing !== undefined && !isNaN(Number(spacing))) ? Number(spacing) : Deck.space12;
         var minLeft = (infoMinWidth !== undefined && !isNaN(Number(infoMinWidth))) ? Number(infoMinWidth) : 220;
         return (minLeft + gap + actW) > avail;
     }

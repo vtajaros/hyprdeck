@@ -21,10 +21,10 @@ Rectangle {
     implicitHeight: 36
     radius: 6
     color: active
-        ? HKS.alpha(HKS.accent, 0.18)
-        : (mouseArea.containsMouse && !disabled ? HKS.alpha(HKS.elevated, 0.6) : "transparent")
+        ? Deck.alpha(Deck.accent, 0.18)
+        : (mouseArea.containsMouse && !disabled ? Deck.alpha(Deck.elevated, 0.6) : "transparent")
     border.width: active ? 1 : 0
-    border.color: active ? HKS.alpha(HKS.accent, 0.5) : "transparent"
+    border.color: active ? Deck.alpha(Deck.accent, 0.5) : "transparent"
 
     opacity: disabled ? 0.45 : 1.0
 
@@ -33,9 +33,9 @@ Rectangle {
         x: root.compactRail ? Math.round((parent.width - width) / 2) : 12
         anchors.verticalCenter: parent.verticalCenter
         text: root.icon
-        font.family: HKS.fontFamily
+        font.family: Deck.fontFamily
         font.pixelSize: 14
-        color: root.active ? HKS.accent : (root.disabled ? HKS.muted : HKS.fg)
+        color: root.active ? Deck.accent : (root.disabled ? Deck.muted : Deck.fg)
     }
 
     Text {
@@ -46,10 +46,10 @@ Rectangle {
         width: Math.max(0, (badgeBox.visible ? badgeBox.x - 8 : parent.width - 10) - x)
         anchors.verticalCenter: parent.verticalCenter
         text: root.text
-        font.family: HKS.fontFamily
-        font.pixelSize: HKS.fontSizeSmall
+        font.family: Deck.fontFamily
+        font.pixelSize: Deck.fontSizeSmall
         font.weight: root.active ? Font.DemiBold : Font.Normal
-        color: root.active ? HKS.accent : (root.disabled ? HKS.muted : HKS.fg)
+        color: root.active ? Deck.accent : (root.disabled ? Deck.muted : Deck.fg)
         elide: Text.ElideRight
     }
 
@@ -62,16 +62,16 @@ Rectangle {
         width: badgeText.implicitWidth + 8
         height: 16
         radius: 4
-        color: root.disabled ? HKS.alpha(HKS.muted, 0.2) : HKS.elevated
+        color: root.disabled ? Deck.alpha(Deck.muted, 0.2) : Deck.elevated
 
         Text {
             id: badgeText
             anchors.centerIn: parent
             text: root.badge
-            font.family: HKS.fontFamily
+            font.family: Deck.fontFamily
             font.pixelSize: 9
             font.weight: Font.DemiBold
-            color: root.disabled ? HKS.muted : HKS.accent
+            color: root.disabled ? Deck.muted : Deck.accent
         }
     }
 
@@ -84,7 +84,7 @@ Rectangle {
         anchors.rightMargin: 6
         anchors.top: parent.top
         anchors.topMargin: 6
-        color: root.disabled ? HKS.muted : HKS.accent
+        color: root.disabled ? Deck.muted : Deck.accent
     }
 
     // Floating tooltip when used in compactRail outside clipping parents
@@ -96,17 +96,17 @@ Rectangle {
         width: railTipTxt.implicitWidth + 16
         height: 26
         radius: 6
-        color: HKS.elevated
+        color: Deck.elevated
         border.width: 1
-        border.color: HKS.alpha(HKS.accent, 0.5)
+        border.color: Deck.alpha(Deck.accent, 0.5)
 
         Text {
             id: railTipTxt
             anchors.centerIn: parent
             text: root.text
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeSmall
-            color: HKS.fg
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSizeSmall
+            color: Deck.fg
         }
     }
 

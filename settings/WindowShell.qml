@@ -12,8 +12,8 @@ FloatingWindow {
     title: AppInfo.windowTitle
     implicitWidth: 1040
     implicitHeight: 720
-    minimumSize: Qt.size(HKS.minWindowWidth, HKS.minWindowHeight)
-    color: HKS.bg
+    minimumSize: Qt.size(Deck.minWindowWidth, Deck.minWindowHeight)
+    color: Deck.bg
     visible: Quickshell.env("HKS_START_HIDDEN") !== "1"
 
     readonly property bool keepAlive: Quickshell.env("HKS_KEEP_ALIVE") === "1"
@@ -90,7 +90,7 @@ FloatingWindow {
     }
     onVisibleChanged: {
         if (win.visible) {
-            HKS.refreshTheme();
+            Deck.refreshTheme();
             if (!KeyboardService.loading && !KeyboardService.busy) {
                 KeyboardService.reload();
             }
@@ -247,7 +247,7 @@ FloatingWindow {
         id: rootSurface
         width: win.effectiveWinWidth
         height: win.effectiveWinHeight
-        color: HKS.bg
+        color: Deck.bg
         focus: true
 
         Keys.onEscapePressed: function(event) {
@@ -278,15 +278,15 @@ FloatingWindow {
                 id: sidebarRect
                 width: ResponsiveLogic.sidebarWidthForMode(win.sidebarMode)
                 height: parent.height
-                color: HKS.surface
+                color: Deck.surface
 
                 Column {
                     id: sidebarTopCol
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    anchors.margins: HKS.space12
-                    spacing: HKS.space12
+                    anchors.margins: Deck.space12
+                    spacing: Deck.space12
 
                     // Brand Header
                     Row {
@@ -305,16 +305,16 @@ FloatingWindow {
                                 width: 30
                                 height: 30
                                 radius: 8
-                                color: HKS.alpha(HKS.accent, 0.15)
+                                color: Deck.alpha(Deck.accent, 0.15)
                                 border.width: 1
-                                border.color: HKS.accent
+                                border.color: Deck.accent
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: ""
-                                    font.family: HKS.fontFamily
+                                    font.family: Deck.fontFamily
                                     font.pixelSize: 14
-                                    color: HKS.accent
+                                    color: Deck.accent
                                 }
                             }
                         }
@@ -328,10 +328,10 @@ FloatingWindow {
                                 objectName: "elideOk"
                                 width: parent.width
                                 text: AppInfo.appDisplayName
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
                                 font.weight: Font.Bold
-                                color: HKS.fg
+                                color: Deck.fg
                                 elide: Text.ElideRight
                             }
 
@@ -339,9 +339,9 @@ FloatingWindow {
                                 objectName: "elideOk"
                                 width: parent.width
                                 text: AppInfo.subtitle
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 10
-                                color: HKS.muted
+                                color: Deck.muted
                                 elide: Text.ElideRight
                             }
                         }
@@ -358,19 +358,19 @@ FloatingWindow {
                             anchors.fill: parent
                             radius: 6
                             color: (win.railSearchExpanded || globalSearch.text.length > 0)
-                                ? HKS.alpha(HKS.accent, 0.18)
-                                : HKS.elevated
+                                ? Deck.alpha(Deck.accent, 0.18)
+                                : Deck.elevated
                             border.width: 1
                             border.color: (win.railSearchExpanded || globalSearch.text.length > 0)
-                                ? HKS.accent
-                                : HKS.alpha(HKS.muted, 0.25)
+                                ? Deck.accent
+                                : Deck.alpha(Deck.muted, 0.25)
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "󰍉"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 15
-                                color: (win.railSearchExpanded || globalSearch.text.length > 0) ? HKS.accent : HKS.fg
+                                color: (win.railSearchExpanded || globalSearch.text.length > 0) ? Deck.accent : Deck.fg
                             }
 
                             MouseArea {
@@ -392,11 +392,11 @@ FloatingWindow {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: sidebarTopCol.bottom
-                    anchors.topMargin: HKS.space12
+                    anchors.topMargin: Deck.space12
                     anchors.bottom: parent.bottom
-                    anchors.leftMargin: HKS.space12
-                    anchors.rightMargin: HKS.space12
-                    anchors.bottomMargin: HKS.space12
+                    anchors.leftMargin: Deck.space12
+                    anchors.rightMargin: Deck.space12
+                    anchors.bottomMargin: Deck.space12
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
                     contentWidth: width
@@ -582,7 +582,7 @@ FloatingWindow {
                             visible: win.placeholderPages.length > 0
                             width: parent.width
                             height: 1
-                            color: HKS.alpha(HKS.muted, 0.15)
+                            color: Deck.alpha(Deck.muted, 0.15)
                         }
 
                         Repeater {
@@ -688,11 +688,11 @@ FloatingWindow {
             id: globalSearch
             z: 40
             visible: !win.compactRail || win.railSearchExpanded || text.length > 0
-            x: win.compactRail ? (sidebarRect.width + HKS.space8) : (sidebarRect.x + HKS.space12)
-            y: HKS.space12 + brandRow.height + HKS.space12
+            x: win.compactRail ? (sidebarRect.width + Deck.space8) : (sidebarRect.x + Deck.space12)
+            y: Deck.space12 + brandRow.height + Deck.space12
             width: win.compactRail
-                ? Math.min(280, Math.max(180, rootSurface.width - sidebarRect.width - HKS.space16))
-                : (sidebarRect.width - HKS.space12 * 2)
+                ? Math.min(280, Math.max(180, rootSurface.width - sidebarRect.width - Deck.space16))
+                : (sidebarRect.width - Deck.space12 * 2)
             height: 34
             placeholder: "Search settings..."
         }
@@ -706,17 +706,17 @@ FloatingWindow {
             width: railOverlayTipTxt.implicitWidth + 16
             height: 26
             radius: 6
-            color: HKS.elevated
+            color: Deck.elevated
             border.width: 1
-            border.color: HKS.alpha(HKS.accent, 0.5)
+            border.color: Deck.alpha(Deck.accent, 0.5)
 
             Text {
                 id: railOverlayTipTxt
                 anchors.centerIn: parent
                 text: win.railTipText
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.fg
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.fg
             }
         }
 
@@ -727,33 +727,33 @@ FloatingWindow {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            height: unsavedInner.implicitHeight + HKS.space16
-            color: HKS.surface
+            height: unsavedInner.implicitHeight + Deck.space16
+            color: Deck.surface
             border.width: 1
-            border.color: HKS.alpha(HKS.accent, 0.35)
+            border.color: Deck.alpha(Deck.accent, 0.35)
 
             Item {
                 id: unsavedInner
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.leftMargin: HKS.space16
-                anchors.rightMargin: HKS.space16
-                anchors.topMargin: HKS.space8
+                anchors.leftMargin: Deck.space16
+                anchors.rightMargin: Deck.space16
+                anchors.topMargin: Deck.space8
 
-                readonly property real actionsNaturalW: SettingsService.hasUnsavedChanges ? (discardBtn.implicitWidth + HKS.space8 + saveBtn.implicitWidth) : 0
+                readonly property real actionsNaturalW: SettingsService.hasUnsavedChanges ? (discardBtn.implicitWidth + Deck.space8 + saveBtn.implicitWidth) : 0
                 readonly property bool stacked: SettingsService.hasUnsavedChanges
-                    && (unsavedMsgMetrics.advanceWidth + HKS.space12 + actionsNaturalW > unsavedInner.width)
+                    && (unsavedMsgMetrics.advanceWidth + Deck.space12 + actionsNaturalW > unsavedInner.width)
 
                 implicitHeight: stacked
-                    ? (unsavedTxt.implicitHeight + HKS.space8 + actionsRow.implicitHeight)
+                    ? (unsavedTxt.implicitHeight + Deck.space8 + actionsRow.implicitHeight)
                     : Math.max(unsavedTxt.implicitHeight, actionsRow.implicitHeight)
                 height: implicitHeight
 
                 TextMetrics {
                     id: unsavedMsgMetrics
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
                     text: unsavedTxt.text
                 }
 
@@ -763,13 +763,13 @@ FloatingWindow {
                     y: unsavedInner.stacked ? 0 : Math.max(0, Math.round((unsavedInner.implicitHeight - height) / 2))
                     width: unsavedInner.stacked
                         ? unsavedInner.width
-                        : Math.max(0, unsavedInner.width - unsavedInner.actionsNaturalW - (unsavedInner.actionsNaturalW > 0 ? HKS.space12 : 0))
+                        : Math.max(0, unsavedInner.width - unsavedInner.actionsNaturalW - (unsavedInner.actionsNaturalW > 0 ? Deck.space12 : 0))
                     text: SettingsService.hasUnsavedChanges
                         ? "You have unsaved changes (live preview active)."
                         : SettingsService.statusMessage
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: SettingsService.hasUnsavedChanges ? HKS.warning : HKS.accent
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: SettingsService.hasUnsavedChanges ? Deck.warning : Deck.accent
                     wrapMode: Text.WordWrap
                 }
 
@@ -778,10 +778,10 @@ FloatingWindow {
                     visible: SettingsService.hasUnsavedChanges
                     x: unsavedInner.stacked ? 0 : Math.max(0, unsavedInner.width - width)
                     y: unsavedInner.stacked
-                        ? (unsavedTxt.implicitHeight + HKS.space8)
+                        ? (unsavedTxt.implicitHeight + Deck.space8)
                         : Math.max(0, Math.round((unsavedInner.implicitHeight - height) / 2))
                     width: unsavedInner.stacked ? unsavedInner.width : unsavedInner.actionsNaturalW
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     ActionButton {
                         id: discardBtn
@@ -807,19 +807,19 @@ FloatingWindow {
         Rectangle {
             anchors.fill: parent
             visible: win.unsavedPromptOpen
-            color: HKS.alpha(HKS.bg, 0.72)
+            color: Deck.alpha(Deck.bg, 0.72)
             z: 20
 
             MouseArea { anchors.fill: parent }
 
             Rectangle {
                 anchors.centerIn: parent
-                width: Math.min(420, parent.width - HKS.space24)
+                width: Math.min(420, parent.width - Deck.space24)
                 height: promptCol.implicitHeight + 36
-                radius: HKS.radius
-                color: HKS.surface
+                radius: Deck.radius
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.accent
+                border.color: Deck.accent
 
                 Column {
                     id: promptCol
@@ -830,19 +830,19 @@ FloatingWindow {
                     Text {
                         width: parent.width
                         text: "Unsaved Changes"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeLarge
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeLarge
                         font.weight: Font.Bold
-                        color: HKS.fg
+                        color: Deck.fg
                         wrapMode: Text.WordWrap
                     }
 
                     Text {
                         width: parent.width
                         text: "Discard live preview changes and close, or keep editing?"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.muted
                         wrapMode: Text.WordWrap
                     }
 
@@ -875,19 +875,19 @@ FloatingWindow {
             readonly property int modalSecs: inputModal ? InputService.remainingSeconds : DisplayService.remainingSeconds
             anchors.fill: parent
             visible: DisplayService.countdownActive || InputService.countdownActive
-            color: HKS.alpha(HKS.bg, 0.78)
+            color: Deck.alpha(Deck.bg, 0.78)
             z: 30
 
             MouseArea { anchors.fill: parent }
 
             Rectangle {
                 anchors.centerIn: parent
-                width: Math.min(440, parent.width - HKS.space24)
+                width: Math.min(440, parent.width - Deck.space24)
                 height: displayConfirmCol.implicitHeight + 36
-                radius: HKS.radius
-                color: HKS.surface
+                radius: Deck.radius
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.accent
+                border.color: Deck.accent
 
                 Column {
                     id: displayConfirmCol
@@ -898,19 +898,19 @@ FloatingWindow {
                     Text {
                         width: parent.width
                         text: parent.parent.parent.inputModal ? "Keep these input settings?" : "Keep these display settings?"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeLarge
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeLarge
                         font.weight: Font.Bold
-                        color: HKS.fg
+                        color: Deck.fg
                         wrapMode: Text.WordWrap
                     }
 
                     Text {
                         width: parent.width
                         text: "Reverting automatically in " + parent.parent.parent.modalSecs + "s unless confirmed."
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.warning
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.warning
                         wrapMode: Text.WordWrap
                     }
 

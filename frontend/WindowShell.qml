@@ -12,7 +12,7 @@ FloatingWindow {
     title: AppInfo.windowTitle
     implicitWidth: 1000
     implicitHeight: 700
-    color: HKS.bg
+    color: Deck.bg
     visible: Quickshell.env("HKS_START_HIDDEN") !== "1"
 
     readonly property bool keepAlive: Quickshell.env("HKS_KEEP_ALIVE") === "1"
@@ -34,7 +34,7 @@ FloatingWindow {
     }
     onVisibleChanged: {
         if (win.visible) {
-            HKS.refreshTheme();
+            Deck.refreshTheme();
         }
     }
     property string currentPage: Quickshell.env("HKS_PAGE") || "all" // "all" | "conflicts" | "disabled" | "backups" | "settings"
@@ -102,7 +102,7 @@ FloatingWindow {
     Rectangle {
         id: rootSurface
         anchors.fill: parent
-        color: HKS.bg
+        color: Deck.bg
         focus: true
 
         // App-wide Escape: only reached when no page/dialog accepted it first
@@ -125,7 +125,7 @@ FloatingWindow {
             Rectangle {
                 width: 210
                 height: parent.height
-                color: HKS.surface
+                color: Deck.surface
                 border.width: 0
 
                 // 1px subtle divider on right
@@ -134,13 +134,13 @@ FloatingWindow {
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     width: 1
-                    color: HKS.alpha(HKS.muted, 0.15)
+                    color: Deck.alpha(Deck.muted, 0.15)
                 }
 
                 Column {
                     anchors.fill: parent
-                    anchors.margins: HKS.space12
-                    spacing: HKS.space16
+                    anchors.margins: Deck.space12
+                    spacing: Deck.space16
 
                     // App Brand Header
                     Row {
@@ -152,16 +152,16 @@ FloatingWindow {
                             width: 32
                             height: 32
                             radius: 6
-                            color: HKS.alpha(HKS.accent, 0.2)
+                            color: Deck.alpha(Deck.accent, 0.2)
                             border.width: 1
-                            border.color: HKS.accent
+                            border.color: Deck.accent
 
                             Text {
                                 anchors.centerIn: parent
                                 text: ""
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 16
-                                color: HKS.accent
+                                color: Deck.accent
                             }
                         }
 
@@ -170,16 +170,16 @@ FloatingWindow {
                             spacing: 2
                             Text {
                                 text: "Keybind Studio"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
                                 font.weight: Font.Bold
-                                color: HKS.fg
+                                color: Deck.fg
                             }
                             Text {
                                 text: "Hyprland (HKS)"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 10
-                                color: HKS.muted
+                                color: Deck.muted
                             }
                         }
                     }
@@ -291,7 +291,7 @@ FloatingWindow {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             height: 28
-            color: HKS.surface
+            color: Deck.surface
             border.width: 0
 
             Rectangle {
@@ -299,12 +299,12 @@ FloatingWindow {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 height: 1
-                color: HKS.alpha(HKS.muted, 0.15)
+                color: Deck.alpha(Deck.muted, 0.15)
             }
 
             Row {
                 anchors.left: parent.left
-                anchors.leftMargin: HKS.space12
+                anchors.leftMargin: Deck.space12
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 12
 
@@ -321,20 +321,20 @@ FloatingWindow {
                             : "";
                         return [lang, ep, hv, cnt, sbTime].filter(Boolean).join("  •  ");
                     }
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 10
-                    color: HKS.muted
+                    color: Deck.muted
                 }
             }
 
             Text {
                 anchors.right: parent.right
-                anchors.rightMargin: HKS.space12
+                anchors.rightMargin: Deck.space12
                 anchors.verticalCenter: parent.verticalCenter
                 text: "Ctrl+R to reload  •  Esc to clear"
-                font.family: HKS.fontFamily
+                font.family: Deck.fontFamily
                 font.pixelSize: 10
-                color: HKS.alpha(HKS.muted, 0.7)
+                color: Deck.alpha(Deck.muted, 0.7)
             }
         }
 
@@ -347,9 +347,9 @@ FloatingWindow {
             height: 38
             width: toastRow.implicitWidth + 28
             radius: 19
-            color: HKS.elevated
+            color: Deck.elevated
             border.width: 1
-            border.color: HKS.alpha(HKS.accent, 0.5)
+            border.color: Deck.alpha(Deck.accent, 0.5)
             visible: EditService.toastVisible
             z: 99
 
@@ -361,18 +361,18 @@ FloatingWindow {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: ""
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 12
-                    color: HKS.accent
+                    color: Deck.accent
                 }
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: EditService.toastMessage
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
                     font.weight: Font.DemiBold
-                    color: HKS.fg
+                    color: Deck.fg
                 }
 
                 // Undo Button (when canUndo is true)
@@ -382,18 +382,18 @@ FloatingWindow {
                     height: 24
                     width: undoTxt.implicitWidth + 16
                     radius: 12
-                    color: undoMa.containsMouse ? HKS.alpha(HKS.accent, 0.3) : HKS.alpha(HKS.accent, 0.15)
+                    color: undoMa.containsMouse ? Deck.alpha(Deck.accent, 0.3) : Deck.alpha(Deck.accent, 0.15)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.accent, 0.5)
+                    border.color: Deck.alpha(Deck.accent, 0.5)
 
                     Text {
                         id: undoTxt
                         anchors.centerIn: parent
                         text: "Undo"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 11
                         font.weight: Font.Bold
-                        color: HKS.accent
+                        color: Deck.accent
                     }
 
                     MouseArea {
@@ -411,14 +411,14 @@ FloatingWindow {
                     width: 20
                     height: 20
                     radius: 10
-                    color: dismissMa.containsMouse ? HKS.alpha(HKS.muted, 0.25) : "transparent"
+                    color: dismissMa.containsMouse ? Deck.alpha(Deck.muted, 0.25) : "transparent"
 
                     Text {
                         anchors.centerIn: parent
                         text: "✕"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 10
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     MouseArea {

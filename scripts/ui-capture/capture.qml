@@ -10,7 +10,7 @@ Window {
     width: 1120
     height: 760
     visible: true
-    color: HKS.bg
+    color: Deck.bg
 
     property int step: 0
     readonly property string outDir: Quickshell.env("HKS_CAPTURE_DIR") || "scripts/ui-capture"

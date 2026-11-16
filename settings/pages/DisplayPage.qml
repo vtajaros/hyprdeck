@@ -59,19 +59,19 @@ Item {
             visible: !DisplayService.loading && !DisplayService.includeInstalled
             width: viewport.innerWidth
             height: incWarnTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.warning, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.warning, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.warning, 0.5)
+            border.color: Deck.alpha(Deck.warning, 0.5)
 
             Text {
                 id: incWarnTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: "Include block not installed in hyprland.lua. Applying display rules requires running: python3 -m backend.cli overrides install-include --apply --scan-sha256 <sha>"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.warning
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.warning
                 wrapMode: Text.WordWrap
             }
         }
@@ -81,19 +81,19 @@ Item {
             visible: DisplayService.error.length > 0
             width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.critical, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.critical, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.critical, 0.5)
+            border.color: Deck.alpha(Deck.critical, 0.5)
 
             Text {
                 id: errTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: DisplayService.error
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.critical
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.critical
                 wrapMode: Text.WordWrap
             }
         }
@@ -102,28 +102,28 @@ Item {
         Rectangle {
             visible: !!(DisplayService.brightness && DisplayService.brightness.available)
             width: viewport.innerWidth
-            height: briInner.implicitHeight + HKS.space12 * 2
-            radius: HKS.radiusMedium
-            color: HKS.surface
+            height: briInner.implicitHeight + Deck.space12 * 2
+            radius: Deck.radiusMedium
+            color: Deck.surface
             border.width: 1
-            border.color: HKS.alpha(HKS.muted, 0.18)
+            border.color: Deck.alpha(Deck.muted, 0.18)
 
             Item {
                 id: briInner
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: HKS.space12
+                anchors.margins: Deck.space12
 
                 // 180 track + 28 '-' + 52 box + 28 '+' + 3*8 spacing = 312
                 readonly property real briNaturalW: 312
                 readonly property bool stacked: ResponsiveLogic.shouldStackSettingRow(
-                    briInner.width, 160, briNaturalW, HKS.space12
+                    briInner.width, 160, briNaturalW, Deck.space12
                 )
                 readonly property real inlineRowH: Math.max(briTitleCol.implicitHeight, briControls.implicitHeight)
 
                 implicitHeight: stacked
-                    ? (briTitleCol.implicitHeight + HKS.space8 + briControls.implicitHeight)
+                    ? (briTitleCol.implicitHeight + Deck.space8 + briControls.implicitHeight)
                     : inlineRowH
                 height: implicitHeight
 
@@ -133,25 +133,25 @@ Item {
                     y: briInner.stacked ? 0 : Math.max(0, Math.round((briInner.inlineRowH - height) / 2))
                     width: briInner.stacked
                         ? briInner.width
-                        : Math.max(0, briInner.width - briInner.briNaturalW - HKS.space12)
+                        : Math.max(0, briInner.width - briInner.briNaturalW - Deck.space12)
                     spacing: 2
 
                     Text {
                         width: parent.width
                         text: "Display Brightness"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSize
                         font.weight: Font.DemiBold
-                        color: HKS.fg
+                        color: Deck.fg
                         wrapMode: Text.WordWrap
                     }
 
                     Text {
                         width: parent.width
                         text: "Device: " + (DisplayService.brightness.device || "backlight") + " (5% minimum floor)"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.muted
                         wrapMode: Text.WordWrap
                     }
                 }
@@ -160,7 +160,7 @@ Item {
                     id: briControls
                     x: briInner.stacked ? 0 : Math.max(0, briInner.width - width)
                     y: briInner.stacked
-                        ? (briTitleCol.implicitHeight + HKS.space8)
+                        ? (briTitleCol.implicitHeight + Deck.space8)
                         : Math.max(0, Math.round((briInner.inlineRowH - height) / 2))
                     spacing: 8
 
@@ -172,7 +172,7 @@ Item {
                         height: 6
                         radius: 3
                         anchors.verticalCenter: parent.verticalCenter
-                        color: HKS.elevated
+                        color: Deck.elevated
 
                         readonly property int pct: dispLogic.clampBrightness(DisplayService.brightness ? DisplayService.brightness.percent : 100)
                         readonly property real ratio: Math.max(0, Math.min(1, (pct - 5) / 95.0))
@@ -181,7 +181,7 @@ Item {
                             width: parent.width * parent.ratio
                             height: parent.height
                             radius: 3
-                            color: HKS.accent
+                            color: Deck.accent
                         }
 
                         Rectangle {
@@ -190,9 +190,9 @@ Item {
                             radius: 7
                             anchors.verticalCenter: parent.verticalCenter
                             x: Math.max(0, Math.min(parent.width - width, parent.width * parent.ratio - width / 2))
-                            color: HKS.fg
+                            color: Deck.fg
                             border.width: 1
-                            border.color: HKS.accent
+                            border.color: Deck.accent
                         }
 
                         MouseArea {
@@ -221,17 +221,17 @@ Item {
                     Rectangle {
                         width: 52
                         height: 28
-                        radius: HKS.radiusSmall
-                        color: HKS.bg
+                        radius: Deck.radiusSmall
+                        color: Deck.bg
                         border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.3)
+                        border.color: Deck.alpha(Deck.muted, 0.3)
 
                         Text {
                             anchors.centerIn: parent
                             text: briTrack.pct + "%"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.fg
                         }
                     }
 
@@ -274,19 +274,19 @@ Item {
                 readonly property string scaleWarn: dispLogic.scaleWarningText(outData ? outData.width : 0, outData ? outData.height : 0, effScale)
 
                 width: viewport.innerWidth
-                height: cardCol.implicitHeight + HKS.space12 * 2
-                radius: HKS.radiusMedium
-                color: DisplayService.draftOutputs.hasOwnProperty(outName) ? HKS.alpha(HKS.accent, 0.08) : HKS.surface
+                height: cardCol.implicitHeight + Deck.space12 * 2
+                radius: Deck.radiusMedium
+                color: DisplayService.draftOutputs.hasOwnProperty(outName) ? Deck.alpha(Deck.accent, 0.08) : Deck.surface
                 border.width: 1
-                border.color: DisplayService.draftOutputs.hasOwnProperty(outName) ? HKS.alpha(HKS.accent, 0.45) : HKS.alpha(HKS.muted, 0.18)
+                border.color: DisplayService.draftOutputs.hasOwnProperty(outName) ? Deck.alpha(Deck.accent, 0.45) : Deck.alpha(Deck.muted, 0.18)
 
                 Column {
                     id: cardCol
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    anchors.margins: HKS.space12
-                    spacing: HKS.space12
+                    anchors.margins: Deck.space12
+                    spacing: Deck.space12
 
                     // Output Header
                     Item {
@@ -294,12 +294,12 @@ Item {
                         width: parent.width
                         readonly property real rightW: outHeaderRight.implicitWidth
                         readonly property bool wrapped: ResponsiveLogic.shouldWrapDeviceActions(
-                            outHdrBox.width, 160, rightW, HKS.space12
+                            outHdrBox.width, 160, rightW, Deck.space12
                         )
                         readonly property real rowH: Math.max(outHdrLeft.implicitHeight, outHeaderRight.implicitHeight)
 
                         implicitHeight: wrapped
-                            ? (outHdrLeft.implicitHeight + HKS.space8 + outHeaderRight.implicitHeight)
+                            ? (outHdrLeft.implicitHeight + Deck.space8 + outHeaderRight.implicitHeight)
                             : rowH
                         height: implicitHeight
 
@@ -309,7 +309,7 @@ Item {
                             y: outHdrBox.wrapped ? 0 : Math.max(0, Math.round((outHdrBox.rowH - height) / 2))
                             width: outHdrBox.wrapped
                                 ? outHdrBox.width
-                                : Math.max(0, outHdrBox.width - outHdrBox.rightW - HKS.space12)
+                                : Math.max(0, outHdrBox.width - outHdrBox.rightW - Deck.space12)
                             spacing: 3
 
                             Flow {
@@ -318,17 +318,17 @@ Item {
 
                                 Text {
                                     text: outputCard.outName
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeMedium
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeMedium
                                     font.weight: Font.Bold
-                                    color: HKS.fg
+                                    color: Deck.fg
                                 }
 
                                 Rectangle {
                                     width: Math.min(hdrBadgeTxt.implicitWidth + 12, outHdrLeft.width)
                                     height: 18
                                     radius: 4
-                                    color: HKS.elevated
+                                    color: Deck.elevated
 
                                     Text {
                                         id: hdrBadgeTxt
@@ -340,9 +340,9 @@ Item {
                                         text: outputCard.outData && outputCard.outData.hdr_capable
                                             ? "HDR supported"
                                             : ("SDR (" + (outputCard.outData ? outputCard.outData.color_management_preset : "srgb") + ")")
-                                        font.family: HKS.fontFamily
+                                        font.family: Deck.fontFamily
                                         font.pixelSize: 10
-                                        color: HKS.muted
+                                        color: Deck.muted
                                         elide: Text.ElideRight
                                     }
                                 }
@@ -351,9 +351,9 @@ Item {
                             Text {
                                 width: parent.width
                                 text: outputCard.outData && outputCard.outData.description ? String(outputCard.outData.description) : "Connected display"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.muted
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                color: Deck.muted
                                 wrapMode: Text.WordWrap
                             }
                         }
@@ -362,7 +362,7 @@ Item {
                             id: outHeaderRight
                             x: outHdrBox.wrapped ? 0 : Math.max(0, outHdrBox.width - width)
                             y: outHdrBox.wrapped
-                                ? (outHdrLeft.implicitHeight + HKS.space8)
+                                ? (outHdrLeft.implicitHeight + Deck.space8)
                                 : Math.max(0, Math.round((outHdrBox.rowH - height) / 2))
                             spacing: 8
 
@@ -370,9 +370,9 @@ Item {
                                 visible: !outputCard.canToggleDisable && !outputCard.effDisabled
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "Last active monitor"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 10
-                                color: HKS.muted
+                                color: Deck.muted
                             }
 
                             Rectangle {
@@ -381,9 +381,9 @@ Item {
                                 radius: 12
                                 anchors.verticalCenter: parent.verticalCenter
                                 opacity: (outputCard.effDisabled || outputCard.canToggleDisable) ? 1.0 : 0.45
-                                color: !outputCard.effDisabled ? HKS.accent : HKS.elevated
+                                color: !outputCard.effDisabled ? Deck.accent : Deck.elevated
                                 border.width: 1
-                                border.color: !outputCard.effDisabled ? HKS.accent : HKS.alpha(HKS.muted, 0.4)
+                                border.color: !outputCard.effDisabled ? Deck.accent : Deck.alpha(Deck.muted, 0.4)
 
                                 Rectangle {
                                     width: 18
@@ -391,7 +391,7 @@ Item {
                                     radius: 9
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: !outputCard.effDisabled ? parent.width - width - 3 : 3
-                                    color: HKS.fg
+                                    color: Deck.fg
                                     Behavior on x { NumberAnimation { duration: 110 } }
                                 }
 
@@ -409,7 +409,7 @@ Item {
                     Column {
                         visible: !outputCard.effDisabled
                         width: parent.width
-                        spacing: HKS.space8
+                        spacing: Deck.space8
 
                         // Resolution & Refresh
                         Column {
@@ -419,9 +419,9 @@ Item {
                             Text {
                                 width: parent.width
                                 text: "Resolution & Refresh Rate"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.muted
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                color: Deck.muted
                                 wrapMode: Text.WordWrap
                             }
 
@@ -439,18 +439,18 @@ Item {
                                         readonly property bool selected: root._normMode(outputCard.effMode) === normVal
                                         width: modeTxt.implicitWidth + 16
                                         height: 28
-                                        radius: HKS.radiusSmall
-                                        color: selected ? HKS.alpha(HKS.accent, 0.22) : HKS.elevated
+                                        radius: Deck.radiusSmall
+                                        color: selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
                                         border.width: 1
-                                        border.color: selected ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+                                        border.color: selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
 
                                         Text {
                                             id: modeTxt
                                             anchors.centerIn: parent
                                             text: modelData
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: HKS.fontSizeSmall
-                                            color: selected ? HKS.accent : HKS.fg
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSizeSmall
+                                            color: selected ? Deck.accent : Deck.fg
                                         }
                                         MouseArea {
                                             anchors.fill: parent
@@ -473,9 +473,9 @@ Item {
 
                                 Text {
                                     text: "Scale"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: HKS.muted
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
+                                    color: Deck.muted
                                 }
 
                                 Rectangle {
@@ -484,7 +484,7 @@ Item {
                                     width: Math.min(scaleWarnTxt.implicitWidth + 10, parent.width)
                                     height: 16
                                     radius: 4
-                                    color: HKS.alpha(HKS.warning, 0.2)
+                                    color: Deck.alpha(Deck.warning, 0.2)
 
                                     Text {
                                         id: scaleWarnTxt
@@ -494,9 +494,9 @@ Item {
                                         anchors.rightMargin: 5
                                         verticalAlignment: Text.AlignVCenter
                                         text: outputCard.scaleWarn
-                                        font.family: HKS.fontFamily
+                                        font.family: Deck.fontFamily
                                         font.pixelSize: 10
-                                        color: HKS.warning
+                                        color: Deck.warning
                                         elide: Text.ElideRight
                                     }
                                 }
@@ -517,18 +517,18 @@ Item {
                                         readonly property bool clean: !!modelData.clean
                                         width: scaleTxt.implicitWidth + 16
                                         height: 28
-                                        radius: HKS.radiusSmall
-                                        color: selected ? HKS.alpha(clean ? HKS.accent : HKS.warning, 0.22) : HKS.elevated
+                                        radius: Deck.radiusSmall
+                                        color: selected ? Deck.alpha(clean ? Deck.accent : Deck.warning, 0.22) : Deck.elevated
                                         border.width: 1
-                                        border.color: selected ? (clean ? HKS.accent : HKS.warning) : HKS.alpha(HKS.muted, 0.25)
+                                        border.color: selected ? (clean ? Deck.accent : Deck.warning) : Deck.alpha(Deck.muted, 0.25)
 
                                         Text {
                                             id: scaleTxt
                                             anchors.centerIn: parent
                                             text: String(modelData.label) + (clean ? "" : " ~")
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: HKS.fontSizeSmall
-                                            color: selected ? (clean ? HKS.accent : HKS.warning) : HKS.fg
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSizeSmall
+                                            color: selected ? (clean ? Deck.accent : Deck.warning) : Deck.fg
                                         }
                                         MouseArea {
                                             anchors.fill: parent
@@ -548,9 +548,9 @@ Item {
                             Text {
                                 width: parent.width
                                 text: "Rotation"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.muted
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                color: Deck.muted
                                 wrapMode: Text.WordWrap
                             }
 
@@ -567,18 +567,18 @@ Item {
                                         readonly property bool selected: outputCard.effTransform === modelData
                                         width: trTxt.implicitWidth + 16
                                         height: 28
-                                        radius: HKS.radiusSmall
-                                        color: selected ? HKS.alpha(HKS.accent, 0.22) : HKS.elevated
+                                        radius: Deck.radiusSmall
+                                        color: selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
                                         border.width: 1
-                                        border.color: selected ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+                                        border.color: selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
 
                                         Text {
                                             id: trTxt
                                             anchors.centerIn: parent
                                             text: dispLogic.transformLabel(modelData)
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: HKS.fontSizeSmall
-                                            color: selected ? HKS.accent : HKS.fg
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSizeSmall
+                                            color: selected ? Deck.accent : Deck.fg
                                         }
                                         MouseArea {
                                             anchors.fill: parent
@@ -593,22 +593,22 @@ Item {
                         // VRR
                         Flow {
                             width: parent.width
-                            spacing: HKS.space12
+                            spacing: Deck.space12
 
                             Column {
                                 spacing: 2
                                 Text {
                                     text: "Variable Refresh Rate (VRR)"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: HKS.muted
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
+                                    color: Deck.muted
                                 }
                                 Text {
                                     visible: !(outputCard.outData && outputCard.outData.vrr_capable)
                                     text: "Not supported by panel"
-                                    font.family: HKS.fontFamily
+                                    font.family: Deck.fontFamily
                                     font.pixelSize: 10
-                                    color: HKS.muted
+                                    color: Deck.muted
                                 }
                             }
 
@@ -627,18 +627,18 @@ Item {
                                         readonly property bool selected: outputCard.effVrr === modelData.val
                                         width: vrrTxt.implicitWidth + 14
                                         height: 26
-                                        radius: HKS.radiusSmall
-                                        color: selected ? HKS.alpha(HKS.accent, 0.22) : HKS.elevated
+                                        radius: Deck.radiusSmall
+                                        color: selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
                                         border.width: 1
-                                        border.color: selected ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+                                        border.color: selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
 
                                         Text {
                                             id: vrrTxt
                                             anchors.centerIn: parent
                                             text: modelData.label
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: HKS.fontSizeSmall
-                                            color: selected ? HKS.accent : HKS.fg
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSizeSmall
+                                            color: selected ? Deck.accent : Deck.fg
                                         }
                                         MouseArea {
                                             anchors.fill: parent
@@ -655,28 +655,28 @@ Item {
                         Column {
                             visible: DisplayService.outputs.length > 1
                             width: parent.width
-                            spacing: HKS.space8
+                            spacing: Deck.space8
 
                             Flow {
                                 width: parent.width
-                                spacing: HKS.space8
+                                spacing: Deck.space8
 
                                 Text {
                                     height: 28
                                     verticalAlignment: Text.AlignVCenter
                                     text: "Position (XxY)"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: HKS.muted
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
+                                    color: Deck.muted
                                 }
 
                                 Rectangle {
                                     width: Math.min(130, parent.width)
                                     height: 28
-                                    radius: HKS.radiusSmall
-                                    color: HKS.bg
+                                    radius: Deck.radiusSmall
+                                    color: Deck.bg
                                     border.width: 1
-                                    border.color: posInput.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.3)
+                                    border.color: posInput.activeFocus ? Deck.accent : Deck.alpha(Deck.muted, 0.3)
 
                                     TextInput {
                                         id: posInput
@@ -684,9 +684,9 @@ Item {
                                         anchors.leftMargin: 8
                                         anchors.rightMargin: 8
                                         verticalAlignment: TextInput.AlignVCenter
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        color: HKS.fg
+                                        font.family: Deck.fontFamily
+                                        font.pixelSize: Deck.fontSizeSmall
+                                        color: Deck.fg
                                         text: outputCard.effPosition
                                         onEditingFinished: DisplayService.setOutputDraft(outputCard.outName, "position", text.trim())
                                     }
@@ -703,9 +703,9 @@ Item {
                                     height: 26
                                     verticalAlignment: Text.AlignVCenter
                                     text: "Mirror of"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: HKS.muted
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
+                                    color: Deck.muted
                                 }
 
                                 Rectangle {
@@ -713,18 +713,18 @@ Item {
                                     readonly property bool selected: outputCard.effMirror === "" || outputCard.effMirror === "none"
                                     width: mirrorNoneTxt.implicitWidth + 14
                                     height: 26
-                                    radius: HKS.radiusSmall
-                                    color: mirrorNoneChip.selected ? HKS.alpha(HKS.accent, 0.22) : HKS.elevated
+                                    radius: Deck.radiusSmall
+                                    color: mirrorNoneChip.selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
                                     border.width: 1
-                                    border.color: mirrorNoneChip.selected ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+                                    border.color: mirrorNoneChip.selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
 
                                     Text {
                                         id: mirrorNoneTxt
                                         anchors.centerIn: parent
                                         text: "None"
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
-                                        color: mirrorNoneChip.selected ? HKS.accent : HKS.fg
+                                        font.family: Deck.fontFamily
+                                        font.pixelSize: Deck.fontSizeSmall
+                                        color: mirrorNoneChip.selected ? Deck.accent : Deck.fg
                                     }
                                     MouseArea {
                                         anchors.fill: parent
@@ -742,18 +742,18 @@ Item {
                                         visible: targetName !== outputCard.outName
                                         width: visible ? mirrorOutTxt.implicitWidth + 14 : 0
                                         height: 26
-                                        radius: HKS.radiusSmall
-                                        color: selected ? HKS.alpha(HKS.accent, 0.22) : HKS.elevated
+                                        radius: Deck.radiusSmall
+                                        color: selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
                                         border.width: 1
-                                        border.color: selected ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+                                        border.color: selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
 
                                         Text {
                                             id: mirrorOutTxt
                                             anchors.centerIn: parent
                                             text: targetName
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: HKS.fontSizeSmall
-                                            color: selected ? HKS.accent : HKS.fg
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSizeSmall
+                                            color: selected ? Deck.accent : Deck.fg
                                         }
                                         MouseArea {
                                             anchors.fill: parent

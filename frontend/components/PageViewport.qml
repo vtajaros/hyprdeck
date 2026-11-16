@@ -5,7 +5,7 @@ Item {
     id: root
 
     property bool allowTwoColumns: false
-    property real maxContentWidth: HKS.contentMaxWidth
+    property real maxContentWidth: Deck.contentMaxWidth
     property alias header: headerSlot.data
     property alias contentItem: bodyCol
     property alias verticalFlickable: vFlick
@@ -13,23 +13,23 @@ Item {
 
     property string layoutClass: "expanded"
     readonly property bool layoutShort: ResponsiveLogic.isLayoutShort(root.height)
-    readonly property int outerMargin: HKS.scaledSpace(HKS.space24, root.layoutClass, root.layoutShort)
-    readonly property int sectionSpacing: HKS.scaledSpace(HKS.space12, root.layoutClass, root.layoutShort)
-    readonly property int cardPadding: HKS.scaledSpace(HKS.space12, root.layoutClass, root.layoutShort)
+    readonly property int outerMargin: Deck.scaledSpace(Deck.space24, root.layoutClass, root.layoutShort)
+    readonly property int sectionSpacing: Deck.scaledSpace(Deck.space12, root.layoutClass, root.layoutShort)
+    readonly property int cardPadding: Deck.scaledSpace(Deck.space12, root.layoutClass, root.layoutShort)
 
-    readonly property bool horizontalScrollNeeded: root.width > 0 && (root.width - root.outerMargin * 2) < HKS.minContentScrollWidth
+    readonly property bool horizontalScrollNeeded: root.width > 0 && (root.width - root.outerMargin * 2) < Deck.minContentScrollWidth
     readonly property real innerWidth: Math.max(
-        HKS.minContentScrollWidth,
+        Deck.minContentScrollWidth,
         Math.min(Math.max(0, root.width - root.outerMargin * 2), root.maxContentWidth)
     )
-    readonly property bool twoColumns: root.allowTwoColumns && root.width >= HKS.twoColumnThreshold
-    readonly property int columnSpacing: HKS.space12
+    readonly property bool twoColumns: root.allowTwoColumns && root.width >= Deck.twoColumnThreshold
+    readonly property int columnSpacing: Deck.space12
     readonly property real twoColumnCardWidth: root.twoColumns
         ? Math.floor((root.innerWidth - root.columnSpacing) / 2)
         : root.innerWidth
 
     function _updateLayoutClass() {
-        var usable = Math.max(HKS.minContentScrollWidth, root.width - HKS.space24 * 2);
+        var usable = Math.max(Deck.minContentScrollWidth, root.width - Deck.space24 * 2);
         var next = ResponsiveLogic.computeLayoutClass(usable, root.layoutClass);
         if (next !== root.layoutClass) {
             root.layoutClass = next;

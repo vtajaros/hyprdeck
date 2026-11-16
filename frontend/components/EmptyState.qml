@@ -21,18 +21,18 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.icon
-            font.family: HKS.fontFamily
+            font.family: Deck.fontFamily
             font.pixelSize: 36
-            color: HKS.alpha(HKS.muted, 0.4)
+            color: Deck.alpha(Deck.muted, 0.4)
         }
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.title
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeLarge
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSizeLarge
             font.weight: Font.Bold
-            color: HKS.fg
+            color: Deck.fg
             horizontalAlignment: Text.AlignHCenter
         }
 
@@ -40,9 +40,9 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             width: parent.width
             text: root.message
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSize
-            color: HKS.muted
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSize
+            color: Deck.muted
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
         }
@@ -53,18 +53,18 @@ Item {
             width: btnText.implicitWidth + 24
             height: 32
             radius: 6
-            color: btnMouse.containsMouse ? HKS.elevated : HKS.surface
+            color: btnMouse.containsMouse ? Deck.elevated : Deck.surface
             border.width: 1
-            border.color: HKS.alpha(HKS.accent, 0.5)
+            border.color: Deck.alpha(Deck.accent, 0.5)
 
             Text {
                 id: btnText
                 anchors.centerIn: parent
                 text: root.buttonText
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
                 font.weight: Font.DemiBold
-                color: HKS.accent
+                color: Deck.accent
             }
 
             MouseArea {

@@ -69,19 +69,19 @@ Item {
             visible: !PowerService.loading && PowerService.error.length > 0
             width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.critical, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.critical, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.critical, 0.5)
+            border.color: Deck.alpha(Deck.critical, 0.5)
 
             Text {
                 id: errTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: PowerService.error
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.critical
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.critical
                 wrapMode: Text.WordWrap
             }
         }
@@ -91,19 +91,19 @@ Item {
             visible: PowerService.statusMessage.length > 0 && PowerService.error.length === 0
             width: viewport.innerWidth
             height: stTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.accent, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.accent, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.accent, 0.45)
+            border.color: Deck.alpha(Deck.accent, 0.45)
 
             Text {
                 id: stTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: PowerService.statusMessage
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.accent
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.accent
                 wrapMode: Text.WordWrap
             }
         }
@@ -129,10 +129,10 @@ Item {
                 text: "Battery (" + String(PowerService.battery.name || "BAT1") + ") — "
                     + String(PowerService.battery.percentage !== undefined && PowerService.battery.percentage !== null ? PowerService.battery.percentage : "?") + "% · "
                     + String(PowerService.battery.state || "unknown")
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.DemiBold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -141,9 +141,9 @@ Item {
                 text: "Health: " + (PowerService.battery.health_percent !== null && PowerService.battery.health_percent !== undefined ? (PowerService.battery.health_percent + "%") : "Unknown")
                     + " · Rate: " + (PowerService.battery.energy_rate_w !== null && PowerService.battery.energy_rate_w !== undefined ? (PowerService.battery.energy_rate_w + " W") : "0 W")
                     + (PowerService.battery.ac_online !== null && PowerService.battery.ac_online !== undefined ? (" · AC: " + (PowerService.battery.ac_online ? "Online" : "Battery")) : "")
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
 
@@ -153,9 +153,9 @@ Item {
                 text: PowerService.battery.time_to_empty
                     ? ("Time to empty: " + PowerService.battery.time_to_empty)
                     : ("Time to full: " + (PowerService.battery.time_to_full || ""))
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
 
@@ -163,9 +163,9 @@ Item {
                 visible: PowerService.battery.charge_cycles !== null && PowerService.battery.charge_cycles !== undefined
                 width: parent.width
                 text: "Charge cycles: " + String(PowerService.battery.charge_cycles || "")
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
 
@@ -173,9 +173,9 @@ Item {
                 visible: PowerService.battery.charge_end_threshold !== null && PowerService.battery.charge_end_threshold !== undefined
                 width: parent.width
                 text: "Charge threshold: " + String(PowerService.battery.charge_end_threshold || "") + "%"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
         }
@@ -189,19 +189,19 @@ Item {
             Text {
                 width: parent.width
                 text: "Performance (" + String(PowerService.cpu.driver || "cpu") + ", " + String(PowerService.cpu.cpu_count || 0) + " threads)"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.DemiBold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
             Text {
                 width: parent.width
                 text: "Session only, resets on reboot, asks for your password."
-                font.family: HKS.fontFamily
+                font.family: Deck.fontFamily
                 font.pixelSize: 11
-                color: HKS.muted
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
 
@@ -230,17 +230,17 @@ Item {
                 visible: !!PowerService.capabilities.can_write_turbo
                 width: parent.width
                 readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
-                    turboRowBox.width, turboLblMetrics.advanceWidth, turboBtn.implicitWidth, HKS.space12
+                    turboRowBox.width, turboLblMetrics.advanceWidth, turboBtn.implicitWidth, Deck.space12
                 )
                 implicitHeight: wrapped
-                    ? (turboLbl.implicitHeight + HKS.space8 + turboBtn.height)
+                    ? (turboLbl.implicitHeight + Deck.space8 + turboBtn.height)
                     : Math.max(turboLbl.implicitHeight, turboBtn.height)
                 height: implicitHeight
 
                 TextMetrics {
                     id: turboLblMetrics
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
                     text: turboLbl.text
                 }
 
@@ -250,11 +250,11 @@ Item {
                     y: turboRowBox.wrapped ? 0 : Math.max(0, Math.round((turboRowBox.height - height) / 2))
                     width: turboRowBox.wrapped
                         ? turboRowBox.width
-                        : Math.max(0, turboRowBox.width - turboBtn.width - HKS.space12)
+                        : Math.max(0, turboRowBox.width - turboBtn.width - Deck.space12)
                     text: "Intel Turbo Boost: " + (PowerService.cpu.turbo_enabled ? "Enabled" : "Disabled")
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.fg
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.fg
                     wrapMode: Text.WordWrap
                 }
 
@@ -262,7 +262,7 @@ Item {
                     id: turboBtn
                     x: turboRowBox.wrapped ? 0 : Math.max(0, turboRowBox.width - width)
                     y: turboRowBox.wrapped
-                        ? (turboLbl.implicitHeight + HKS.space8)
+                        ? (turboLbl.implicitHeight + Deck.space8)
                         : Math.max(0, Math.round((turboRowBox.height - height) / 2))
                     text: PowerService.cpu.turbo_enabled ? "Disable Turbo" : "Enable Turbo"
                     variant: PowerService.cpu.turbo_enabled ? "neutral" : "accent"
@@ -283,17 +283,17 @@ Item {
                 id: idleHdrBox
                 width: parent.width
                 readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
-                    idleHdrBox.width, idleLblMetrics.advanceWidth, idleActions.implicitWidth, HKS.space8
+                    idleHdrBox.width, idleLblMetrics.advanceWidth, idleActions.implicitWidth, Deck.space8
                 )
                 implicitHeight: wrapped
-                    ? (idleLbl.implicitHeight + HKS.space8 + idleActions.height)
+                    ? (idleLbl.implicitHeight + Deck.space8 + idleActions.height)
                     : Math.max(idleLbl.implicitHeight, idleActions.height)
                 height: implicitHeight
 
                 TextMetrics {
                     id: idleLblMetrics
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.DemiBold
                     text: idleLbl.text
                 }
@@ -304,12 +304,12 @@ Item {
                     y: idleHdrBox.wrapped ? 0 : Math.max(0, Math.round((idleHdrBox.height - height) / 2))
                     width: idleHdrBox.wrapped
                         ? idleHdrBox.width
-                        : Math.max(0, idleHdrBox.width - idleActions.width - HKS.space8)
+                        : Math.max(0, idleHdrBox.width - idleActions.width - Deck.space8)
                     text: "Screen Idle (hypridle: " + (PowerService.hypridle.running ? "running" : "stopped") + ")"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.DemiBold
-                    color: HKS.fg
+                    color: Deck.fg
                     wrapMode: Text.WordWrap
                 }
 
@@ -317,9 +317,9 @@ Item {
                     id: idleActions
                     x: idleHdrBox.wrapped ? 0 : Math.max(0, idleHdrBox.width - width)
                     y: idleHdrBox.wrapped
-                        ? (idleLbl.implicitHeight + HKS.space8)
+                        ? (idleLbl.implicitHeight + Deck.space8)
                         : Math.max(0, Math.round((idleHdrBox.height - height) / 2))
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     ActionButton {
                         text: "Revert"
@@ -357,11 +357,11 @@ Item {
                     objectName: "elideOk"
                     x: 0
                     anchors.verticalCenter: parent.verticalCenter
-                    width: Math.max(80, dimRowBox.width - dimCtrls.width - HKS.space8)
+                    width: Math.max(80, dimRowBox.width - dimCtrls.width - Deck.space8)
                     text: "Dim screen"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.fg
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.fg
                     elide: Text.ElideRight
                 }
 
@@ -369,7 +369,7 @@ Item {
                     id: dimCtrls
                     x: dimRowBox.width - width
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     ActionButton {
                         text: "-"
@@ -382,17 +382,17 @@ Item {
                     Rectangle {
                         width: 68
                         height: 28
-                        radius: HKS.radiusSmall
-                        color: HKS.bg
+                        radius: Deck.radiusSmall
+                        color: Deck.bg
                         border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.3)
+                        border.color: Deck.alpha(Deck.muted, 0.3)
 
                         Text {
                             anchors.centerIn: parent
                             text: root.draftDimMin + " min"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.fg
                         }
                     }
 
@@ -418,11 +418,11 @@ Item {
                     objectName: "elideOk"
                     x: 0
                     anchors.verticalCenter: parent.verticalCenter
-                    width: Math.max(80, lockRowBox.width - lockCtrls.width - HKS.space8)
+                    width: Math.max(80, lockRowBox.width - lockCtrls.width - Deck.space8)
                     text: "Lock session"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.fg
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.fg
                     elide: Text.ElideRight
                 }
 
@@ -430,7 +430,7 @@ Item {
                     id: lockCtrls
                     x: lockRowBox.width - width
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     ActionButton {
                         text: "-"
@@ -443,17 +443,17 @@ Item {
                     Rectangle {
                         width: 68
                         height: 28
-                        radius: HKS.radiusSmall
-                        color: HKS.bg
+                        radius: Deck.radiusSmall
+                        color: Deck.bg
                         border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.3)
+                        border.color: Deck.alpha(Deck.muted, 0.3)
 
                         Text {
                             anchors.centerIn: parent
                             text: root.draftLockMin + " min"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.fg
                         }
                     }
 
@@ -479,11 +479,11 @@ Item {
                     objectName: "elideOk"
                     x: 0
                     anchors.verticalCenter: parent.verticalCenter
-                    width: Math.max(80, dpmsRowBox.width - dpmsCtrls.width - HKS.space8)
+                    width: Math.max(80, dpmsRowBox.width - dpmsCtrls.width - Deck.space8)
                     text: "Turn off display"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.fg
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.fg
                     elide: Text.ElideRight
                 }
 
@@ -491,7 +491,7 @@ Item {
                     id: dpmsCtrls
                     x: dpmsRowBox.width - width
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     ActionButton {
                         text: "-"
@@ -504,17 +504,17 @@ Item {
                     Rectangle {
                         width: 68
                         height: 28
-                        radius: HKS.radiusSmall
-                        color: HKS.bg
+                        radius: Deck.radiusSmall
+                        color: Deck.bg
                         border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.3)
+                        border.color: Deck.alpha(Deck.muted, 0.3)
 
                         Text {
                             anchors.centerIn: parent
                             text: root.draftDpmsMin + " min"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.fg
                         }
                     }
 
@@ -531,9 +531,9 @@ Item {
             Text {
                 visible: root.idleValidationErr.length > 0
                 text: root.idleValidationErr
-                font.family: HKS.fontFamily
+                font.family: Deck.fontFamily
                 font.pixelSize: 11
-                color: HKS.critical
+                color: Deck.critical
                 width: parent.width
                 wrapMode: Text.WordWrap
             }
@@ -549,19 +549,19 @@ Item {
             Text {
                 width: parent.width
                 text: "Lid & Sleep (Read-Only)"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.DemiBold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
             Text {
                 width: parent.width
                 text: "Sleep mode: " + String(PowerService.lidSleep.mem_sleep || "unknown")
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
 
@@ -570,9 +570,9 @@ Item {
                 text: "Lid switch: battery=" + String(PowerService.lidSleep.handle_lid_switch || "suspend")
                     + " · ac=" + String(PowerService.lidSleep.handle_lid_switch_external_power || "suspend")
                     + " · docked=" + String(PowerService.lidSleep.handle_lid_switch_docked || "ignore")
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
         }
@@ -582,41 +582,41 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: PowerService.confirmOpen
-        color: HKS.alpha(HKS.bg, 0.72)
+        color: Deck.alpha(Deck.bg, 0.72)
         z: 35
 
         MouseArea { anchors.fill: parent }
 
         Rectangle {
             anchors.centerIn: parent
-            width: Math.min(440, parent.width - HKS.space24)
+            width: Math.min(440, parent.width - Deck.space24)
             height: modalCol.implicitHeight + 36
-            radius: HKS.radius
-            color: HKS.surface
+            radius: Deck.radius
+            color: Deck.surface
             border.width: 1
-            border.color: HKS.warning
+            border.color: Deck.warning
 
             Column {
                 id: modalCol
                 anchors.fill: parent
                 anchors.margins: 18
-                spacing: HKS.space12
+                spacing: Deck.space12
 
                 Text {
                     text: PowerService.confirmTitle
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeMedium
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeMedium
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                     width: parent.width
                     wrapMode: Text.WordWrap
                 }
 
                 Text {
                     text: PowerService.confirmMessage
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.warning
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.warning
                     width: parent.width
                     wrapMode: Text.WordWrap
                 }
@@ -624,7 +624,7 @@ Item {
                 Flow {
                     width: parent.width
                     layoutDirection: Qt.RightToLeft
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     ActionButton {
                         text: "Disable Turbo"

@@ -86,8 +86,8 @@ Item {
 
     Column {
         anchors.fill: parent
-        anchors.margins: HKS.space16
-        spacing: HKS.space12
+        anchors.margins: Deck.space16
+        spacing: Deck.space12
 
         // Header Summary Area
         Column {
@@ -101,10 +101,10 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Keybinding Conflicts"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeLarge
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeLarge
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                 }
 
                 Rectangle {
@@ -113,27 +113,27 @@ Item {
                     height: 22
                     width: summaryBadge.implicitWidth + 12
                     radius: 4
-                    color: root.duplicateCount > 0 ? HKS.alpha(HKS.critical, 0.2) : HKS.alpha(HKS.warning, 0.2)
+                    color: root.duplicateCount > 0 ? Deck.alpha(Deck.critical, 0.2) : Deck.alpha(Deck.warning, 0.2)
                     border.width: 1
-                    border.color: root.duplicateCount > 0 ? HKS.alpha(HKS.critical, 0.6) : HKS.alpha(HKS.warning, 0.6)
+                    border.color: root.duplicateCount > 0 ? Deck.alpha(Deck.critical, 0.6) : Deck.alpha(Deck.warning, 0.6)
 
                     Text {
                         id: summaryBadge
                         anchors.centerIn: parent
                         text: root.totalConflicts + " conflicts: " + root.duplicateCount + " duplicate, " + root.stackedCount + " stacked"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 10
                         font.weight: Font.Bold
-                        color: root.duplicateCount > 0 ? HKS.critical : HKS.warning
+                        color: root.duplicateCount > 0 ? Deck.critical : Deck.warning
                     }
                 }
             }
 
             Text {
                 text: "Stacked binds are legal: Hyprland runs every bind that matches a keypress."
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
             }
         }
 
@@ -153,16 +153,16 @@ Item {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 32
-                        color: HKS.accent
+                        color: Deck.accent
                     }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Loading conflicts..."
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSize
+                        color: Deck.muted
                     }
                 }
             }
@@ -211,10 +211,10 @@ Item {
 
                     width: listView.width - (listView.ScrollBar.vertical.visible ? 10 : 0)
                     implicitHeight: cardCol.implicitHeight + 24
-                    radius: HKS.radius
-                    color: HKS.surface
+                    radius: Deck.radius
+                    color: Deck.surface
                     border.width: 1
-                    border.color: isDuplicate ? HKS.alpha(HKS.critical, 0.45) : HKS.alpha(HKS.warning, 0.45)
+                    border.color: isDuplicate ? Deck.alpha(Deck.critical, 0.45) : Deck.alpha(Deck.warning, 0.45)
 
                     Column {
                         id: cardCol
@@ -247,18 +247,18 @@ Item {
                                     height: 20
                                     width: kindTxt.implicitWidth + 10
                                     radius: 4
-                                    color: isDuplicate ? HKS.alpha(HKS.critical, 0.2) : HKS.alpha(HKS.warning, 0.2)
+                                    color: isDuplicate ? Deck.alpha(Deck.critical, 0.2) : Deck.alpha(Deck.warning, 0.2)
                                     border.width: 1
-                                    border.color: isDuplicate ? HKS.alpha(HKS.critical, 0.6) : HKS.alpha(HKS.warning, 0.6)
+                                    border.color: isDuplicate ? Deck.alpha(Deck.critical, 0.6) : Deck.alpha(Deck.warning, 0.6)
 
                                     Text {
                                         id: kindTxt
                                         anchors.centerIn: parent
                                         text: isDuplicate ? "Duplicate" : "Stacked"
-                                        font.family: HKS.fontFamily
+                                        font.family: Deck.fontFamily
                                         font.pixelSize: 9
                                         font.weight: Font.Bold
-                                        color: isDuplicate ? HKS.critical : HKS.warning
+                                        color: isDuplicate ? Deck.critical : Deck.warning
                                     }
                                 }
 
@@ -269,17 +269,17 @@ Item {
                                     height: 20
                                     width: submapTxt.implicitWidth + 8
                                     radius: 4
-                                    color: HKS.alpha(HKS.muted, 0.15)
+                                    color: Deck.alpha(Deck.muted, 0.15)
                                     border.width: 1
-                                    border.color: HKS.alpha(HKS.muted, 0.3)
+                                    border.color: Deck.alpha(Deck.muted, 0.3)
 
                                     Text {
                                         id: submapTxt
                                         anchors.centerIn: parent
                                         text: conflictItem && conflictItem.submap ? ("submap: " + conflictItem.submap) : ""
-                                        font.family: HKS.fontFamily
+                                        font.family: Deck.fontFamily
                                         font.pixelSize: 9
-                                        color: HKS.muted
+                                        color: Deck.muted
                                     }
                                 }
 
@@ -287,9 +287,9 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: conflictCard.bindCount + " binds"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    color: HKS.muted
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
+                                    color: Deck.muted
                                 }
                             }
 
@@ -313,9 +313,9 @@ Item {
                             text: isDuplicate
                                 ? "These binds do the same thing; one of them is redundant."
                                 : ("Pressing this triggers all " + conflictCard.bindCount + " actions.")
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.alpha(HKS.muted, 0.85)
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.alpha(Deck.muted, 0.85)
                         }
 
                         // 3. One row per bind in config order (with fixed columns across cards)
@@ -333,9 +333,9 @@ Item {
                                     width: parent.width
                                     height: 32
                                     radius: 4
-                                    color: HKS.alpha(HKS.bg, 0.5)
+                                    color: Deck.alpha(Deck.bg, 0.5)
                                     border.width: 1
-                                    border.color: HKS.alpha(HKS.muted, 0.12)
+                                    border.color: Deck.alpha(Deck.muted, 0.12)
 
                                     Item {
                                         anchors.fill: parent
@@ -349,10 +349,10 @@ Item {
                                             anchors.verticalCenter: parent.verticalCenter
                                             width: 250
                                             text: bindObj ? KeybindData.descriptionText(bindObj) : ("(Unknown bind: " + bindId + ")")
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: HKS.fontSizeSmall
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSizeSmall
                                             font.weight: Font.DemiBold
-                                            color: bindObj ? HKS.fg : HKS.muted
+                                            color: bindObj ? Deck.fg : Deck.muted
                                             elide: Text.ElideRight
                                         }
 
@@ -370,17 +370,17 @@ Item {
                                                 height: 18
                                                 width: loopBadgeTxt.implicitWidth + 8
                                                 radius: 3
-                                                color: HKS.alpha(HKS.muted, 0.15)
+                                                color: Deck.alpha(Deck.muted, 0.15)
                                                 border.width: 1
-                                                border.color: HKS.alpha(HKS.muted, 0.3)
+                                                border.color: Deck.alpha(Deck.muted, 0.3)
 
                                                 Text {
                                                     id: loopBadgeTxt
                                                     anchors.centerIn: parent
                                                     text: "loop"
-                                                    font.family: HKS.fontFamily
+                                                    font.family: Deck.fontFamily
                                                     font.pixelSize: 9
-                                                    color: HKS.muted
+                                                    color: Deck.muted
                                                 }
                                             }
 
@@ -390,9 +390,9 @@ Item {
                                                 width: 240
                                                 horizontalAlignment: Text.AlignRight
                                                 text: root.formatSource(bindObj ? bindObj.source_file : "", bindObj ? bindObj.source_line : null)
-                                                font.family: HKS.fontFamily
-                                                font.pixelSize: HKS.fontSizeSmall
-                                                color: HKS.alpha(HKS.muted, 0.8)
+                                                font.family: Deck.fontFamily
+                                                font.pixelSize: Deck.fontSizeSmall
+                                                color: Deck.alpha(Deck.muted, 0.8)
                                                 elide: Text.ElideLeft
                                             }
                                         }
@@ -405,9 +405,9 @@ Item {
                                             anchors.rightMargin: 12
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: bindObj ? KeybindData.actionText(bindObj) : "-"
-                                            font.family: HKS.fontFamily
-                                            font.pixelSize: HKS.fontSizeSmall
-                                            color: HKS.muted
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSizeSmall
+                                            color: Deck.muted
                                             elide: Text.ElideRight
                                         }
                                     }

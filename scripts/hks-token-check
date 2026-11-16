@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static guard ensuring every HKS.<token> used in QML is defined in frontend/theme/HKS.qml."""
+"""Static guard ensuring every Deck.<token> used in QML is defined in frontend/theme/Deck.qml."""
 
 from __future__ import annotations
 
@@ -9,15 +9,15 @@ from pathlib import Path
 
 _PROP_RE = re.compile(r"(?:readonly\s+)?property\s+\S+\s+(\w+)\s*:")
 _FUNC_RE = re.compile(r"function\s+(\w+)\s*\(")
-_USE_RE = re.compile(r"\bHKS\.(\w+)\b")
+_USE_RE = re.compile(r"\bDeck\.(\w+)\b")
 
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
-    hks_qml = repo_root / "frontend" / "theme" / "HKS.qml"
-    hks_text = hks_qml.read_text(encoding="utf-8")
+    deck_qml = repo_root / "frontend" / "theme" / "Deck.qml"
+    deck_text = deck_qml.read_text(encoding="utf-8")
 
-    defined = set(_PROP_RE.findall(hks_text)) | set(_FUNC_RE.findall(hks_text))
+    defined = set(_PROP_RE.findall(deck_text)) | set(_FUNC_RE.findall(deck_text))
     offenders: list[str] = []
 
     for sub in ("frontend", "settings"):
@@ -27,15 +27,15 @@ def main() -> int:
                 for match in _USE_RE.finditer(line):
                     token = match.group(1)
                     if token not in defined:
-                        offenders.append(f"  {rel}:{lineno}: undefined HKS.{token}")
+                        offenders.append(f"  {rel}:{lineno}: undefined Deck.{token}")
 
     if offenders:
-        sys.stderr.write(f"hks-token-check: FAILED ({len(offenders)} undefined HKS.* token(s)):\n")
+        sys.stderr.write(f"hks-token-check: FAILED ({len(offenders)} undefined Deck.* token(s)):\n")
         for item in offenders:
             sys.stderr.write(item + "\n")
         return 1
 
-    print(f"hks-token-check: passed (all HKS.* references defined in {hks_qml.relative_to(repo_root)}).")
+    print(f"hks-token-check: passed (all Deck.* references defined in {deck_qml.relative_to(repo_root)}).")
     return 0
 
 

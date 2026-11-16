@@ -248,10 +248,10 @@ Item {
         anchors.centerIn: parent
         width: Math.min(parent.width - 48, 640)
         height: Math.min(parent.height - 48, cardCol.implicitHeight + 40)
-        radius: HKS.radius
-        color: HKS.bg
+        radius: Deck.radius
+        color: Deck.bg
         border.width: 1
-        border.color: HKS.alpha(HKS.accent, 0.45)
+        border.color: Deck.alpha(Deck.accent, 0.45)
 
         MouseArea {
             anchors.fill: parent
@@ -277,18 +277,18 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.isAddMode ? "" : ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 16
-                        color: HKS.accent
+                        color: Deck.accent
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.isAddMode ? "Add Keybinding" : "Edit Keybinding"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeLarge
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeLarge
                         font.weight: Font.Bold
-                        color: HKS.fg
+                        color: Deck.fg
                     }
 
                     // Submap Tag (Read-only for edit mode)
@@ -298,18 +298,18 @@ Item {
                         height: 20
                         width: submapTxt.implicitWidth + 10
                         radius: 4
-                        color: HKS.alpha(HKS.warning, 0.15)
+                        color: Deck.alpha(Deck.warning, 0.15)
                         border.width: 1
-                        border.color: HKS.alpha(HKS.warning, 0.4)
+                        border.color: Deck.alpha(Deck.warning, 0.4)
 
                         Text {
                             id: submapTxt
                             anchors.centerIn: parent
                             text: "Submap: " + root.submap
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
                             font.weight: Font.DemiBold
-                            color: HKS.warning
+                            color: Deck.warning
                         }
                     }
                 }
@@ -321,14 +321,14 @@ Item {
                     width: 24
                     height: 24
                     radius: 4
-                    color: closeMa.containsMouse ? HKS.alpha(HKS.muted, 0.2) : "transparent"
+                    color: closeMa.containsMouse ? Deck.alpha(Deck.muted, 0.2) : "transparent"
 
                     Text {
                         anchors.centerIn: parent
                         text: "✕"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 12
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     MouseArea {
@@ -352,10 +352,10 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Submap:"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
                     font.weight: Font.DemiBold
-                    color: HKS.muted
+                    color: Deck.muted
                 }
 
                 ComboBox {
@@ -387,19 +387,19 @@ Item {
 
                 Text {
                     text: "Keyboard Shortcut"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
                     font.weight: Font.DemiBold
-                    color: HKS.muted
+                    color: Deck.muted
                 }
 
                 Rectangle {
                     width: parent.width
                     height: 48
                     radius: 6
-                    color: HKS.alpha(HKS.surface, 0.7)
+                    color: Deck.alpha(Deck.surface, 0.7)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.25)
+                    border.color: Deck.alpha(Deck.muted, 0.25)
 
                     Row {
                         anchors.left: parent.left
@@ -417,9 +417,9 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: !root.newKey
                             text: root.isAddMode ? "Click 'Record' or press a shortcut..." : "(No key selected)"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.muted
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.muted
                             font.italic: true
                         }
                     }
@@ -479,9 +479,9 @@ Item {
                 width: parent.width
                 height: confBannerCol.implicitHeight + 12
                 radius: 6
-                color: HKS.alpha(HKS.warning, 0.12)
+                color: Deck.alpha(Deck.warning, 0.12)
                 border.width: 1
-                border.color: HKS.alpha(HKS.warning, 0.45)
+                border.color: Deck.alpha(Deck.warning, 0.45)
                 visible: ConflictCheckService.hasConflicts || ConflictCheckService.disabledHeld
 
                 Row {
@@ -495,9 +495,9 @@ Item {
 
                     Text {
                         text: ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 13
-                        color: HKS.warning
+                        color: Deck.warning
                     }
 
                     Column {
@@ -507,10 +507,10 @@ Item {
                         Text {
                             visible: ConflictCheckService.hasConflicts
                             text: "Conflict: This combo is already used by:"
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 11
                             font.weight: Font.Bold
-                            color: HKS.warning
+                            color: Deck.warning
                         }
 
                         Repeater {
@@ -518,9 +518,9 @@ Item {
                             Text {
                                 width: parent.width
                                 text: "• " + modelData.shortcut + " — " + modelData.description + " (" + modelData.file + ":" + modelData.line + ")"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 10
-                                color: HKS.fg
+                                color: Deck.fg
                                 elide: Text.ElideRight
                             }
                         }
@@ -528,10 +528,10 @@ Item {
                         Text {
                             visible: ConflictCheckService.disabledHeld
                             text: "Notice: Key is currently held by a disabled keybinding."
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
                             font.italic: true
-                            color: HKS.warning
+                            color: Deck.warning
                         }
                     }
                 }
@@ -549,10 +549,10 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Action / Dispatcher"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
                         font.weight: Font.DemiBold
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     // Mode switch (Guided vs Raw)
@@ -562,17 +562,17 @@ Item {
                         height: 20
                         width: modeTxt.implicitWidth + 12
                         radius: 4
-                        color: HKS.alpha(HKS.surface, 0.8)
+                        color: Deck.alpha(Deck.surface, 0.8)
                         border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.3)
+                        border.color: Deck.alpha(Deck.muted, 0.3)
 
                         Text {
                             id: modeTxt
                             anchors.centerIn: parent
                             text: root.rawExpressionMode ? "Switch to Guided" : "Raw Expression"
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
-                            color: HKS.muted
+                            color: Deck.muted
                         }
 
                         MouseArea {
@@ -591,9 +591,9 @@ Item {
                     width: parent.width
                     height: 44
                     radius: 6
-                    color: HKS.alpha(HKS.surface, 0.6)
+                    color: Deck.alpha(Deck.surface, 0.6)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.2)
+                    border.color: Deck.alpha(Deck.muted, 0.2)
 
                     Row {
                         anchors.left: parent.left
@@ -605,19 +605,19 @@ Item {
 
                         Text {
                             text: "Keep current action:"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.muted
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.muted
                         }
 
                         Text {
                             text: (root.bind && root.bind.dispatcher)
                                 ? (root.bind.dispatcher.path + (root.bind.dispatcher.arg_summary ? (" " + root.bind.dispatcher.arg_summary) : ""))
                                 : (root.bind ? root.bind.original_line : "")
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.DemiBold
-                            color: HKS.fg
+                            color: Deck.fg
                             elide: Text.ElideRight
                             width: Math.max(120, parent.width - 150)
                         }
@@ -648,9 +648,9 @@ Item {
                         width: parent.width
                         height: 36
                         radius: 6
-                        color: HKS.alpha(HKS.surface, 0.8)
+                        color: Deck.alpha(Deck.surface, 0.8)
                         border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.3)
+                        border.color: Deck.alpha(Deck.muted, 0.3)
 
                         ComboBox {
                             id: dispatcherCombo
@@ -690,9 +690,9 @@ Item {
                         width: parent.width
                         height: 36
                         radius: 6
-                        color: HKS.alpha(HKS.surface, 0.8)
+                        color: Deck.alpha(Deck.surface, 0.8)
                         border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.3)
+                        border.color: Deck.alpha(Deck.muted, 0.3)
 
                         TextField {
                             id: argField
@@ -702,9 +702,9 @@ Item {
                                 ? root.selectedSchema[0].placeholder
                                 : "Argument"
                             text: root.selectedArgValue
-                            color: HKS.fg
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            color: Deck.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             background: Item {}
                             onTextChanged: {
                                 root.selectedArgValue = text;
@@ -718,9 +718,9 @@ Item {
                         width: parent.width
                         height: 36
                         radius: 6
-                        color: HKS.alpha(HKS.surface, 0.8)
+                        color: Deck.alpha(Deck.surface, 0.8)
                         border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.3)
+                        border.color: Deck.alpha(Deck.muted, 0.3)
 
                         TextField {
                             id: rawExprField
@@ -728,9 +728,9 @@ Item {
                             anchors.margins: 4
                             placeholderText: "Lua expression or Hyprlang args"
                             text: root.rawExpressionText
-                            color: HKS.fg
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            color: Deck.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             background: Item {}
                             onTextChanged: {
                                 root.rawExpressionText = text;
@@ -748,9 +748,9 @@ Item {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             text: "↩ Revert to original action"
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
-                            color: HKS.accent
+                            color: Deck.accent
 
                             MouseArea {
                                 anchors.fill: parent
@@ -774,10 +774,10 @@ Item {
 
                 Text {
                     text: "Flags & Modifiers"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
                     font.weight: Font.DemiBold
-                    color: HKS.muted
+                    color: Deck.muted
                 }
 
                 Row {
@@ -791,16 +791,16 @@ Item {
                             height: 18
                             radius: 4
                             anchors.verticalCenter: parent.verticalCenter
-                            color: root.flagLocked ? HKS.accent : "transparent"
+                            color: root.flagLocked ? Deck.accent : "transparent"
                             border.width: 1
-                            border.color: root.flagLocked ? HKS.accent : HKS.alpha(HKS.muted, 0.4)
+                            border.color: root.flagLocked ? Deck.accent : Deck.alpha(Deck.muted, 0.4)
                             Text {
                                 anchors.centerIn: parent
                                 text: "✓"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 12
                                 font.bold: true
-                                color: HKS.bg
+                                color: Deck.bg
                                 visible: root.flagLocked
                             }
                             MouseArea {
@@ -812,9 +812,9 @@ Item {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Locked (trigger while session locked)"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.fg
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
@@ -831,16 +831,16 @@ Item {
                             height: 18
                             radius: 4
                             anchors.verticalCenter: parent.verticalCenter
-                            color: root.flagRepeating ? HKS.accent : "transparent"
+                            color: root.flagRepeating ? Deck.accent : "transparent"
                             border.width: 1
-                            border.color: root.flagRepeating ? HKS.accent : HKS.alpha(HKS.muted, 0.4)
+                            border.color: root.flagRepeating ? Deck.accent : Deck.alpha(Deck.muted, 0.4)
                             Text {
                                 anchors.centerIn: parent
                                 text: "✓"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 12
                                 font.bold: true
-                                color: HKS.bg
+                                color: Deck.bg
                                 visible: root.flagRepeating
                             }
                             MouseArea {
@@ -852,9 +852,9 @@ Item {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Repeat (repeat when key held)"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.fg
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
@@ -882,10 +882,10 @@ Item {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Description & Category"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.DemiBold
-                            color: HKS.muted
+                            color: Deck.muted
                         }
 
                         // Indicator: (custom) vs (from config)
@@ -895,18 +895,18 @@ Item {
                             height: 18
                             width: badgeText.implicitWidth + 8
                             radius: 3
-                            color: root.hasCustomOverride ? HKS.alpha(HKS.accent, 0.15) : HKS.alpha(HKS.muted, 0.15)
+                            color: root.hasCustomOverride ? Deck.alpha(Deck.accent, 0.15) : Deck.alpha(Deck.muted, 0.15)
                             border.width: 1
-                            border.color: root.hasCustomOverride ? HKS.alpha(HKS.accent, 0.3) : HKS.alpha(HKS.muted, 0.3)
+                            border.color: root.hasCustomOverride ? Deck.alpha(Deck.accent, 0.3) : Deck.alpha(Deck.muted, 0.3)
 
                             Text {
                                 id: badgeText
                                 anchors.centerIn: parent
                                 text: root.hasCustomOverride ? "custom" : "from config"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 10
                                 font.weight: Font.DemiBold
-                                color: root.hasCustomOverride ? HKS.accent : HKS.muted
+                                color: root.hasCustomOverride ? Deck.accent : Deck.muted
                             }
                         }
 
@@ -917,18 +917,18 @@ Item {
                             height: 18
                             width: sharedText.implicitWidth + 8
                             radius: 3
-                            color: HKS.alpha(HKS.warning, 0.15)
+                            color: Deck.alpha(Deck.warning, 0.15)
                             border.width: 1
-                            border.color: HKS.alpha(HKS.warning, 0.4)
+                            border.color: Deck.alpha(Deck.warning, 0.4)
 
                             Text {
                                 id: sharedText
                                 anchors.centerIn: parent
                                 text: "shared with " + root.sharedShortcutCount + (root.sharedShortcutCount === 1 ? " other bind" : " other binds")
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 10
                                 font.weight: Font.DemiBold
-                                color: HKS.warning
+                                color: Deck.warning
                             }
                         }
 
@@ -943,9 +943,9 @@ Item {
                                 id: resetLinkTxt
                                 anchors.centerIn: parent
                                 text: "Reset to default"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 10
-                                color: resetMa.containsMouse ? HKS.accent : HKS.muted
+                                color: resetMa.containsMouse ? Deck.accent : Deck.muted
                                 font.underline: true
                             }
 
@@ -974,9 +974,9 @@ Item {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.descriptionText.length + "/200"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 10
-                        color: root.descriptionText.length > 200 ? HKS.critical : HKS.muted
+                        color: root.descriptionText.length > 200 ? Deck.critical : Deck.muted
                     }
                 }
 
@@ -989,9 +989,9 @@ Item {
                         width: parent.width - 170
                         height: 34
                         radius: 6
-                        color: HKS.alpha(HKS.surface, 0.7)
+                        color: Deck.alpha(Deck.surface, 0.7)
                         border.width: 1
-                        border.color: descInput.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+                        border.color: descInput.activeFocus ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
 
                         TextField {
                             id: descInput
@@ -999,10 +999,10 @@ Item {
                             anchors.leftMargin: 8
                             anchors.rightMargin: 8
                             placeholderText: "Enter custom description..."
-                            placeholderTextColor: HKS.alpha(HKS.muted, 0.5)
-                            color: HKS.fg
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            placeholderTextColor: Deck.alpha(Deck.muted, 0.5)
+                            color: Deck.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             background: null
                             verticalAlignment: TextInput.AlignVCenter
                             maximumLength: 200
@@ -1040,9 +1040,9 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.validationHint
                     visible: !root.canReview && root.validationHint.length > 0
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 11
-                    color: HKS.warning
+                    color: Deck.warning
                 }
 
                 Row {

@@ -33,12 +33,12 @@ Item {
         anchors.centerIn: parent
         width: Math.min(parent.width - 48, 720)
         height: Math.min(parent.height - 48, 580)
-        radius: HKS.radius
-        color: HKS.bg
+        radius: Deck.radius
+        color: Deck.bg
         border.width: 1
         border.color: EditService.activeOp && EditService.activeOp.isDestructive
-            ? HKS.alpha(HKS.critical, 0.5)
-            : HKS.alpha(HKS.accent, 0.45)
+            ? Deck.alpha(Deck.critical, 0.5)
+            : Deck.alpha(Deck.accent, 0.45)
 
         Column {
             anchors.fill: parent
@@ -57,18 +57,18 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: EditService.activeOp && EditService.activeOp.isDestructive ? "" : ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 16
-                        color: EditService.activeOp && EditService.activeOp.isDestructive ? HKS.critical : HKS.accent
+                        color: EditService.activeOp && EditService.activeOp.isDestructive ? Deck.critical : Deck.accent
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: EditService.activeOp ? EditService.activeOp.title : "Confirm Edit"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeLarge
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeLarge
                         font.weight: Font.Bold
-                        color: HKS.fg
+                        color: Deck.fg
                     }
                 }
 
@@ -79,14 +79,14 @@ Item {
                     width: 24
                     height: 24
                     radius: 4
-                    color: closeMa.containsMouse ? HKS.alpha(HKS.muted, 0.2) : "transparent"
+                    color: closeMa.containsMouse ? Deck.alpha(Deck.muted, 0.2) : "transparent"
 
                     Text {
                         anchors.centerIn: parent
                         text: "✕"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 12
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     MouseArea {
@@ -104,9 +104,9 @@ Item {
                 width: parent.width
                 height: 40
                 radius: 6
-                color: HKS.alpha(HKS.surface, 0.8)
+                color: Deck.alpha(Deck.surface, 0.8)
                 border.width: 1
-                border.color: HKS.alpha(HKS.muted, 0.2)
+                border.color: Deck.alpha(Deck.muted, 0.2)
 
                 Row {
                     anchors.left: parent.left
@@ -118,10 +118,10 @@ Item {
 
                     Text {
                         text: "Target:"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
                         font.weight: Font.Bold
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     // Shortcut Target (when operation targets a keybinding)
@@ -140,27 +140,27 @@ Item {
                         height: 22
                         width: targetLabel.implicitWidth + 12
                         radius: 4
-                        color: HKS.alpha(HKS.accent, 0.15)
+                        color: Deck.alpha(Deck.accent, 0.15)
                         border.width: 1
-                        border.color: HKS.alpha(HKS.accent, 0.3)
+                        border.color: Deck.alpha(Deck.accent, 0.3)
 
                         Text {
                             id: targetLabel
                             anchors.centerIn: parent
                             text: EditService.activeOp ? EditService.activeOp.label : ""
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.Bold
-                            color: HKS.accent
+                            color: Deck.accent
                         }
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: EditService.activeOp ? EditService.activeOp.description : ""
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.muted
                         elide: Text.ElideRight
                         width: Math.max(100, parent.width - (targetShortcutKeys.visible ? targetShortcutKeys.width : targetLabelRect.width) - 80)
                     }
@@ -183,12 +183,12 @@ Item {
                     width: verifyTxt.implicitWidth + 14
                     radius: 4
                     color: isOk
-                        ? HKS.alpha(HKS.accent, 0.15)
-                        : (isFailed ? HKS.alpha(HKS.critical, 0.15) : HKS.alpha(HKS.warning, 0.15))
+                        ? Deck.alpha(Deck.accent, 0.15)
+                        : (isFailed ? Deck.alpha(Deck.critical, 0.15) : Deck.alpha(Deck.warning, 0.15))
                     border.width: 1
                     border.color: isOk
-                        ? HKS.alpha(HKS.accent, 0.4)
-                        : (isFailed ? HKS.alpha(HKS.critical, 0.4) : HKS.alpha(HKS.warning, 0.4))
+                        ? Deck.alpha(Deck.accent, 0.4)
+                        : (isFailed ? Deck.alpha(Deck.critical, 0.4) : Deck.alpha(Deck.warning, 0.4))
 
                     Row {
                         id: verifyTxt
@@ -196,22 +196,22 @@ Item {
                         spacing: 4
                         Text {
                             text: parent.parent.isOk ? "" : (parent.parent.isFailed ? "" : "")
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
                             color: parent.parent.isOk
-                                ? HKS.accent
-                                : (parent.parent.isFailed ? HKS.critical : HKS.warning)
+                                ? Deck.accent
+                                : (parent.parent.isFailed ? Deck.critical : Deck.warning)
                         }
                         Text {
                             text: parent.parent.isOk
                                 ? "Hyprland syntax: OK"
                                 : (parent.parent.isFailed ? "Hyprland verify: FAILED" : "Hyprland verify: skipped")
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
                             font.weight: Font.DemiBold
                             color: parent.parent.isOk
-                                ? HKS.accent
-                                : (parent.parent.isFailed ? HKS.critical : HKS.warning)
+                                ? Deck.accent
+                                : (parent.parent.isFailed ? Deck.critical : Deck.warning)
                         }
                     }
                 }
@@ -223,9 +223,9 @@ Item {
                     height: 22
                     width: bcTxt.implicitWidth + 14
                     radius: 4
-                    color: HKS.alpha(HKS.surface, 0.8)
+                    color: Deck.alpha(Deck.surface, 0.8)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.3)
+                    border.color: Deck.alpha(Deck.muted, 0.3)
 
                     Text {
                         id: bcTxt
@@ -236,9 +236,9 @@ Item {
                             return "Binds: " + b.before_count + " → " + b.after_count +
                                 " (+" + b.added_count + " / -" + b.removed_count + ")";
                         }
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 10
-                        color: HKS.fg
+                        color: Deck.fg
                     }
                 }
 
@@ -248,9 +248,9 @@ Item {
                     height: 22
                     width: dspPreservedTxt.implicitWidth + 14
                     radius: 4
-                    color: HKS.alpha(HKS.accent, 0.15)
+                    color: Deck.alpha(Deck.accent, 0.15)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.accent, 0.4)
+                    border.color: Deck.alpha(Deck.accent, 0.4)
 
                     Row {
                         id: dspPreservedTxt
@@ -258,16 +258,16 @@ Item {
                         spacing: 4
                         Text {
                             text: ""
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
-                            color: HKS.accent
+                            color: Deck.accent
                         }
                         Text {
                             text: "Dispatcher preserved as written"
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
                             font.weight: Font.DemiBold
-                            color: HKS.accent
+                            color: Deck.accent
                         }
                     }
                 }
@@ -278,9 +278,9 @@ Item {
                     height: 22
                     width: fileLineTxt.implicitWidth + 14
                     radius: 4
-                    color: HKS.alpha(HKS.surface, 0.8)
+                    color: Deck.alpha(Deck.surface, 0.8)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.3)
+                    border.color: Deck.alpha(Deck.muted, 0.3)
 
                     Row {
                         id: fileLineTxt
@@ -288,9 +288,9 @@ Item {
                         spacing: 4
                         Text {
                             text: ""
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
-                            color: HKS.muted
+                            color: Deck.muted
                         }
                         Text {
                             text: {
@@ -299,9 +299,9 @@ Item {
                                 var l = EditService.previewData.insert_line;
                                 return f + (l ? (":" + l) : "");
                             }
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
-                            color: HKS.fg
+                            color: Deck.fg
                         }
                     }
                 }
@@ -312,9 +312,9 @@ Item {
                 width: parent.width
                 height: 28
                 radius: 6
-                color: HKS.alpha(HKS.accent, 0.12)
+                color: Deck.alpha(Deck.accent, 0.12)
                 border.width: 1
-                border.color: HKS.alpha(HKS.accent, 0.4)
+                border.color: Deck.alpha(Deck.accent, 0.4)
                 visible: !!(EditService.activeOp && EditService.activeOp.action === "add" && EditService.previewData && EditService.previewData.anchor_created)
 
                 Row {
@@ -323,17 +323,17 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 11
-                        color: HKS.accent
+                        color: Deck.accent
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Notice: HKS anchor block ('# HKS: custom binds') will be created in this file."
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 11
                         font.weight: Font.DemiBold
-                        color: HKS.accent
+                        color: Deck.accent
                     }
                 }
             }
@@ -346,9 +346,9 @@ Item {
                 height: Math.max(28, scRow.implicitHeight + 10)
                 radius: 6
                 visible: !!(mig && mig.has_override) || !!scWarn
-                color: (scWarn || (mig && mig.collision)) ? HKS.alpha(HKS.warning, 0.15) : HKS.alpha(HKS.accent, 0.12)
+                color: (scWarn || (mig && mig.collision)) ? Deck.alpha(Deck.warning, 0.15) : Deck.alpha(Deck.accent, 0.12)
                 border.width: 1
-                border.color: (scWarn || (mig && mig.collision)) ? HKS.alpha(HKS.warning, 0.4) : HKS.alpha(HKS.accent, 0.4)
+                border.color: (scWarn || (mig && mig.collision)) ? Deck.alpha(Deck.warning, 0.4) : Deck.alpha(Deck.accent, 0.4)
 
                 Row {
                     id: scRow
@@ -361,9 +361,9 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: (parent.parent.scWarn || (parent.parent.mig && parent.parent.mig.collision)) ? "" : ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 11
-                        color: (parent.parent.scWarn || (parent.parent.mig && parent.parent.mig.collision)) ? HKS.warning : HKS.accent
+                        color: (parent.parent.scWarn || (parent.parent.mig && parent.parent.mig.collision)) ? Deck.warning : Deck.accent
                     }
                     Text {
                         width: parent.width - 24
@@ -376,10 +376,10 @@ Item {
                             }
                             return "Custom description will follow this bind to new shortcut";
                         }
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 11
                         font.weight: Font.DemiBold
-                        color: (parent.parent.scWarn || (parent.parent.mig && parent.parent.mig.collision)) ? HKS.warning : HKS.accent
+                        color: (parent.parent.scWarn || (parent.parent.mig && parent.parent.mig.collision)) ? Deck.warning : Deck.accent
                         wrapMode: Text.Wrap
                     }
                 }
@@ -391,9 +391,9 @@ Item {
                 width: parent.width
                 height: confCol.implicitHeight + 14
                 radius: 6
-                color: HKS.alpha(HKS.warning, 0.12)
+                color: Deck.alpha(Deck.warning, 0.12)
                 border.width: 1
-                border.color: HKS.alpha(HKS.warning, 0.5)
+                border.color: Deck.alpha(Deck.warning, 0.5)
                 visible: !!(EditService.activeOp && EditService.activeOp.conflicts && EditService.activeOp.conflicts.length > 0)
 
                 Row {
@@ -407,9 +407,9 @@ Item {
 
                     Text {
                         text: ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 13
-                        color: HKS.warning
+                        color: Deck.warning
                     }
 
                     Column {
@@ -417,19 +417,19 @@ Item {
                         spacing: 2
                         Text {
                             text: "Conflict Notice: New shortcut conflicts with existing bind(s):"
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 11
                             font.weight: Font.Bold
-                            color: HKS.warning
+                            color: Deck.warning
                         }
                         Repeater {
                             model: (EditService.activeOp && EditService.activeOp.conflicts) ? EditService.activeOp.conflicts : []
                             Text {
                                 width: parent.width
                                 text: "• " + modelData.shortcut + " — " + modelData.description + " (" + modelData.file + ":" + modelData.line + ")"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 10
-                                color: HKS.fg
+                                color: Deck.fg
                                 elide: Text.ElideRight
                             }
                         }
@@ -443,9 +443,9 @@ Item {
                 width: parent.width
                 height: warnCol.implicitHeight + 14
                 radius: 6
-                color: HKS.alpha(HKS.warning, 0.1)
+                color: Deck.alpha(Deck.warning, 0.1)
                 border.width: 1
-                border.color: HKS.alpha(HKS.warning, 0.35)
+                border.color: Deck.alpha(Deck.warning, 0.35)
                 visible: !!(EditService.previewData && EditService.previewData.warnings && EditService.previewData.warnings.length > 0)
 
                 Row {
@@ -459,17 +459,17 @@ Item {
 
                     Text {
                         text: ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 12
-                        color: HKS.warning
+                        color: Deck.warning
                     }
 
                     Text {
                         width: parent.width - 24
                         text: (EditService.previewData && EditService.previewData.warnings) ? EditService.previewData.warnings.join("\n") : ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 11
-                        color: HKS.warning
+                        color: Deck.warning
                         wrapMode: Text.Wrap
                     }
                 }
@@ -478,10 +478,10 @@ Item {
             // Diff Title
             Text {
                 text: "Proposed Changes (Unified Diff):"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
                 font.weight: Font.DemiBold
-                color: HKS.muted
+                color: Deck.muted
             }
 
             // Diff Viewer Box
@@ -490,9 +490,9 @@ Item {
                 width: parent.width
                 height: Math.max(120, parent.height - y - bottomControlArea.height - 12)
                 radius: 6
-                color: HKS.alpha(HKS.elevated, 0.6)
+                color: Deck.alpha(Deck.elevated, 0.6)
                 border.width: 1
-                border.color: HKS.alpha(HKS.muted, 0.25)
+                border.color: Deck.alpha(Deck.muted, 0.25)
                 clip: true
 
                 ListView {
@@ -513,15 +513,15 @@ Item {
                     delegate: Text {
                         width: diffListView.width - 12
                         text: modelData
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 11
                         font.bold: modelData.startsWith("+++") || modelData.startsWith("---") || modelData.startsWith("@@")
                         color: {
-                            if (modelData.startsWith("+++") || modelData.startsWith("---")) return HKS.fg;
+                            if (modelData.startsWith("+++") || modelData.startsWith("---")) return Deck.fg;
                             if (modelData.startsWith("+")) return "#4ade80";
-                            if (modelData.startsWith("-")) return HKS.critical;
+                            if (modelData.startsWith("-")) return Deck.critical;
                             if (modelData.startsWith("@@")) return "#38bdf8";
-                            return HKS.alpha(HKS.fg, 0.7);
+                            return Deck.alpha(Deck.fg, 0.7);
                         }
                     }
                 }
@@ -543,14 +543,14 @@ Item {
                         width: 18
                         height: 18
                         radius: 3
-                        color: root.deleteConfirmed ? HKS.critical : HKS.alpha(HKS.surface, 0.8)
+                        color: root.deleteConfirmed ? Deck.critical : Deck.alpha(Deck.surface, 0.8)
                         border.width: 1
-                        border.color: root.deleteConfirmed ? HKS.critical : HKS.alpha(HKS.muted, 0.4)
+                        border.color: root.deleteConfirmed ? Deck.critical : Deck.alpha(Deck.muted, 0.4)
 
                         Text {
                             anchors.centerIn: parent
                             text: ""
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 11
                             color: "#ffffff"
                             visible: root.deleteConfirmed
@@ -566,10 +566,10 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "I understand this permanently deletes the keybinding line"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
                         font.weight: Font.DemiBold
-                        color: root.deleteConfirmed ? HKS.fg : HKS.critical
+                        color: root.deleteConfirmed ? Deck.fg : Deck.critical
 
                         MouseArea {
                             anchors.fill: parent
@@ -593,15 +593,15 @@ Item {
 
                         Text {
                             text: ""
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 12
-                            color: HKS.muted
+                            color: Deck.muted
                         }
                         Text {
                             text: "Safe mode active (read-only environment)"
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
-                            color: HKS.muted
+                            color: Deck.muted
                             font.italic: true
                         }
                     }

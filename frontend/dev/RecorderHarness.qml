@@ -10,7 +10,7 @@ FloatingWindow {
     title: "HKS Keybind Recorder Harness"
     implicitWidth: 640
     implicitHeight: 480
-    color: HKS.bg
+    color: Deck.bg
 
     property int lastModmask: 0
     property string lastKey: ""
@@ -23,7 +23,7 @@ FloatingWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: HKS.bg
+        color: Deck.bg
 
         Column {
             anchors.centerIn: parent
@@ -38,18 +38,18 @@ FloatingWindow {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "HKS Recorder Test Harness"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeLarge
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeLarge
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                 }
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: "Dev testing for live submap interception & key translation"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.muted
                 }
             }
 
@@ -57,10 +57,10 @@ FloatingWindow {
             Rectangle {
                 width: parent.width
                 height: 160
-                radius: HKS.radius
-                color: HKS.surface
+                radius: Deck.radius
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.border
+                border.color: Deck.border
 
                 Column {
                     anchors.centerIn: parent
@@ -73,16 +73,16 @@ FloatingWindow {
 
                         Text {
                             text: "Status:"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.muted
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.muted
                         }
                         Text {
                             text: win.lastEventStatus
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.DemiBold
-                            color: win.lastEventStatus === "Accepted" ? HKS.accent : HKS.fg
+                            color: win.lastEventStatus === "Accepted" ? Deck.accent : Deck.fg
                         }
                     }
 
@@ -105,18 +105,18 @@ FloatingWindow {
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: "Modmask: " + win.lastModmask + " (0x" + win.lastModmask.toString(16) + ") | Key: \"" + win.lastKey + "\""
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 11
-                            color: HKS.muted
+                            color: Deck.muted
                         }
 
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: "Display String: " + win.lastDisplay
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 12
                             font.weight: Font.DemiBold
-                            color: HKS.fg
+                            color: Deck.fg
                         }
                     }
                 }
@@ -132,13 +132,13 @@ FloatingWindow {
                     width: recordBtnText.implicitWidth + 28
                     height: 38
                     radius: 6
-                    color: HKS.accent
+                    color: Deck.accent
 
                     Text {
                         id: recordBtnText
                         anchors.centerIn: parent
                         text: "  Record Keybinding"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         color: "#ffffff"
@@ -158,17 +158,17 @@ FloatingWindow {
                     width: healBtnText.implicitWidth + 24
                     height: 38
                     radius: 6
-                    color: HKS.surface
+                    color: Deck.surface
                     border.width: 1
-                    border.color: HKS.border
+                    border.color: Deck.border
 
                     Text {
                         id: healBtnText
                         anchors.centerIn: parent
                         text: "Reset Submap (Heal)"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 12
-                        color: HKS.fg
+                        color: Deck.fg
                     }
 
                     MouseArea {

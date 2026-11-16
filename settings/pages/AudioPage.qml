@@ -45,10 +45,10 @@ Item {
             visible: !AudioService.loading && (!AudioService.available || AudioService.error.length > 0)
             width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.critical, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.critical, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.critical, 0.5)
+            border.color: Deck.alpha(Deck.critical, 0.5)
 
             Text {
                 id: errTxt
@@ -57,9 +57,9 @@ Item {
                 text: AudioService.error.length > 0
                     ? AudioService.error
                     : "Audio daemon unavailable (pactl failed)."
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.critical
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.critical
                 wrapMode: Text.WordWrap
             }
         }
@@ -79,15 +79,15 @@ Item {
         Column {
             visible: AudioService.outputs.length > 0 || AudioService.inputs.length > 0 || AudioService.streams.length > 0
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
 
             Text {
                 width: parent.width
                 text: "Output Devices (" + AudioService.outputs.length + ")"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.Bold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -103,14 +103,14 @@ Item {
                     badges: [
                         {
                             text: audioLogic.kindLabel(outCard.modelData.kind),
-                            textColor: HKS.accent,
-                            bgColor: HKS.alpha(HKS.accent, 0.15),
-                            borderColor: HKS.alpha(HKS.accent, 0.35)
+                            textColor: Deck.accent,
+                            bgColor: Deck.alpha(Deck.accent, 0.15),
+                            borderColor: Deck.alpha(Deck.accent, 0.35)
                         },
                         {
                             text: String(outCard.modelData.running_state || ""),
-                            textColor: HKS.muted,
-                            bgColor: HKS.elevated
+                            textColor: Deck.muted,
+                            bgColor: Deck.elevated
                         }
                     ]
                     detailText: root.showDetails ? String(outCard.modelData.name || "") : ""
@@ -141,10 +141,10 @@ Item {
                                 id: outTrack
                                 x: 0
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: Math.max(80, parent.width - 56 - HKS.space8)
+                                width: Math.max(80, parent.width - 56 - Deck.space8)
                                 height: 6
                                 radius: 3
-                                color: HKS.elevated
+                                color: Deck.elevated
 
                                 readonly property int pct: audioLogic.clampVolume(outCard.modelData.volume_percent, 100)
                                 readonly property real ratio: Math.max(0, Math.min(1, pct / 100.0))
@@ -153,7 +153,7 @@ Item {
                                     width: parent.width * parent.ratio
                                     height: parent.height
                                     radius: 3
-                                    color: outCard.modelData.mute ? HKS.muted : HKS.accent
+                                    color: outCard.modelData.mute ? Deck.muted : Deck.accent
                                 }
 
                                 Rectangle {
@@ -162,9 +162,9 @@ Item {
                                     radius: 7
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: Math.max(0, Math.min(parent.width - width, parent.width * parent.ratio - width / 2))
-                                    color: HKS.fg
+                                    color: Deck.fg
                                     border.width: 1
-                                    border.color: outCard.modelData.mute ? HKS.muted : HKS.accent
+                                    border.color: outCard.modelData.mute ? Deck.muted : Deck.accent
                                 }
 
                                 MouseArea {
@@ -186,18 +186,18 @@ Item {
                                 horizontalAlignment: Text.AlignRight
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: audioLogic.clampVolume(outCard.modelData.volume_percent, 150) + "%"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.fg
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                color: Deck.fg
                             }
                         },
                         Text {
                             visible: Number(outCard.modelData.balance_diff || 0) > 0
                             width: parent.width
                             text: audioLogic.balanceWarningText(outCard.modelData.balance_diff)
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
-                            color: HKS.warning
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
+                            color: Deck.warning
                             wrapMode: Text.WordWrap
                         }
                     ]
@@ -219,11 +219,11 @@ Item {
                         id: outInactTxt
                         x: 0
                         anchors.verticalCenter: parent.verticalCenter
-                        width: Math.max(0, outInactBox.width - outInactiveBtn.width - HKS.space12)
+                        width: Math.max(0, outInactBox.width - outInactiveBtn.width - Deck.space12)
                         text: root.outputParts.inactive.length + (root.outputParts.inactive.length === 1 ? " inactive output" : " inactive outputs")
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.muted
                         wrapMode: Text.WordWrap
                     }
 
@@ -244,15 +244,15 @@ Item {
         Column {
             visible: AudioService.outputs.length > 0 || AudioService.inputs.length > 0 || AudioService.streams.length > 0
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
 
             Text {
                 width: parent.width
                 text: "Input Devices (" + AudioService.inputs.length + ")"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.Bold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -268,14 +268,14 @@ Item {
                     badges: [
                         {
                             text: audioLogic.kindLabel(inCard.modelData.kind),
-                            textColor: HKS.accent,
-                            bgColor: HKS.alpha(HKS.accent, 0.15),
-                            borderColor: HKS.alpha(HKS.accent, 0.35)
+                            textColor: Deck.accent,
+                            bgColor: Deck.alpha(Deck.accent, 0.15),
+                            borderColor: Deck.alpha(Deck.accent, 0.35)
                         },
                         {
                             text: String(inCard.modelData.running_state || ""),
-                            textColor: HKS.muted,
-                            bgColor: HKS.elevated
+                            textColor: Deck.muted,
+                            bgColor: Deck.elevated
                         }
                     ]
                     detailText: root.showDetails ? String(inCard.modelData.name || "") : ""
@@ -306,10 +306,10 @@ Item {
                                 id: inTrack
                                 x: 0
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: Math.max(80, parent.width - 56 - HKS.space8)
+                                width: Math.max(80, parent.width - 56 - Deck.space8)
                                 height: 6
                                 radius: 3
-                                color: HKS.elevated
+                                color: Deck.elevated
 
                                 readonly property int pct: audioLogic.clampVolume(inCard.modelData.volume_percent, 100)
                                 readonly property real ratio: Math.max(0, Math.min(1, pct / 100.0))
@@ -318,7 +318,7 @@ Item {
                                     width: parent.width * parent.ratio
                                     height: parent.height
                                     radius: 3
-                                    color: inCard.modelData.mute ? HKS.muted : HKS.accent
+                                    color: inCard.modelData.mute ? Deck.muted : Deck.accent
                                 }
 
                                 Rectangle {
@@ -327,9 +327,9 @@ Item {
                                     radius: 7
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: Math.max(0, Math.min(parent.width - width, parent.width * parent.ratio - width / 2))
-                                    color: HKS.fg
+                                    color: Deck.fg
                                     border.width: 1
-                                    border.color: inCard.modelData.mute ? HKS.muted : HKS.accent
+                                    border.color: inCard.modelData.mute ? Deck.muted : Deck.accent
                                 }
 
                                 MouseArea {
@@ -351,9 +351,9 @@ Item {
                                 horizontalAlignment: Text.AlignRight
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: audioLogic.clampVolume(inCard.modelData.volume_percent, 150) + "%"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
-                                color: HKS.fg
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                color: Deck.fg
                             }
                         }
                     ]
@@ -375,11 +375,11 @@ Item {
                         id: inInactTxt
                         x: 0
                         anchors.verticalCenter: parent.verticalCenter
-                        width: Math.max(0, inInactBox.width - inInactiveBtn.width - HKS.space12)
+                        width: Math.max(0, inInactBox.width - inInactiveBtn.width - Deck.space12)
                         text: root.inputParts.inactive.length + (root.inputParts.inactive.length === 1 ? " inactive input" : " inactive inputs")
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.muted
                         wrapMode: Text.WordWrap
                     }
 
@@ -400,15 +400,15 @@ Item {
         Column {
             visible: AudioService.outputs.length > 0 || AudioService.inputs.length > 0 || AudioService.streams.length > 0
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
 
             Text {
                 width: parent.width
                 text: "Playback Streams (" + AudioService.streams.length + ")"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.Bold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -416,9 +416,9 @@ Item {
                 visible: AudioService.streams.length === 0
                 width: parent.width
                 text: "No active playback streams."
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
 
@@ -435,8 +435,8 @@ Item {
                     badges: [
                         {
                             text: (streamRow.modelData.mute ? "Muted · " : "") + String(streamRow.modelData.volume || 0) + "%",
-                            textColor: streamRow.modelData.mute ? HKS.warning : HKS.muted,
-                            bgColor: HKS.elevated
+                            textColor: streamRow.modelData.mute ? Deck.warning : Deck.muted,
+                            bgColor: Deck.elevated
                         }
                     ]
                 }

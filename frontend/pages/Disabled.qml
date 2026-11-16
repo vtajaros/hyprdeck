@@ -35,8 +35,8 @@ Item {
 
     Column {
         anchors.fill: parent
-        anchors.margins: HKS.space24
-        spacing: HKS.space16
+        anchors.margins: Deck.space24
+        spacing: Deck.space16
 
         // Page Header
         Item {
@@ -51,18 +51,18 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: ""
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 20
-                    color: HKS.accent
+                    color: Deck.accent
                 }
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Disabled Keybindings"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeLarge
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeLarge
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                 }
 
                 Rectangle {
@@ -70,34 +70,34 @@ Item {
                     height: 22
                     width: countTxt.implicitWidth + 14
                     radius: 11
-                    color: HKS.alpha(HKS.accent, 0.15)
+                    color: Deck.alpha(Deck.accent, 0.15)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.accent, 0.3)
+                    border.color: Deck.alpha(Deck.accent, 0.3)
 
                     Text {
                         id: countTxt
                         anchors.centerIn: parent
                         text: root.count + " disabled"
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 10
                         font.weight: Font.DemiBold
-                        color: HKS.accent
+                        color: Deck.accent
                     }
                 }
             }
         }
 
         Text {
-            text: "Keybindings disabled with HKS. Click 'Enable' to restore any keybinding to your active configuration."
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeSmall
-            color: HKS.muted
+            text: "Keybindings disabled with Deck. Click 'Enable' to restore any keybinding to your active configuration."
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSizeSmall
+            color: Deck.muted
         }
 
         Rectangle {
             width: parent.width
             height: 1
-            color: HKS.alpha(HKS.muted, 0.15)
+            color: Deck.alpha(Deck.muted, 0.15)
         }
 
         // Main List Area
@@ -133,10 +133,10 @@ Item {
                     id: card
                     width: listView.width - (listView.ScrollBar.vertical.visible ? 10 : 0)
                     height: cardCol.implicitHeight + 24
-                    radius: HKS.radiusSmall
-                    color: HKS.alpha(HKS.surface, 0.7)
+                    radius: Deck.radiusSmall
+                    color: Deck.alpha(Deck.surface, 0.7)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.muted, 0.2)
+                    border.color: Deck.alpha(Deck.muted, 0.2)
 
                     Column {
                         id: cardCol
@@ -166,10 +166,10 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: modelData.description_hint || "Disabled keybinding"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
                                     font.weight: Font.DemiBold
-                                    color: HKS.fg
+                                    color: Deck.fg
                                     elide: Text.ElideRight
                                     width: Math.min(implicitWidth, 260)
                                 }
@@ -178,9 +178,9 @@ Item {
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: root.formatSource(modelData.file, modelData.line)
-                                    font.family: HKS.fontFamily
+                                    font.family: Deck.fontFamily
                                     font.pixelSize: 10
-                                    color: HKS.muted
+                                    color: Deck.muted
                                 }
                             }
 
@@ -200,9 +200,9 @@ Item {
                             width: parent.width
                             height: rawTxt.implicitHeight + 12
                             radius: 4
-                            color: HKS.alpha(HKS.elevated, 0.7)
+                            color: Deck.alpha(Deck.elevated, 0.7)
                             border.width: 1
-                            border.color: HKS.alpha(HKS.muted, 0.15)
+                            border.color: Deck.alpha(Deck.muted, 0.15)
 
                             Text {
                                 id: rawTxt
@@ -212,9 +212,9 @@ Item {
                                 anchors.leftMargin: 10
                                 anchors.rightMargin: 10
                                 text: modelData.original_text || ""
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 11
-                                color: HKS.alpha(HKS.muted, 0.9)
+                                color: Deck.alpha(Deck.muted, 0.9)
                                 elide: Text.ElideRight
                             }
                         }

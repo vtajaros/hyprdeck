@@ -183,13 +183,13 @@ Item {
 
     Column {
         anchors.fill: parent
-        anchors.margins: HKS.space16
-        spacing: HKS.space12
+        anchors.margins: Deck.space16
+        spacing: Deck.space12
 
         // Top control bar: Search + Add Keybind + Keyboard View Toggle
         Row {
             width: parent.width
-            spacing: HKS.space12
+            spacing: Deck.space12
 
             SearchField {
                 id: searchField
@@ -217,10 +217,10 @@ Item {
                 id: kbToggle
                 width: kbRow.width + 18
                 height: 38
-                radius: HKS.radiusSmall
-                color: HKS.surface
+                radius: Deck.radiusSmall
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.alpha(HKS.muted, 0.2)
+                border.color: Deck.alpha(Deck.muted, 0.2)
                 opacity: 0.55
 
                 Row {
@@ -231,17 +231,17 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 14
-                        color: HKS.muted
+                        color: Deck.muted
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Keyboard"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.muted
                     }
 
                     Rectangle {
@@ -249,15 +249,15 @@ Item {
                         width: soonText.implicitWidth + 8
                         height: 16
                         radius: 4
-                        color: HKS.elevated
+                        color: Deck.elevated
 
                         Text {
                             id: soonText
                             anchors.centerIn: parent
                             text: "soon"
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 9
-                            color: HKS.muted
+                            color: Deck.muted
                         }
                     }
                 }
@@ -290,9 +290,9 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: KeybindData.submaps.length > 0 ? "Submap:" : "No submaps in this config"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.muted
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.muted
                 }
 
                 // Submap chips if present
@@ -302,17 +302,17 @@ Item {
                         height: 20
                         width: subTxt.implicitWidth + 10
                         radius: 4
-                        color: root.selectedSubmap === modelData ? HKS.accent : HKS.surface
+                        color: root.selectedSubmap === modelData ? Deck.accent : Deck.surface
                         border.width: 1
-                        border.color: HKS.alpha(HKS.muted, 0.25)
+                        border.color: Deck.alpha(Deck.muted, 0.25)
 
                         Text {
                             id: subTxt
                             anchors.centerIn: parent
                             text: modelData
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
-                            color: root.selectedSubmap === modelData ? HKS.bg : HKS.fg
+                            color: root.selectedSubmap === modelData ? Deck.bg : Deck.fg
                         }
 
                         MouseArea {
@@ -332,9 +332,9 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.filteredBinds.length + " of " + KeybindData.binds.length + " keybindings"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
             }
         }
 
@@ -354,16 +354,16 @@ Item {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 32
-                        color: HKS.accent
+                        color: Deck.accent
                     }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Scanning keybindings..."
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSize
+                        color: Deck.muted
                     }
                 }
             }
@@ -431,9 +431,9 @@ Item {
             width: parent.width
             height: 26
             radius: 4
-            color: HKS.alpha(HKS.muted, 0.12)
+            color: Deck.alpha(Deck.muted, 0.12)
             border.width: 1
-            border.color: HKS.alpha(HKS.muted, 0.25)
+            border.color: Deck.alpha(Deck.muted, 0.25)
             visible: (EditService.companionWarning.length > 0) || KeybindData.hasCompanionConf
 
             Row {
@@ -443,17 +443,17 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: ""
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 11
-                    color: HKS.muted
+                    color: Deck.muted
                 }
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "hyprland.conf is not modified by HKS"
-                    font.family: HKS.fontFamily
+                    font.family: Deck.fontFamily
                     font.pixelSize: 10
-                    color: HKS.muted
+                    color: Deck.muted
                     font.italic: true
                 }
             }

@@ -14,10 +14,10 @@ Rectangle {
 
     implicitWidth: 320
     implicitHeight: 38
-    radius: HKS.radiusSmall
-    color: HKS.surface
+    radius: Deck.radiusSmall
+    color: Deck.surface
     border.width: 1
-    border.color: input.activeFocus ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+    border.color: input.activeFocus ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
 
     Behavior on border.color {
         ColorAnimation { duration: 120 }
@@ -33,9 +33,9 @@ Rectangle {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: ""
-            font.family: HKS.fontFamily
+            font.family: Deck.fontFamily
             font.pixelSize: 13
-            color: input.activeFocus ? HKS.accent : HKS.muted
+            color: input.activeFocus ? Deck.accent : Deck.muted
         }
 
         Item {
@@ -48,20 +48,20 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
-                color: HKS.fg
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
+                color: Deck.fg
                 selectByMouse: true
-                selectionColor: HKS.alpha(HKS.accent, 0.35)
-                selectedTextColor: HKS.fg
+                selectionColor: Deck.alpha(Deck.accent, 0.35)
+                selectedTextColor: Deck.fg
                 clip: true
 
                 Text {
                     anchors.fill: parent
                     text: root.placeholder
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
-                    color: HKS.alpha(HKS.muted, 0.6)
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
+                    color: Deck.alpha(Deck.muted, 0.6)
                     visible: !input.text && !input.inputMethodComposing
                 }
             }
@@ -74,14 +74,14 @@ Rectangle {
             height: 20
             radius: 10
             visible: input.text.length > 0
-            color: clearMouse.containsMouse ? HKS.elevated : "transparent"
+            color: clearMouse.containsMouse ? Deck.elevated : "transparent"
 
             Text {
                 anchors.centerIn: parent
                 text: ""
-                font.family: HKS.fontFamily
+                font.family: Deck.fontFamily
                 font.pixelSize: 11
-                color: HKS.muted
+                color: Deck.muted
             }
 
             MouseArea {

@@ -10,24 +10,24 @@ Item {
 
     Column {
         anchors.centerIn: parent
-        spacing: HKS.space12
+        spacing: Deck.space12
         width: 420
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.icon
-            font.family: HKS.fontFamily
+            font.family: Deck.fontFamily
             font.pixelSize: 36
-            color: HKS.muted
+            color: Deck.muted
         }
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.title
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeTitle
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSizeTitle
             font.weight: Font.Bold
-            color: HKS.fg
+            color: Deck.fg
         }
 
         Rectangle {
@@ -35,16 +35,16 @@ Item {
             width: soonTxt.implicitWidth + 16
             height: 22
             radius: 6
-            color: HKS.elevated
+            color: Deck.elevated
             border.width: 1
-            border.color: HKS.alpha(HKS.muted, 0.25)
+            border.color: Deck.alpha(Deck.muted, 0.25)
             Text {
                 id: soonTxt
                 anchors.centerIn: parent
                 text: "Coming soon"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
             }
         }
 
@@ -52,9 +52,9 @@ Item {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             text: root.summary
-            font.family: HKS.fontFamily
-            font.pixelSize: HKS.fontSizeSmall
-            color: HKS.muted
+            font.family: Deck.fontFamily
+            font.pixelSize: Deck.fontSizeSmall
+            color: Deck.muted
             wrapMode: Text.WordWrap
         }
     }

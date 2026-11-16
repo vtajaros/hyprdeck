@@ -44,19 +44,19 @@ Item {
             visible: ThemesService.error.length > 0
             width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.critical, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.critical, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.critical, 0.5)
+            border.color: Deck.alpha(Deck.critical, 0.5)
 
             Text {
                 id: errTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: ThemesService.error
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.critical
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.critical
                 wrapMode: Text.WordWrap
             }
         }
@@ -66,19 +66,19 @@ Item {
             visible: ThemesService.warningMessage.length > 0
             width: viewport.innerWidth
             height: warnMsgTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.warning, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.warning, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.warning, 0.5)
+            border.color: Deck.alpha(Deck.warning, 0.5)
 
             Text {
                 id: warnMsgTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: ThemesService.warningMessage
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.warning
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.warning
                 wrapMode: Text.WordWrap
             }
         }
@@ -86,24 +86,24 @@ Item {
         // Consistency & Conflicts Panel
         Column {
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
             visible: ThemesService.conflicts.length > 0
 
             Item {
                 id: confHdrBox
                 width: parent.width
                 readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
-                    confHdrBox.width, confLblMetrics.advanceWidth, conflictToggleBtn.implicitWidth, HKS.space12
+                    confHdrBox.width, confLblMetrics.advanceWidth, conflictToggleBtn.implicitWidth, Deck.space12
                 )
                 implicitHeight: wrapped
-                    ? (confLbl.implicitHeight + HKS.space8 + conflictToggleBtn.height)
+                    ? (confLbl.implicitHeight + Deck.space8 + conflictToggleBtn.height)
                     : Math.max(confLbl.implicitHeight, conflictToggleBtn.height)
                 height: implicitHeight
 
                 TextMetrics {
                     id: confLblMetrics
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.Bold
                     text: confLbl.text
                 }
@@ -114,12 +114,12 @@ Item {
                     y: confHdrBox.wrapped ? 0 : Math.max(0, Math.round((confHdrBox.height - height) / 2))
                     width: confHdrBox.wrapped
                         ? confHdrBox.width
-                        : Math.max(0, confHdrBox.width - conflictToggleBtn.width - HKS.space12)
+                        : Math.max(0, confHdrBox.width - conflictToggleBtn.width - Deck.space12)
                     text: "Consistency & Conflicts (" + ThemesService.conflicts.length + ")"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                     wrapMode: Text.WordWrap
                 }
 
@@ -127,7 +127,7 @@ Item {
                     id: conflictToggleBtn
                     x: confHdrBox.wrapped ? 0 : Math.max(0, confHdrBox.width - width)
                     y: confHdrBox.wrapped
-                        ? (confLbl.implicitHeight + HKS.space8)
+                        ? (confLbl.implicitHeight + Deck.space8)
                         : Math.max(0, Math.round((confHdrBox.height - height) / 2))
                     text: root.expandConflicts ? "Hide hints" : "Fix hints"
                     compact: true
@@ -143,12 +143,12 @@ Item {
                     required property var modelData
                     width: viewport.innerWidth
                     height: confCol.implicitHeight + 20
-                    radius: HKS.radiusSmall
-                    color: HKS.surface
+                    radius: Deck.radiusSmall
+                    color: Deck.surface
                     border.width: 1
                     border.color: confCard.modelData.severity === "warning"
-                        ? HKS.alpha(HKS.warning, 0.5)
-                        : HKS.alpha(HKS.muted, 0.25)
+                        ? Deck.alpha(Deck.warning, 0.5)
+                        : Deck.alpha(Deck.muted, 0.25)
 
                     Column {
                         id: confCol
@@ -161,10 +161,10 @@ Item {
                         Text {
                             objectName: root.expandConflicts ? "" : "elideOk"
                             text: String(confCard.modelData.explanation || "")
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.DemiBold
-                            color: confCard.modelData.severity === "warning" ? HKS.warning : HKS.fg
+                            color: confCard.modelData.severity === "warning" ? Deck.warning : Deck.fg
                             width: parent.width
                             elide: root.expandConflicts ? Text.ElideNone : Text.ElideRight
                             maximumLineCount: root.expandConflicts ? 10 : 1
@@ -174,9 +174,9 @@ Item {
                         Text {
                             visible: root.expandConflicts && String(confCard.modelData.fix_hint || "").length > 0
                             text: String(confCard.modelData.fix_hint || "")
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 11
-                            color: HKS.muted
+                            color: Deck.muted
                             width: parent.width
                             wrapMode: Text.WordWrap
                         }
@@ -186,7 +186,7 @@ Item {
                             width: parent.width
                             height: 28
                             radius: 4
-                            color: HKS.elevated
+                            color: Deck.elevated
 
                             TextInput {
                                 anchors.fill: parent
@@ -194,9 +194,9 @@ Item {
                                 readOnly: true
                                 selectByMouse: true
                                 text: String(confCard.modelData.copy_text || "")
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 11
-                                color: HKS.fg
+                                color: Deck.fg
                                 clip: true
                             }
                         }
@@ -232,10 +232,10 @@ Item {
             Text {
                 width: parent.width
                 text: "GTK Theme (" + String(ThemesService.gtk.effective_theme || "unset") + ") · Color scheme: " + ThemesService.colorScheme
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.DemiBold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -271,17 +271,17 @@ Item {
                 readonly property bool hasBtn: iconShowAllBtn.visible
                 readonly property real btnW: hasBtn ? iconShowAllBtn.width : 0
                 readonly property bool wrapped: hasBtn && ResponsiveLogic.shouldWrapHeaderActions(
-                    iconHdrBox.width, iconLblMetrics.advanceWidth, btnW, HKS.space12
+                    iconHdrBox.width, iconLblMetrics.advanceWidth, btnW, Deck.space12
                 )
                 implicitHeight: wrapped
-                    ? (iconLbl.implicitHeight + HKS.space8 + iconShowAllBtn.height)
+                    ? (iconLbl.implicitHeight + Deck.space8 + iconShowAllBtn.height)
                     : Math.max(iconLbl.implicitHeight, hasBtn ? iconShowAllBtn.height : 0)
                 height: implicitHeight
 
                 TextMetrics {
                     id: iconLblMetrics
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.DemiBold
                     text: iconLbl.text
                 }
@@ -292,12 +292,12 @@ Item {
                     y: iconHdrBox.wrapped ? 0 : Math.max(0, Math.round((iconHdrBox.height - height) / 2))
                     width: iconHdrBox.wrapped
                         ? iconHdrBox.width
-                        : Math.max(0, iconHdrBox.width - (iconHdrBox.hasBtn ? iconHdrBox.btnW + HKS.space12 : 0))
+                        : Math.max(0, iconHdrBox.width - (iconHdrBox.hasBtn ? iconHdrBox.btnW + Deck.space12 : 0))
                     text: "Icon Theme (" + String(ThemesService.icons.gsettings_theme || "unset") + ") — " + themesLogic.iconBadgeText(ThemesService.icons.gsettings_theme)
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.DemiBold
-                    color: HKS.fg
+                    color: Deck.fg
                     wrapMode: Text.WordWrap
                 }
 
@@ -305,7 +305,7 @@ Item {
                     id: iconShowAllBtn
                     x: iconHdrBox.wrapped ? 0 : Math.max(0, iconHdrBox.width - width)
                     y: iconHdrBox.wrapped
-                        ? (iconLbl.implicitHeight + HKS.space8)
+                        ? (iconLbl.implicitHeight + Deck.space8)
                         : Math.max(0, Math.round((iconHdrBox.height - height) / 2))
                     visible: (ThemesService.icons.installed || []).length > themesLogic.visibleThemeChips(ThemesService.icons.installed || [], ThemesService.icons.gsettings_theme, false, 8).length || root.showAllIcons
                     text: root.showAllIcons ? "Show less" : ("Show all (" + (ThemesService.icons.installed || []).length + ")")
@@ -345,17 +345,17 @@ Item {
                 id: curHdrBox
                 width: parent.width
                 readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
-                    curHdrBox.width, curLblMetrics.advanceWidth, curSizeRow.implicitWidth, HKS.space12
+                    curHdrBox.width, curLblMetrics.advanceWidth, curSizeRow.implicitWidth, Deck.space12
                 )
                 implicitHeight: wrapped
-                    ? (curLbl.implicitHeight + HKS.space8 + curSizeRow.height)
+                    ? (curLbl.implicitHeight + Deck.space8 + curSizeRow.height)
                     : Math.max(curLbl.implicitHeight, curSizeRow.height)
                 height: implicitHeight
 
                 TextMetrics {
                     id: curLblMetrics
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.DemiBold
                     text: curLbl.text
                 }
@@ -366,12 +366,12 @@ Item {
                     y: curHdrBox.wrapped ? 0 : Math.max(0, Math.round((curHdrBox.height - height) / 2))
                     width: curHdrBox.wrapped
                         ? curHdrBox.width
-                        : Math.max(0, curHdrBox.width - curSizeRow.width - HKS.space12)
+                        : Math.max(0, curHdrBox.width - curSizeRow.width - Deck.space12)
                     text: "Cursor (" + String(ThemesService.cursor.gsettings_theme || "unset") + ", size " + String(ThemesService.cursor.size || 24) + ") · Applies live"
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.DemiBold
-                    color: HKS.fg
+                    color: Deck.fg
                     wrapMode: Text.WordWrap
                 }
 
@@ -379,7 +379,7 @@ Item {
                     id: curSizeRow
                     x: curHdrBox.wrapped ? 0 : Math.max(0, curHdrBox.width - width)
                     y: curHdrBox.wrapped
-                        ? (curLbl.implicitHeight + HKS.space8)
+                        ? (curLbl.implicitHeight + Deck.space8)
                         : Math.max(0, Math.round((curHdrBox.height - height) / 2))
                     spacing: 6
 
@@ -448,10 +448,10 @@ Item {
             Text {
                 width: parent.width
                 text: "Qt6ct Style (" + String(ThemesService.qt.style || "unset") + ") · Qt apps pick this up after restart"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.DemiBold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -478,9 +478,9 @@ Item {
             Text {
                 width: parent.width
                 text: "Qt6ct Color Schemes"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WordWrap
             }
 

@@ -51,13 +51,13 @@ ShellRoot {
             }
             return JSON.stringify({
                 ok: true,
-                themeMode: HKS.themeMode,
-                colorsPath: HKS.colorsPath,
+                themeMode: Deck.themeMode,
+                colorsPath: Deck.colorsPath,
                 visible: shellLoader.item ? !!shellLoader.item.visible : false,
-                bg: String(HKS.bg),
-                surface: String(HKS.surface),
-                accent: String(HKS.accent),
-                fg: String(HKS.fg)
+                bg: String(Deck.bg),
+                surface: String(Deck.surface),
+                accent: String(Deck.accent),
+                fg: String(Deck.fg)
             });
         }
     }

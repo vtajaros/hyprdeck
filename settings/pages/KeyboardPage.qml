@@ -32,19 +32,19 @@ Item {
             visible: !KeyboardService.loading && KeyboardService.available && KeyboardService.error.length > 0
             width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.critical, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.critical, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.critical, 0.5)
+            border.color: Deck.alpha(Deck.critical, 0.5)
 
             Text {
                 id: errTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: KeyboardService.error
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.critical
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.critical
                 wrapMode: Text.WordWrap
             }
         }
@@ -54,19 +54,19 @@ Item {
             visible: KeyboardService.statusMessage.length > 0 && KeyboardService.error.length === 0
             width: viewport.innerWidth
             height: stTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.accent, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.accent, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.accent, 0.45)
+            border.color: Deck.alpha(Deck.accent, 0.45)
 
             Text {
                 id: stTxt
                 anchors.fill: parent
                 anchors.margins: 8
                 text: KeyboardService.statusMessage
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.accent
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.accent
                 wrapMode: Text.WordWrap
             }
         }
@@ -84,15 +84,15 @@ Item {
         SectionCard {
             visible: KeyboardService.loading || KeyboardService.available
             width: viewport.innerWidth
-            cardPadding: HKS.space16
-            spacing: HKS.space12
+            cardPadding: Deck.space16
+            spacing: Deck.space12
 
             Item {
                 id: cardHdrBox
                 width: parent.width
-                readonly property bool badgeWrapped: (180 + HKS.space12 + badgeRect.width) > cardHdrBox.width
+                readonly property bool badgeWrapped: (180 + Deck.space12 + badgeRect.width) > cardHdrBox.width
                 implicitHeight: badgeWrapped
-                    ? (cardTitleCol.implicitHeight + HKS.space8 + badgeRect.height)
+                    ? (cardTitleCol.implicitHeight + Deck.space8 + badgeRect.height)
                     : Math.max(cardTitleCol.implicitHeight, badgeRect.height)
                 height: implicitHeight
 
@@ -102,33 +102,33 @@ Item {
                     y: 0
                     width: cardHdrBox.badgeWrapped
                         ? cardHdrBox.width
-                        : Math.max(0, cardHdrBox.width - badgeRect.width - HKS.space12)
+                        : Math.max(0, cardHdrBox.width - badgeRect.width - Deck.space12)
                     spacing: 4
 
                     Text {
                         width: parent.width
                         text: "HyprDeck Keybind Studio"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSize
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSize
                         font.weight: Font.DemiBold
-                        color: HKS.fg
+                        color: Deck.fg
                         wrapMode: Text.WordWrap
                     }
 
                     Text {
                         width: parent.width
                         text: "Keybind Studio runs in its own isolated window to manage your Hyprland binds, chord recording, submaps, and conflict diagnostics."
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.muted
                         wrapMode: Text.WordWrap
                     }
                 }
 
                 TextMetrics {
                     id: badgeMetrics
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
                     font.weight: Font.DemiBold
                     text: KeyboardService.loading
                         ? "Checking..."
@@ -138,17 +138,17 @@ Item {
                 Rectangle {
                     id: badgeRect
                     x: cardHdrBox.badgeWrapped ? 0 : Math.max(0, cardHdrBox.width - width)
-                    y: cardHdrBox.badgeWrapped ? (cardTitleCol.implicitHeight + HKS.space8) : 0
+                    y: cardHdrBox.badgeWrapped ? (cardTitleCol.implicitHeight + Deck.space8) : 0
                     width: Math.min(Math.ceil(badgeMetrics.advanceWidth) + 16, Math.max(40, cardHdrBox.width))
                     height: badgeText.implicitHeight + 8
-                    radius: HKS.radiusSmall
+                    radius: Deck.radiusSmall
                     color: KeyboardService.hksWindowOpen === true
-                        ? HKS.alpha(HKS.accent, 0.18)
-                        : HKS.alpha(HKS.muted, 0.14)
+                        ? Deck.alpha(Deck.accent, 0.18)
+                        : Deck.alpha(Deck.muted, 0.14)
                     border.width: 1
                     border.color: KeyboardService.hksWindowOpen === true
-                        ? HKS.alpha(HKS.accent, 0.45)
-                        : HKS.alpha(HKS.muted, 0.28)
+                        ? Deck.alpha(Deck.accent, 0.45)
+                        : Deck.alpha(Deck.muted, 0.28)
 
                     Text {
                         id: badgeText
@@ -158,10 +158,10 @@ Item {
                         anchors.rightMargin: 8
                         verticalAlignment: Text.AlignVCenter
                         text: badgeMetrics.text
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
                         font.weight: Font.DemiBold
-                        color: KeyboardService.hksWindowOpen === true ? HKS.accent : HKS.fg
+                        color: KeyboardService.hksWindowOpen === true ? Deck.accent : Deck.fg
                         elide: Text.ElideRight
                     }
                 }
@@ -170,7 +170,7 @@ Item {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: HKS.alpha(HKS.muted, 0.14)
+                color: Deck.alpha(Deck.muted, 0.14)
             }
 
             Text {
@@ -178,9 +178,9 @@ Item {
                 text: "Status: " + (KeyboardService.loading
                     ? "Checking Keybind Studio status..."
                     : kbLogic.statusText(KeyboardService.available, KeyboardService.hksRunning, KeyboardService.hksWindowOpen))
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.fg
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -188,15 +188,15 @@ Item {
                 visible: KeyboardService.scriptPath.length > 0
                 width: parent.width
                 text: "Launcher: " + KeyboardService.scriptPath
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.muted
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.muted
                 wrapMode: Text.WrapAnywhere
             }
 
             Flow {
                 width: parent.width
-                spacing: HKS.space12
+                spacing: Deck.space12
 
                 ActionButton {
                     text: kbLogic.buttonLabel(KeyboardService.busy, KeyboardService.hksWindowOpen)

@@ -34,10 +34,10 @@ Item {
                 width: allRow.width + 16
                 radius: 14
                 color: isSelected
-                    ? HKS.accent
-                    : (allMouse.containsMouse ? HKS.elevated : HKS.alpha(HKS.surface, 0.7))
+                    ? Deck.accent
+                    : (allMouse.containsMouse ? Deck.elevated : Deck.alpha(Deck.surface, 0.7))
                 border.width: 1
-                border.color: isSelected ? HKS.accent : HKS.alpha(HKS.muted, 0.2)
+                border.color: isSelected ? Deck.accent : Deck.alpha(Deck.muted, 0.2)
 
                 Row {
                     id: allRow
@@ -46,10 +46,10 @@ Item {
 
                     Text {
                         text: "All"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
                         font.weight: allChip.isSelected ? Font.Bold : Font.Normal
-                        color: allChip.isSelected ? HKS.bg : HKS.fg
+                        color: allChip.isSelected ? Deck.bg : Deck.fg
                     }
 
                     Rectangle {
@@ -57,15 +57,15 @@ Item {
                         width: allCnt.implicitWidth + 8
                         height: 16
                         radius: 8
-                        color: allChip.isSelected ? HKS.alpha(HKS.bg, 0.2) : HKS.alpha(HKS.muted, 0.15)
+                        color: allChip.isSelected ? Deck.alpha(Deck.bg, 0.2) : Deck.alpha(Deck.muted, 0.15)
 
                         Text {
                             id: allCnt
                             anchors.centerIn: parent
                             text: String(root.totalCount)
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
-                            color: allChip.isSelected ? HKS.bg : HKS.muted
+                            color: allChip.isSelected ? Deck.bg : Deck.muted
                         }
                     }
                 }
@@ -93,10 +93,10 @@ Item {
                     width: chipRow.width + 16
                     radius: 14
                     color: isSelected
-                        ? HKS.accent
-                        : (chipMouse.containsMouse ? HKS.elevated : HKS.alpha(HKS.surface, 0.7))
+                        ? Deck.accent
+                        : (chipMouse.containsMouse ? Deck.elevated : Deck.alpha(Deck.surface, 0.7))
                     border.width: 1
-                    border.color: isSelected ? HKS.accent : HKS.alpha(HKS.muted, 0.2)
+                    border.color: isSelected ? Deck.accent : Deck.alpha(Deck.muted, 0.2)
 
                     Row {
                         id: chipRow
@@ -105,10 +105,10 @@ Item {
 
                         Text {
                             text: modelData.name
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: chip.isSelected ? Font.Bold : Font.Normal
-                            color: chip.isSelected ? HKS.bg : HKS.fg
+                            color: chip.isSelected ? Deck.bg : Deck.fg
                         }
 
                         Rectangle {
@@ -116,15 +116,15 @@ Item {
                             width: cntText.implicitWidth + 8
                             height: 16
                             radius: 8
-                            color: chip.isSelected ? HKS.alpha(HKS.bg, 0.2) : HKS.alpha(HKS.muted, 0.15)
+                            color: chip.isSelected ? Deck.alpha(Deck.bg, 0.2) : Deck.alpha(Deck.muted, 0.15)
 
                             Text {
                                 id: cntText
                                 anchors.centerIn: parent
                                 text: String(modelData.count)
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 10
-                                color: chip.isSelected ? HKS.bg : HKS.muted
+                                color: chip.isSelected ? Deck.bg : Deck.muted
                             }
                         }
                     }

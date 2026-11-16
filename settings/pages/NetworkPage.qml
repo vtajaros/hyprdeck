@@ -70,10 +70,10 @@ Item {
             visible: !NetworkService.loading && (!NetworkService.available || NetworkService.error.length > 0)
             width: viewport.innerWidth
             height: errTxt.implicitHeight + 16
-            radius: HKS.radiusSmall
-            color: HKS.alpha(HKS.critical, 0.14)
+            radius: Deck.radiusSmall
+            color: Deck.alpha(Deck.critical, 0.14)
             border.width: 1
-            border.color: HKS.alpha(HKS.critical, 0.5)
+            border.color: Deck.alpha(Deck.critical, 0.5)
 
             Text {
                 id: errTxt
@@ -82,9 +82,9 @@ Item {
                 text: NetworkService.error.length > 0
                     ? NetworkService.error
                     : "NetworkManager is unavailable."
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.critical
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.critical
                 wrapMode: Text.WordWrap
             }
         }
@@ -103,15 +103,15 @@ Item {
         Column {
             visible: NetworkService.available
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
 
             Text {
                 width: parent.width
                 text: "Devices (" + NetworkService.devices.length + ")"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.Bold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -128,16 +128,16 @@ Item {
                         var b = [
                             {
                                 text: String(devCard.modelData.state || ""),
-                                textColor: devCard.modelData.is_active ? HKS.accent : HKS.muted,
-                                bgColor: HKS.elevated
+                                textColor: devCard.modelData.is_active ? Deck.accent : Deck.muted,
+                                bgColor: Deck.elevated
                             }
                         ];
                         if (devCard.modelData.is_active) {
                             b.push({
                                 text: "Active",
-                                textColor: HKS.accent,
-                                bgColor: HKS.alpha(HKS.accent, 0.16),
-                                borderColor: HKS.alpha(HKS.accent, 0.45)
+                                textColor: Deck.accent,
+                                bgColor: Deck.alpha(Deck.accent, 0.16),
+                                borderColor: Deck.alpha(Deck.accent, 0.45)
                             });
                         }
                         return b;
@@ -172,23 +172,23 @@ Item {
         Column {
             visible: NetworkService.available
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
 
             Item {
                 id: wifiHdrBox
                 width: parent.width
                 readonly property bool wrapped: ResponsiveLogic.shouldWrapHeaderActions(
-                    wifiHdrBox.width, wifiLblMetrics.advanceWidth, rescanBtn.implicitWidth, HKS.space12
+                    wifiHdrBox.width, wifiLblMetrics.advanceWidth, rescanBtn.implicitWidth, Deck.space12
                 )
                 implicitHeight: wrapped
-                    ? (wifiLbl.implicitHeight + HKS.space8 + rescanBtn.height)
+                    ? (wifiLbl.implicitHeight + Deck.space8 + rescanBtn.height)
                     : Math.max(wifiLbl.implicitHeight, rescanBtn.height)
                 height: implicitHeight
 
                 TextMetrics {
                     id: wifiLblMetrics
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.Bold
                     text: wifiLbl.text
                 }
@@ -197,19 +197,19 @@ Item {
                     id: wifiLbl
                     x: 0
                     y: wifiHdrBox.wrapped ? 0 : Math.max(0, Math.round((wifiHdrBox.height - height) / 2))
-                    width: wifiHdrBox.wrapped ? wifiHdrBox.width : Math.max(0, wifiHdrBox.width - rescanBtn.width - HKS.space12)
+                    width: wifiHdrBox.wrapped ? wifiHdrBox.width : Math.max(0, wifiHdrBox.width - rescanBtn.width - Deck.space12)
                     text: "Wi-Fi Networks (" + NetworkService.wifiNetworks.length + ")" + (NetworkService.scanning ? " — Scanning..." : "")
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSize
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                     wrapMode: Text.WordWrap
                 }
 
                 ActionButton {
                     id: rescanBtn
                     x: wifiHdrBox.wrapped ? 0 : Math.max(0, wifiHdrBox.width - width)
-                    y: wifiHdrBox.wrapped ? (wifiLbl.implicitHeight + HKS.space8) : Math.max(0, Math.round((wifiHdrBox.height - height) / 2))
+                    y: wifiHdrBox.wrapped ? (wifiLbl.implicitHeight + Deck.space8) : Math.max(0, Math.round((wifiHdrBox.height - height) / 2))
                     text: NetworkService.scanning ? "Scanning..." : "Rescan"
                     variant: "accent"
                     compact: true
@@ -223,9 +223,9 @@ Item {
                 visible: banner.length > 0
                 width: parent.width
                 text: banner
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSizeSmall
-                color: HKS.warning
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSizeSmall
+                color: Deck.warning
                 wrapMode: Text.WordWrap
             }
 
@@ -243,15 +243,15 @@ Item {
                         if (wifiCard.modelData.in_use) {
                             b.push({
                                 text: "Connected",
-                                textColor: HKS.accent,
-                                bgColor: HKS.alpha(HKS.accent, 0.18),
-                                borderColor: HKS.alpha(HKS.accent, 0.4)
+                                textColor: Deck.accent,
+                                bgColor: Deck.alpha(Deck.accent, 0.18),
+                                borderColor: Deck.alpha(Deck.accent, 0.4)
                             });
                         } else if (wifiCard.modelData.known) {
                             b.push({
                                 text: "Saved",
-                                textColor: HKS.muted,
-                                bgColor: HKS.elevated
+                                textColor: Deck.muted,
+                                bgColor: Deck.elevated
                             });
                         }
                         return b;
@@ -283,15 +283,15 @@ Item {
         Column {
             visible: NetworkService.available
             width: viewport.innerWidth
-            spacing: HKS.space8
+            spacing: Deck.space8
 
             Text {
                 width: parent.width
                 text: "Saved Connections (" + root.savedConnections.length + ")"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.Bold
-                color: HKS.fg
+                color: Deck.fg
                 wrapMode: Text.WordWrap
             }
 
@@ -302,19 +302,19 @@ Item {
                     required property var modelData
                     width: viewport.innerWidth
                     height: warnTxt.implicitHeight + 16
-                    radius: HKS.radiusSmall
-                    color: HKS.alpha(HKS.warning, 0.14)
+                    radius: Deck.radiusSmall
+                    color: Deck.alpha(Deck.warning, 0.14)
                     border.width: 1
-                    border.color: HKS.alpha(HKS.warning, 0.5)
+                    border.color: Deck.alpha(Deck.warning, 0.5)
 
                     Text {
                         id: warnTxt
                         anchors.fill: parent
                         anchors.margins: 8
                         text: String(warnBanner.modelData.message || "")
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.warning
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.warning
                         wrapMode: Text.WordWrap
                     }
                 }
@@ -365,52 +365,52 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: root.joinPromptOpen
-        color: HKS.alpha(HKS.bg, 0.72)
+        color: Deck.alpha(Deck.bg, 0.72)
         z: 30
 
         MouseArea { anchors.fill: parent }
 
         Rectangle {
             anchors.centerIn: parent
-            width: Math.min(420, parent.width - HKS.space24)
+            width: Math.min(420, parent.width - Deck.space24)
             height: pwCol.implicitHeight + 36
-            radius: HKS.radius
-            color: HKS.surface
+            radius: Deck.radius
+            color: Deck.surface
             border.width: 1
-            border.color: HKS.accent
+            border.color: Deck.accent
 
             Column {
                 id: pwCol
                 anchors.fill: parent
                 anchors.margins: 18
-                spacing: HKS.space12
+                spacing: Deck.space12
 
                 Text {
                     width: parent.width
                     text: "Connect to " + root.joinPromptSsid
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeMedium
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeMedium
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                     wrapMode: Text.WordWrap
                 }
 
                 Rectangle {
                     width: parent.width
                     height: 36
-                    radius: HKS.radiusSmall
-                    color: HKS.elevated
+                    radius: Deck.radiusSmall
+                    color: Deck.elevated
                     border.width: 1
-                    border.color: HKS.alpha(HKS.accent, 0.5)
+                    border.color: Deck.alpha(Deck.accent, 0.5)
 
                     TextInput {
                         id: pwInput
                         anchors.fill: parent
                         anchors.margins: 8
                         echoMode: TextInput.Password
-                        color: HKS.fg
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
+                        color: Deck.fg
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
                         clip: true
                     }
                 }
@@ -418,7 +418,7 @@ Item {
                 Flow {
                     width: parent.width
                     layoutDirection: Qt.RightToLeft
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     ActionButton {
                         text: "Connect"
@@ -447,41 +447,41 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: NetworkService.confirmOpen
-        color: HKS.alpha(HKS.bg, 0.72)
+        color: Deck.alpha(Deck.bg, 0.72)
         z: 35
 
         MouseArea { anchors.fill: parent }
 
         Rectangle {
             anchors.centerIn: parent
-            width: Math.min(440, parent.width - HKS.space24)
+            width: Math.min(440, parent.width - Deck.space24)
             height: modalCol.implicitHeight + 36
-            radius: HKS.radius
-            color: HKS.surface
+            radius: Deck.radius
+            color: Deck.surface
             border.width: 1
-            border.color: HKS.warning
+            border.color: Deck.warning
 
             Column {
                 id: modalCol
                 anchors.fill: parent
                 anchors.margins: 18
-                spacing: HKS.space12
+                spacing: Deck.space12
 
                 Text {
                     text: NetworkService.confirmTitle
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeMedium
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeMedium
                     font.weight: Font.Bold
-                    color: HKS.fg
+                    color: Deck.fg
                     width: parent.width
                     wrapMode: Text.WordWrap
                 }
 
                 Text {
                     text: NetworkService.confirmMessage
-                    font.family: HKS.fontFamily
-                    font.pixelSize: HKS.fontSizeSmall
-                    color: HKS.warning
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.warning
                     width: parent.width
                     wrapMode: Text.WordWrap
                 }
@@ -489,7 +489,7 @@ Item {
                 Flow {
                     width: parent.width
                     layoutDirection: Qt.RightToLeft
-                    spacing: HKS.space8
+                    spacing: Deck.space8
 
                     ActionButton {
                         text: "Confirm"

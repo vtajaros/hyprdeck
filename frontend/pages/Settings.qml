@@ -34,8 +34,8 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: HKS.space24
-            spacing: HKS.space16
+            anchors.margins: Deck.space24
+            spacing: Deck.space16
 
             // Header Bar
             Item {
@@ -50,18 +50,18 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: ""
-                        font.family: HKS.fontFamily
+                        font.family: Deck.fontFamily
                         font.pixelSize: 20
-                        color: HKS.accent
+                        color: Deck.accent
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Settings & Information"
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeLarge
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeLarge
                         font.weight: Font.Bold
-                        color: HKS.fg
+                        color: Deck.fg
                     }
                 }
             }
@@ -69,25 +69,25 @@ Item {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: HKS.alpha(HKS.muted, 0.2)
+                color: Deck.alpha(Deck.muted, 0.2)
             }
 
             // Section 1: Custom Descriptions (Sidecar)
             Text {
                 text: "Custom Descriptions (Sidecar)"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.Bold
-                color: HKS.fg
+                color: Deck.fg
             }
 
             Rectangle {
                 width: parent.width
                 height: sidecarCol.implicitHeight + 24
-                radius: HKS.radiusSmall
-                color: HKS.surface
+                radius: Deck.radiusSmall
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.alpha(HKS.muted, 0.2)
+                border.color: Deck.alpha(Deck.muted, 0.2)
 
                 Column {
                     id: sidecarCol
@@ -98,9 +98,9 @@ Item {
                     Text {
                         width: parent.width
                         text: "Sidecar overrides store custom descriptions and categories in ~/.config/hks/descriptions.json without modifying your Hyprland configuration files."
-                        font.family: HKS.fontFamily
-                        font.pixelSize: HKS.fontSizeSmall
-                        color: HKS.muted
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        color: Deck.muted
                         wrapMode: Text.WordWrap
                     }
 
@@ -112,18 +112,18 @@ Item {
                             height: 28
                             width: totalTxt.implicitWidth + 20
                             radius: 4
-                            color: HKS.alpha(HKS.accent, 0.15)
+                            color: Deck.alpha(Deck.accent, 0.15)
                             border.width: 1
-                            border.color: HKS.alpha(HKS.accent, 0.3)
+                            border.color: Deck.alpha(Deck.accent, 0.3)
 
                             Text {
                                 id: totalTxt
                                 anchors.centerIn: parent
                                 text: SidecarService.overrideCount + " total overrides"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
                                 font.weight: Font.DemiBold
-                                color: HKS.accent
+                                color: Deck.accent
                             }
                         }
 
@@ -132,18 +132,18 @@ Item {
                             height: 28
                             width: orphanStatTxt.implicitWidth + 20
                             radius: 4
-                            color: SidecarService.orphanCount > 0 ? HKS.alpha(HKS.warning, 0.15) : HKS.alpha(HKS.muted, 0.15)
+                            color: SidecarService.orphanCount > 0 ? Deck.alpha(Deck.warning, 0.15) : Deck.alpha(Deck.muted, 0.15)
                             border.width: 1
-                            border.color: SidecarService.orphanCount > 0 ? HKS.alpha(HKS.warning, 0.4) : HKS.alpha(HKS.muted, 0.3)
+                            border.color: SidecarService.orphanCount > 0 ? Deck.alpha(Deck.warning, 0.4) : Deck.alpha(Deck.muted, 0.3)
 
                             Text {
                                 id: orphanStatTxt
                                 anchors.centerIn: parent
                                 text: SidecarService.orphanCount + " orphaned overrides"
-                                font.family: HKS.fontFamily
-                                font.pixelSize: HKS.fontSizeSmall
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
                                 font.weight: Font.DemiBold
-                                color: SidecarService.orphanCount > 0 ? HKS.warning : HKS.muted
+                                color: SidecarService.orphanCount > 0 ? Deck.warning : Deck.muted
                             }
                         }
                     }
@@ -157,15 +157,15 @@ Item {
                         Rectangle {
                             width: parent.width
                             height: 1
-                            color: HKS.alpha(HKS.muted, 0.15)
+                            color: Deck.alpha(Deck.muted, 0.15)
                         }
 
                         Text {
                             text: "Orphaned Overrides (no matching active or disabled keybinding):"
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.DemiBold
-                            color: HKS.warning
+                            color: Deck.warning
                         }
 
                         Repeater {
@@ -174,9 +174,9 @@ Item {
                                 width: parent.width
                                 height: 44
                                 radius: 4
-                                color: HKS.alpha(HKS.elevated, 0.5)
+                                color: Deck.alpha(Deck.elevated, 0.5)
                                 border.width: 1
-                                border.color: HKS.alpha(HKS.warning, 0.25)
+                                border.color: Deck.alpha(Deck.warning, 0.25)
 
                                 Row {
                                     anchors.left: parent.left
@@ -200,10 +200,10 @@ Item {
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: modelData.description || ""
-                                        font.family: HKS.fontFamily
-                                        font.pixelSize: HKS.fontSizeSmall
+                                        font.family: Deck.fontFamily
+                                        font.pixelSize: Deck.fontSizeSmall
                                         font.weight: Font.DemiBold
-                                        color: HKS.fg
+                                        color: Deck.fg
                                         elide: Text.ElideRight
                                         width: Math.min(implicitWidth, 220)
                                     }
@@ -214,18 +214,18 @@ Item {
                                         height: 20
                                         width: orphanCatTxt.implicitWidth + 10
                                         radius: 10
-                                        color: HKS.alpha(HKS.accent, 0.15)
+                                        color: Deck.alpha(Deck.accent, 0.15)
                                         border.width: 1
-                                        border.color: HKS.alpha(HKS.accent, 0.3)
+                                        border.color: Deck.alpha(Deck.accent, 0.3)
                                         visible: !!modelData.category
 
                                         Text {
                                             id: orphanCatTxt
                                             anchors.centerIn: parent
                                             text: modelData.category || ""
-                                            font.family: HKS.fontFamily
+                                            font.family: Deck.fontFamily
                                             font.pixelSize: 10
-                                            color: HKS.accent
+                                            color: Deck.accent
                                         }
                                     }
                                 }
@@ -251,9 +251,9 @@ Item {
                                             Text {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: "Delete orphan?"
-                                                font.family: HKS.fontFamily
+                                                font.family: Deck.fontFamily
                                                 font.pixelSize: 11
-                                                color: HKS.critical
+                                                color: Deck.critical
                                             }
 
                                             ActionButton {
@@ -296,19 +296,19 @@ Item {
             // Section 2: App / Config Details Card
             Text {
                 text: "Environment & Configuration"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.Bold
-                color: HKS.fg
+                color: Deck.fg
             }
 
             Rectangle {
                 width: parent.width
                 height: infoCol.implicitHeight + 24
-                radius: HKS.radiusSmall
-                color: HKS.surface
+                radius: Deck.radiusSmall
+                color: Deck.surface
                 border.width: 1
-                border.color: HKS.alpha(HKS.muted, 0.2)
+                border.color: Deck.alpha(Deck.muted, 0.2)
 
                 Column {
                     id: infoCol
@@ -318,23 +318,23 @@ Item {
 
                     Row {
                         spacing: 8
-                        Text { width: 140; text: "Repository Root:"; color: HKS.muted; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall; font.weight: Font.Bold }
-                        Text { text: KeybindData.rootPath; color: HKS.fg; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall }
+                        Text { width: 140; text: "Repository Root:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
+                        Text { text: KeybindData.rootPath; color: Deck.fg; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall }
                     }
                     Row {
                         spacing: 8
-                        Text { width: 140; text: "Entrypoint:"; color: HKS.muted; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall; font.weight: Font.Bold }
-                        Text { text: KeybindData.environment ? (KeybindData.environment.entrypoint || "-") : "-"; color: HKS.fg; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall }
+                        Text { width: 140; text: "Entrypoint:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
+                        Text { text: KeybindData.environment ? (KeybindData.environment.entrypoint || "-") : "-"; color: Deck.fg; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall }
                     }
                     Row {
                         spacing: 8
-                        Text { width: 140; text: "Language:"; color: HKS.muted; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall; font.weight: Font.Bold }
-                        Text { text: KeybindData.environment ? (KeybindData.environment.language || "-") : "-"; color: HKS.accent; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall }
+                        Text { width: 140; text: "Language:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
+                        Text { text: KeybindData.environment ? (KeybindData.environment.language || "-") : "-"; color: Deck.accent; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall }
                     }
                     Row {
                         spacing: 8
-                        Text { width: 140; text: "Hyprland Version:"; color: HKS.muted; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall; font.weight: Font.Bold }
-                        Text { text: KeybindData.environment ? (KeybindData.environment.hyprland_version || "unknown") : "unknown"; color: HKS.fg; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall }
+                        Text { width: 140; text: "Hyprland Version:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
+                        Text { text: KeybindData.environment ? (KeybindData.environment.hyprland_version || "unknown") : "unknown"; color: Deck.fg; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall }
                     }
                     Row {
                         spacing: 8
@@ -342,9 +342,9 @@ Item {
                             width: 140
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Theme:"
-                            color: HKS.muted
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            color: Deck.muted
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.Bold
                         }
 
@@ -355,72 +355,72 @@ Item {
                             Rectangle {
                                 height: 26
                                 width: sysTxt.implicitWidth + 16
-                                radius: HKS.radiusSmall
-                                color: HKS.themeMode === "system" ? HKS.alpha(HKS.accent, 0.25) : HKS.alpha(HKS.elevated, 0.6)
+                                radius: Deck.radiusSmall
+                                color: Deck.themeMode === "system" ? Deck.alpha(Deck.accent, 0.25) : Deck.alpha(Deck.elevated, 0.6)
                                 border.width: 1
-                                border.color: HKS.themeMode === "system" ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+                                border.color: Deck.themeMode === "system" ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
 
                                 Text {
                                     id: sysTxt
                                     anchors.centerIn: parent
                                     text: "Follow system (Matugen)"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    font.weight: HKS.themeMode === "system" ? Font.Bold : Font.Normal
-                                    color: HKS.themeMode === "system" ? HKS.accent : HKS.fg
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
+                                    font.weight: Deck.themeMode === "system" ? Font.Bold : Font.Normal
+                                    color: Deck.themeMode === "system" ? Deck.accent : Deck.fg
                                 }
 
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: HKS.themeMode = "system"
+                                    onClicked: Deck.themeMode = "system"
                                 }
                             }
 
                             Rectangle {
                                 height: 26
                                 width: graphTxt.implicitWidth + 16
-                                radius: HKS.radiusSmall
-                                color: HKS.themeMode === "graphite" ? HKS.alpha(HKS.accent, 0.25) : HKS.alpha(HKS.elevated, 0.6)
+                                radius: Deck.radiusSmall
+                                color: Deck.themeMode === "graphite" ? Deck.alpha(Deck.accent, 0.25) : Deck.alpha(Deck.elevated, 0.6)
                                 border.width: 1
-                                border.color: HKS.themeMode === "graphite" ? HKS.accent : HKS.alpha(HKS.muted, 0.25)
+                                border.color: Deck.themeMode === "graphite" ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
 
                                 Text {
                                     id: graphTxt
                                     anchors.centerIn: parent
                                     text: "Fixed graphite"
-                                    font.family: HKS.fontFamily
-                                    font.pixelSize: HKS.fontSizeSmall
-                                    font.weight: HKS.themeMode === "graphite" ? Font.Bold : Font.Normal
-                                    color: HKS.themeMode === "graphite" ? HKS.accent : HKS.fg
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: Deck.fontSizeSmall
+                                    font.weight: Deck.themeMode === "graphite" ? Font.Bold : Font.Normal
+                                    color: Deck.themeMode === "graphite" ? Deck.accent : Deck.fg
                                 }
 
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: HKS.themeMode = "graphite"
+                                    onClicked: Deck.themeMode = "graphite"
                                 }
                             }
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "(in-memory only)"
-                                font.family: HKS.fontFamily
+                                font.family: Deck.fontFamily
                                 font.pixelSize: 10
-                                color: HKS.alpha(HKS.muted, 0.6)
+                                color: Deck.alpha(Deck.muted, 0.6)
                             }
                         }
                     }
                     Row {
                         spacing: 8
-                        Text { width: 140; text: "Theme Source:"; color: HKS.muted; font.family: HKS.fontFamily; font.pixelSize: HKS.fontSizeSmall; font.weight: Font.Bold }
+                        Text { width: 140; text: "Theme Source:"; color: Deck.muted; font.family: Deck.fontFamily; font.pixelSize: Deck.fontSizeSmall; font.weight: Font.Bold }
                         Text {
-                            text: HKS.themeMode === "system"
+                            text: Deck.themeMode === "system"
                                 ? "~/.config/quickshell/theme/colors.json (Matugen / Quickshell)"
                                 : "Fixed graphite palette (offline defaults)"
-                            color: HKS.fg
-                            font.family: HKS.fontFamily
-                            font.pixelSize: HKS.fontSizeSmall
+                            color: Deck.fg
+                            font.family: Deck.fontFamily
+                            font.pixelSize: Deck.fontSizeSmall
                         }
                     }
                 }
@@ -429,24 +429,24 @@ Item {
             // Section 3: Active Palette Swatches
             Text {
                 text: "Active Palette Swatches"
-                font.family: HKS.fontFamily
-                font.pixelSize: HKS.fontSize
+                font.family: Deck.fontFamily
+                font.pixelSize: Deck.fontSize
                 font.weight: Font.Bold
-                color: HKS.fg
+                color: Deck.fg
             }
 
             Row {
                 spacing: 8
                 Repeater {
                     model: [
-                        { label: "bg", color: HKS.bg },
-                        { label: "surface", color: HKS.surface },
-                        { label: "elevated", color: HKS.elevated },
-                        { label: "accent", color: HKS.accent },
-                        { label: "fg", color: HKS.fg },
-                        { label: "muted", color: HKS.muted },
-                        { label: "warning", color: HKS.warning },
-                        { label: "critical", color: HKS.critical }
+                        { label: "bg", color: Deck.bg },
+                        { label: "surface", color: Deck.surface },
+                        { label: "elevated", color: Deck.elevated },
+                        { label: "accent", color: Deck.accent },
+                        { label: "fg", color: Deck.fg },
+                        { label: "muted", color: Deck.muted },
+                        { label: "warning", color: Deck.warning },
+                        { label: "critical", color: Deck.critical }
                     ]
                     delegate: Column {
                         spacing: 4
@@ -456,13 +456,13 @@ Item {
                             radius: 4
                             color: modelData.color
                             border.width: 1
-                            border.color: HKS.alpha(HKS.muted, 0.3)
+                            border.color: Deck.alpha(Deck.muted, 0.3)
                         }
                         Text {
                             text: modelData.label
-                            font.family: HKS.fontFamily
+                            font.family: Deck.fontFamily
                             font.pixelSize: 10
-                            color: HKS.muted
+                            color: Deck.muted
                             anchors.horizontalCenter: parent.horizontalCenter
                         }
                     }
