@@ -336,7 +336,7 @@ Item {
                                         Layout.preferredHeight: 28
                                         Layout.alignment: Qt.AlignVCenter
                                         radius: HKS.radiusSmall
-                                        color: HKS.surfaceAlt
+                                        color: HKS.elevated
                                         border.width: 1
                                         border.color: HKS.alpha(HKS.accent, 0.35)
 
