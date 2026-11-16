@@ -47,18 +47,19 @@ function _insideVerticalScrollView(pageRoot, it) {
     return false;
 }
 
-function _clippedOutByScrollView(pageRoot, it, pt, h) {
+function _clippedBoundsInScrollView(pageRoot, it, y1, y2) {
+    var cy1 = y1;
+    var cy2 = y2;
     var p = it ? it.parent : null;
     while (p && p !== pageRoot) {
         if (p.clip === true && p.contentWidth !== undefined && p.contentHeight !== undefined && p.interactive !== undefined) {
             var svPt = p.mapToItem(pageRoot, 0, 0);
-            if ((pt.y + h) <= svPt.y + 1 || pt.y >= svPt.y + p.height - 1) {
-                return true;
-            }
+            cy1 = Math.max(cy1, svPt.y);
+            cy2 = Math.min(cy2, svPt.y + p.height);
         }
         p = p.parent;
     }
-    return false;
+    return { y1: cy1, y2: cy2 };
 }
 
 function _isDescendant(anc, node) {
@@ -135,8 +136,11 @@ function auditItem(pageRoot, textEnums) {
                     });
                 }
             }
-            if (!inOpaque && (isOpaqueControl || isTxt) && !_clippedOutByScrollView(pageRoot, node, pt, node.height)) {
-                overlapLeaves.push({ node: node, label: label, path: curPath, x1: pt.x, y1: pt.y, x2: pt.x + node.width, y2: pt.y + node.height });
+            if (!inOpaque && (isOpaqueControl || isTxt)) {
+                var cb = _clippedBoundsInScrollView(pageRoot, node, pt.y, pt.y + node.height);
+                if (cb.y2 - cb.y1 > 1) {
+                    overlapLeaves.push({ node: node, label: label, path: curPath, x1: pt.x, y1: cb.y1, x2: pt.x + node.width, y2: cb.y2 });
+                }
             }
         }
 
