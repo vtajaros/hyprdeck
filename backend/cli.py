@@ -802,6 +802,55 @@ def build_arg_parser() -> argparse.ArgumentParser:
         p.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
         p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
+    # settings bluetooth subcommand
+    st_bt = st_sub.add_parser("bluetooth", help="Live BlueZ Bluetooth controller and device operations.")
+    bt_sub = st_bt.add_subparsers(dest="bluetooth_action", required=True)
+
+    bt_state = bt_sub.add_parser("state", help="Read Bluetooth controller, rfkill, and device state.")
+    bt_state.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    bt_state.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    for sub_name, help_txt in (
+        ("power", "Turn Bluetooth controller on or off."),
+        ("pairable", "Set controller pairable mode on or off."),
+    ):
+        p = bt_sub.add_parser(sub_name, help=help_txt)
+        p.add_argument("state", choices=("on", "off"), help="Target state: on or off.")
+        p.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+        p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    bt_disc = bt_sub.add_parser("discoverable", help="Set controller discoverable mode on or off.")
+    bt_disc.add_argument("state", choices=("on", "off"), help="Target state: on or off.")
+    bt_disc.add_argument("discoverable_timeout", nargs="?", type=int, default=180, help="Discoverable timeout seconds (capped at 300).")
+    bt_disc.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    bt_disc.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    for sub_name, help_txt in (
+        ("connect", "Connect to a Bluetooth device by MAC."),
+        ("disconnect", "Disconnect a Bluetooth device by MAC."),
+        ("trust", "Mark a Bluetooth device as trusted."),
+        ("untrust", "Mark a Bluetooth device as untrusted."),
+        ("block", "Block a Bluetooth device."),
+        ("unblock", "Unblock a Bluetooth device."),
+        ("remove", "Remove/unpair a Bluetooth device."),
+        ("pair", "Pair with a Bluetooth device (one-shot NoInputNoOutput agent)."),
+    ):
+        p = bt_sub.add_parser(sub_name, help=help_txt)
+        p.add_argument("mac", help="Device MAC address (AA:BB:CC:DD:EE:FF).")
+        p.add_argument("--timeout", dest="timeout", type=float, default=15.0 if sub_name in ("connect", "pair") else 5.0, help="Per-command timeout seconds.")
+        p.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    bt_alias = bt_sub.add_parser("alias", help="Set a Bluetooth device alias.")
+    bt_alias.add_argument("mac", help="Device MAC address.")
+    bt_alias.add_argument("name", help="New device alias.")
+    bt_alias.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    bt_alias.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    bt_scan = bt_sub.add_parser("scan", help="Start, stop, or read Bluetooth discovery scan.")
+    bt_scan.add_argument("mode", choices=("start", "stop", "results"), help="Scan action: start, stop, or results.")
+    bt_scan.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    bt_scan.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
     return parser
 
 
@@ -2527,6 +2576,76 @@ def _handle_settings_audio(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 1
 
 
+def _handle_settings_bluetooth(args: argparse.Namespace) -> int:
+    from backend.settings.bluetooth.ops import (
+        connect_device,
+        disconnect_device,
+        pair_device,
+        remove_device,
+        scan_results,
+        scan_start,
+        scan_stop,
+        set_alias,
+        set_blocked,
+        set_discoverable,
+        set_pairable,
+        set_powered,
+        set_trusted,
+    )
+    from backend.settings.bluetooth.state import get_bluetooth_state
+
+    b_action = args.bluetooth_action
+    timeout = getattr(args, "timeout", 5.0)
+
+    if b_action == "state":
+        st = get_bluetooth_state(timeout=timeout)
+        sys.stdout.write(json.dumps(st, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    if b_action == "power":
+        res = set_powered(args.state == "on", timeout=timeout)
+    elif b_action == "pairable":
+        res = set_pairable(args.state == "on", timeout=timeout)
+    elif b_action == "discoverable":
+        res = set_discoverable(
+            args.state == "on",
+            discoverable_timeout=args.discoverable_timeout,
+            timeout=timeout,
+        )
+    elif b_action == "connect":
+        res = connect_device(args.mac, timeout=timeout)
+    elif b_action == "disconnect":
+        res = disconnect_device(args.mac, timeout=timeout)
+    elif b_action == "trust":
+        res = set_trusted(args.mac, True, timeout=timeout)
+    elif b_action == "untrust":
+        res = set_trusted(args.mac, False, timeout=timeout)
+    elif b_action == "block":
+        res = set_blocked(args.mac, True, timeout=timeout)
+    elif b_action == "unblock":
+        res = set_blocked(args.mac, False, timeout=timeout)
+    elif b_action == "alias":
+        res = set_alias(args.mac, args.name, timeout=timeout)
+    elif b_action == "remove":
+        res = remove_device(args.mac, timeout=timeout)
+    elif b_action == "pair":
+        res = pair_device(args.mac, pair_timeout=int(timeout))
+    elif b_action == "scan":
+        if args.mode == "start":
+            res = scan_start(timeout=timeout)
+        elif args.mode == "stop":
+            res = scan_stop(timeout=timeout)
+        else:
+            res = scan_results(timeout=timeout)
+    else:
+        res = {"ok": False, "error": f"Unknown bluetooth action: {b_action}"}
+
+    sys.stdout.write(json.dumps(res, indent=2) + "\n")
+    sys.stdout.flush()
+    return 0 if res.get("ok") else 1
+
+
 def _handle_settings(args: argparse.Namespace) -> int:
     from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
     from backend.editor.backups import compute_file_sha256
@@ -2539,6 +2658,9 @@ def _handle_settings(args: argparse.Namespace) -> int:
 
     if action == "audio":
         return _handle_settings_audio(args)
+
+    if action == "bluetooth":
+        return _handle_settings_bluetooth(args)
 
     if action == "display":
         return _handle_settings_display(args, cfg_dir, reload_override, debug_bdir)

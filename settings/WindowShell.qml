@@ -35,6 +35,13 @@ FloatingWindow {
     onVisibleChanged: {
         if (win.visible) {
             HKS.refreshTheme();
+        } else {
+            BluetoothService.stopScanIfActive();
+        }
+    }
+    onCurrentPageChanged: {
+        if (win.currentPage !== "bluetooth") {
+            BluetoothService.stopScanIfActive();
         }
     }
 
@@ -63,6 +70,9 @@ FloatingWindow {
         }
         if (!AudioService.loading && !AudioService.busy) {
             AudioService.reload(true);
+        }
+        if (!BluetoothService.loading && !BluetoothService.busy) {
+            BluetoothService.reload(true);
         }
     }
 
@@ -106,7 +116,7 @@ FloatingWindow {
         id: closeGuard
         recorderActive: false
         editDialogOpen: false
-        dialogOpen: win.unsavedPromptOpen || DisplayService.countdownActive || InputService.countdownActive
+        dialogOpen: win.unsavedPromptOpen || DisplayService.countdownActive || InputService.countdownActive || BluetoothService.confirmOpen
         focusItem: rootSurface.Window.activeFocusItem
     }
 
@@ -115,6 +125,7 @@ FloatingWindow {
         DisplayService.reload();
         InputService.reload();
         AudioService.reload(false);
+        BluetoothService.reload(false);
     }
 
     Binding {
@@ -123,8 +134,13 @@ FloatingWindow {
         value: win.visible && win.currentPage === "audio"
     }
 
+    Binding {
+        target: BluetoothService
+        property: "pollingEnabled"
+        value: win.visible && win.currentPage === "bluetooth"
+    }
+
     readonly property var placeholderPages: [
-        { id: "bluetooth", icon: "󰂯", title: "Bluetooth", summary: "Adapter power, pairing, and connected devices." },
         { id: "network", icon: "󰖩", title: "Network", summary: "Wi-Fi networks, Ethernet links, and DNS status." },
         { id: "power", icon: "󰁹", title: "Power", summary: "Idle timeouts, sleep behavior, and battery profiles." },
         { id: "sysinfo", icon: "󰋼", title: "System info", summary: "OS, kernel, Hyprland version, and hardware overview." }
@@ -314,6 +330,18 @@ FloatingWindow {
                             }
                         }
 
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰂯"
+                            text: "Bluetooth"
+                            active: win.currentPage === "bluetooth" && globalSearch.text.trim().length === 0
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.currentPage = "bluetooth";
+                                BluetoothService.reload(false);
+                            }
+                        }
+
                         Rectangle {
                             width: parent.width
                             height: 1
@@ -362,6 +390,11 @@ FloatingWindow {
                 AudioPage {
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "audio"
+                }
+
+                BluetoothPage {
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "bluetooth"
                 }
 
                 PlaceholderPage {

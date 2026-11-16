@@ -42,6 +42,7 @@ ShellRoot {
             SettingsService.reload();
             DisplayService.reload();
             AudioService.reload(false);
+            BluetoothService.reload(false);
         }
 
         function navigate(page: string) {
@@ -161,6 +162,49 @@ ShellRoot {
             return JSON.stringify({ ok: true, kind: k, name: n, mode: m });
         }
 
+        function debugBluetoothState(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            return JSON.stringify({
+                ok: true,
+                available: BluetoothService.available,
+                noController: BluetoothService.noController,
+                controller: BluetoothService.controller,
+                rfkill: BluetoothService.rfkill,
+                devices: BluetoothService.devices,
+                safety: BluetoothService.safety,
+                confirmOpen: BluetoothService.confirmOpen,
+                confirmTitle: BluetoothService.confirmTitle,
+                confirmMessage: BluetoothService.confirmMessage,
+                loading: BluetoothService.loading,
+                busy: BluetoothService.busy,
+                error: BluetoothService.error,
+                statusMessage: BluetoothService.statusMessage
+            });
+        }
+
+        function debugBluetoothSetPairable(enabled: bool): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            BluetoothService.setPairable(!!enabled);
+            return JSON.stringify({ ok: true, pairable: !!enabled });
+        }
+
+        function debugBluetoothRequestPowerOff(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            BluetoothService.requestPower(false);
+            return JSON.stringify({
+                ok: true,
+                confirmOpen: BluetoothService.confirmOpen,
+                confirmTitle: BluetoothService.confirmTitle,
+                confirmMessage: BluetoothService.confirmMessage
+            });
+        }
+
+        function debugBluetoothCancelConfirm(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            BluetoothService.cancelPending();
+            return JSON.stringify({ ok: true, confirmOpen: BluetoothService.confirmOpen });
+        }
+
         function debugState(): string {
             if (!root.debugEnabled) return root._debugDisabledJson();
             var optsMap = ({});
@@ -224,6 +268,19 @@ ShellRoot {
                     loading: AudioService.loading,
                     error: AudioService.error,
                     statusMessage: AudioService.statusMessage
+                },
+                bluetooth: {
+                    available: BluetoothService.available,
+                    noController: BluetoothService.noController,
+                    controller: BluetoothService.controller,
+                    rfkill: BluetoothService.rfkill,
+                    devices: BluetoothService.devices,
+                    safety: BluetoothService.safety,
+                    confirmOpen: BluetoothService.confirmOpen,
+                    busy: BluetoothService.busy,
+                    loading: BluetoothService.loading,
+                    error: BluetoothService.error,
+                    statusMessage: BluetoothService.statusMessage
                 }
             });
         }

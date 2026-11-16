@@ -1,0 +1,83 @@
+{
+  "default_sink": "bluez_output.D4_50_8A_CA_53_FF.1",
+  "rfkill": {
+    "rfkilldevices": [
+      {"id": 1, "type": "bluetooth", "device": "acer-bluetooth", "soft": "unblocked", "hard": "unblocked"},
+      {"id": 2, "type": "bluetooth", "device": "hci0", "soft": "unblocked", "hard": "unblocked"}
+    ]
+  },
+  "managed_objects": {
+    "type": "a{oa{sa{sv}}}",
+    "data": [
+      {
+        "/org/bluez": {
+          "org.bluez.AgentManager1": {}
+        },
+        "/org/bluez/hci0": {
+          "org.bluez.Adapter1": {
+            "Address": {"type": "s", "data": "88:F4:DA:1B:CB:45"},
+            "Alias": {"type": "s", "data": "arch-del"},
+            "Powered": {"type": "b", "data": true},
+            "PowerState": {"type": "s", "data": "on"},
+            "Pairable": {"type": "b", "data": false},
+            "Discoverable": {"type": "b", "data": false},
+            "DiscoverableTimeout": {"type": "u", "data": 180},
+            "Discovering": {"type": "b", "data": false}
+          }
+        },
+        "/org/bluez/hci0/dev_D4_50_8A_CA_53_FF": {
+          "org.bluez.Device1": {
+            "Address": {"type": "s", "data": "D4:50:8A:CA:53:FF"},
+            "Name": {"type": "s", "data": "YSD Speaker"},
+            "Alias": {"type": "s", "data": "YSD Speaker"},
+            "Icon": {"type": "s", "data": "audio-headset"},
+            "Paired": {"type": "b", "data": true},
+            "Bonded": {"type": "b", "data": true},
+            "Trusted": {"type": "b", "data": true},
+            "Blocked": {"type": "b", "data": false},
+            "Connected": {"type": "b", "data": true},
+            "UUIDs": {
+              "type": "as",
+              "data": ["0000110b-0000-1000-8000-00805f9b34fb"]
+            }
+          }
+        },
+        "/org/bluez/hci0/dev_11_22_33_44_55_66": {
+          "org.bluez.Device1": {
+            "Address": {"type": "s", "data": "11:22:33:44:55:66"},
+            "Name": {"type": "s", "data": "Keychron K2"},
+            "Alias": {"type": "s", "data": "Keychron K2"},
+            "Icon": {"type": "s", "data": "input-keyboard"},
+            "Paired": {"type": "b", "data": true},
+            "Bonded": {"type": "b", "data": true},
+            "Trusted": {"type": "b", "data": true},
+            "Blocked": {"type": "b", "data": false},
+            "Connected": {"type": "b", "data": false},
+            "UUIDs": {
+              "type": "as",
+              "data": ["00001124-0000-1000-8000-00805f9b34fb"]
+            }
+          }
+        },
+        "/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF": {
+          "org.bluez.Device1": {
+            "Address": {"type": "s", "data": "AA:BB:CC:DD:EE:FF"},
+            "Name": {"type": "s", "data": "Nearby Buds"},
+            "Alias": {"type": "s", "data": "Nearby Buds"},
+            "Icon": {"type": "s", "data": "audio-headphones"},
+            "Paired": {"type": "b", "data": false},
+            "Bonded": {"type": "b", "data": false},
+            "Trusted": {"type": "b", "data": false},
+            "Blocked": {"type": "b", "data": false},
+            "Connected": {"type": "b", "data": false},
+            "RSSI": {"type": "n", "data": -58},
+            "UUIDs": {
+              "type": "as",
+              "data": ["0000110b-0000-1000-8000-00805f9b34fb"]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

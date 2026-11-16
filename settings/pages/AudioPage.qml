@@ -87,7 +87,7 @@ Item {
             height: 220
             icon: "󰕾"
             title: "No audio devices found"
-            subtitle: "Connect an output or input device and click Refresh."
+            message: "Connect an output or input device and click Refresh."
         }
 
         // Scrollable content

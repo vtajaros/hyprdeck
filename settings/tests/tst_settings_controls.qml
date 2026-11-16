@@ -56,6 +56,10 @@ TestCase {
         id: audioLogic
     }
 
+    BluetoothControlLogic {
+        id: btLogic
+    }
+
     function test_close_guard_blocks_when_prompt_open() {
         guard.dialogOpen = false;
         verify(guard.closeAllowed);
@@ -176,5 +180,28 @@ TestCase {
         compare(audioLogic.muteLabel(false), "Mute");
         compare(audioLogic.balanceWarningText(0), "");
         compare(audioLogic.balanceWarningText(12), "L/R diff: 12%");
+    }
+
+    function test_bluetooth_filters_and_destructive_confirm() {
+        var devs = [
+            { address: "D4:50:8A:CA:53:FF", alias: "YSD Speaker", paired: true, connected: true, is_default_sink: true },
+            { address: "11:22:33:44:55:66", alias: "Keychron K2", paired: true, connected: false, is_default_sink: false },
+            { address: "AA:BB:CC:DD:EE:FF", alias: "Nearby Buds", paired: false, connected: false, is_default_sink: false, rssi: -58 }
+        ];
+        var safety = {
+            disconnecting_default_audio: true,
+            default_audio_name: "YSD Speaker",
+            powering_off_disconnects: true,
+            connected_names: ["YSD Speaker"]
+        };
+        compare(btLogic.pairedDevices(devs).length, 2);
+        compare(btLogic.discoveredDevices(devs).length, 1);
+        verify(btLogic.needsConfirm("power_off", null, safety));
+        verify(btLogic.destructiveConsequence("power_off", null, safety).indexOf("YSD Speaker") >= 0);
+        verify(btLogic.needsConfirm("disconnect", devs[0], safety));
+        verify(!btLogic.needsConfirm("disconnect", devs[1], safety));
+        verify(btLogic.needsConfirm("remove", devs[1], safety));
+        compare(btLogic.rssiLabel(-58), "-58 dBm");
+        compare(btLogic.rssiLabel(null), "");
     }
 }
