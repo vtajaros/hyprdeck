@@ -50,6 +50,7 @@ ShellRoot {
             PowerService.reload(false);
             SystemService.reload();
             KeyboardService.reload();
+            BackupsService.reload();
         }
 
         function navigate(page: string) {

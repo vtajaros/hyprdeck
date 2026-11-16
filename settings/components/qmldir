@@ -9,3 +9,4 @@ PowerControlLogic 1.0 PowerControlLogic.qml
 KeyboardControlLogic 1.0 KeyboardControlLogic.qml
 SettingRow 1.0 SettingRow.qml
 PlaceholderPage 1.0 PlaceholderPage.qml
+BackupsLogic 1.0 BackupsLogic.qml

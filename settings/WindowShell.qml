@@ -60,6 +60,7 @@ FloatingWindow {
         if (win.currentPage === "power") return powerPage;
         if (win.currentPage === "sysinfo") return systemPage;
         if (win.currentPage === "keyboard") return keyboardPage;
+        if (win.currentPage === "backups") return backupsPage;
         return optionsPage;
     }
 
@@ -74,6 +75,7 @@ FloatingWindow {
         if (pageId === "power") return powerPage;
         if (pageId === "sysinfo") return systemPage;
         if (pageId === "keyboard") return keyboardPage;
+        if (pageId === "backups") return backupsPage;
         return null;
     }
 
@@ -259,6 +261,10 @@ FloatingWindow {
             }
             if (win.unsavedPromptOpen) {
                 win.unsavedPromptOpen = false;
+                event.accepted = true;
+                return;
+            }
+            if (win.currentPage === "backups" && backupsPage.handleEscape()) {
                 event.accepted = true;
                 return;
             }
@@ -579,6 +585,22 @@ FloatingWindow {
                             }
                         }
 
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰁯"
+                            text: "Backups"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
+                            active: win.currentPage === "backups" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.railSearchExpanded = false;
+                                win.currentPage = "backups";
+                                BackupsService.reload();
+                            }
+                        }
+
                         Rectangle {
                             visible: win.placeholderPages.length > 0
                             width: parent.width
@@ -671,6 +693,12 @@ FloatingWindow {
                     id: keyboardPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "keyboard"
+                }
+
+                BackupsPage {
+                    id: backupsPage
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "backups"
                 }
 
                 PlaceholderPage {
