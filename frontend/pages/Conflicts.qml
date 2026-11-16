@@ -94,12 +94,11 @@ Item {
             width: parent.width
             spacing: 4
 
-            Row {
+            Flow {
                 width: parent.width
                 spacing: 12
 
                 Text {
-                    anchors.verticalCenter: parent.verticalCenter
                     text: "Keybinding Conflicts"
                     font.family: Deck.fontFamily
                     font.pixelSize: Deck.fontSizeLarge
@@ -108,10 +107,9 @@ Item {
                 }
 
                 Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
                     visible: root.totalConflicts > 0
                     height: 22
-                    width: summaryBadge.implicitWidth + 12
+                    width: Math.min(parent.width, summaryBadge.implicitWidth + 12)
                     radius: 4
                     color: root.duplicateCount > 0 ? Deck.alpha(Deck.critical, 0.2) : Deck.alpha(Deck.warning, 0.2)
                     border.width: 1
@@ -119,7 +117,10 @@ Item {
 
                     Text {
                         id: summaryBadge
+                        objectName: "elideOk"
                         anchors.centerIn: parent
+                        width: Math.min(implicitWidth, parent.width - 8)
+                        elide: Text.ElideRight
                         text: root.totalConflicts + " conflicts: " + root.duplicateCount + " duplicate, " + root.stackedCount + " stacked"
                         font.family: Deck.fontFamily
                         font.pixelSize: 10
@@ -130,6 +131,8 @@ Item {
             }
 
             Text {
+                width: parent.width
+                wrapMode: Text.WordWrap
                 text: "Stacked binds are legal: Hyprland runs every bind that matches a keypress."
                 font.family: Deck.fontFamily
                 font.pixelSize: Deck.fontSizeSmall
@@ -224,79 +227,69 @@ Item {
                         anchors.margins: 12
                         spacing: 10
 
-                        // 1. Top row: Shortcut keycaps, Kind badge, N binds, and "Show in list" button
-                        Item {
+                        // 1. Top row: Shortcut keycaps, Kind badge, N binds, and "Show in list" button (wrapping Flow)
+                        Flow {
                             width: parent.width
-                            height: 28
+                            spacing: 8
 
-                            // Left: Keycaps + Kind badge + Submap + Binds count
-                            Row {
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 8
+                            ShortcutKeys {
+                                width: Math.min(implicitWidth, parent.width)
+                                wrap: true
+                                parts: KeybindData.conflictShortcutParts(conflictItem)
+                            }
 
-                                // Keycaps
-                                ShortcutKeys {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    parts: KeybindData.conflictShortcutParts(conflictItem)
-                                }
+                            // Kind badge (Duplicate in critical, Stacked in warning)
+                            Rectangle {
+                                height: 20
+                                width: kindTxt.implicitWidth + 10
+                                radius: 4
+                                color: isDuplicate ? Deck.alpha(Deck.critical, 0.2) : Deck.alpha(Deck.warning, 0.2)
+                                border.width: 1
+                                border.color: isDuplicate ? Deck.alpha(Deck.critical, 0.6) : Deck.alpha(Deck.warning, 0.6)
 
-                                // Kind badge (Duplicate in critical, Stacked in warning)
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    height: 20
-                                    width: kindTxt.implicitWidth + 10
-                                    radius: 4
-                                    color: isDuplicate ? Deck.alpha(Deck.critical, 0.2) : Deck.alpha(Deck.warning, 0.2)
-                                    border.width: 1
-                                    border.color: isDuplicate ? Deck.alpha(Deck.critical, 0.6) : Deck.alpha(Deck.warning, 0.6)
-
-                                    Text {
-                                        id: kindTxt
-                                        anchors.centerIn: parent
-                                        text: isDuplicate ? "Duplicate" : "Stacked"
-                                        font.family: Deck.fontFamily
-                                        font.pixelSize: 9
-                                        font.weight: Font.Bold
-                                        color: isDuplicate ? Deck.critical : Deck.warning
-                                    }
-                                }
-
-                                // Submap badge if present
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: !!(conflictItem && conflictItem.submap)
-                                    height: 20
-                                    width: submapTxt.implicitWidth + 8
-                                    radius: 4
-                                    color: Deck.alpha(Deck.muted, 0.15)
-                                    border.width: 1
-                                    border.color: Deck.alpha(Deck.muted, 0.3)
-
-                                    Text {
-                                        id: submapTxt
-                                        anchors.centerIn: parent
-                                        text: conflictItem && conflictItem.submap ? ("submap: " + conflictItem.submap) : ""
-                                        font.family: Deck.fontFamily
-                                        font.pixelSize: 9
-                                        color: Deck.muted
-                                    }
-                                }
-
-                                // N binds count
                                 Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: conflictCard.bindCount + " binds"
+                                    id: kindTxt
+                                    anchors.centerIn: parent
+                                    text: isDuplicate ? "Duplicate" : "Stacked"
                                     font.family: Deck.fontFamily
-                                    font.pixelSize: Deck.fontSizeSmall
+                                    font.pixelSize: 9
+                                    font.weight: Font.Bold
+                                    color: isDuplicate ? Deck.critical : Deck.warning
+                                }
+                            }
+
+                            // Submap badge if present
+                            Rectangle {
+                                visible: !!(conflictItem && conflictItem.submap)
+                                height: 20
+                                width: submapTxt.implicitWidth + 8
+                                radius: 4
+                                color: Deck.alpha(Deck.muted, 0.15)
+                                border.width: 1
+                                border.color: Deck.alpha(Deck.muted, 0.3)
+
+                                Text {
+                                    id: submapTxt
+                                    anchors.centerIn: parent
+                                    text: conflictItem && conflictItem.submap ? ("submap: " + conflictItem.submap) : ""
+                                    font.family: Deck.fontFamily
+                                    font.pixelSize: 9
                                     color: Deck.muted
                                 }
                             }
 
-                            // Right: Button "Show in list"
+                            // N binds count
+                            Text {
+                                height: 20
+                                verticalAlignment: Text.AlignVCenter
+                                text: conflictCard.bindCount + " binds"
+                                font.family: Deck.fontFamily
+                                font.pixelSize: Deck.fontSizeSmall
+                                color: Deck.muted
+                            }
+
+                            // Button "Show in list"
                             ActionButton {
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
                                 variant: "neutral"
                                 compact: true
                                 iconText: ""
@@ -310,6 +303,8 @@ Item {
 
                         // 2. Plain sentence explaining behavior
                         Text {
+                            width: parent.width
+                            wrapMode: Text.WordWrap
                             text: isDuplicate
                                 ? "These binds do the same thing; one of them is redundant."
                                 : ("Pressing this triggers all " + conflictCard.bindCount + " actions.")
@@ -318,7 +313,7 @@ Item {
                             color: Deck.alpha(Deck.muted, 0.85)
                         }
 
-                        // 3. One row per bind in config order (with fixed columns across cards)
+                        // 3. One row per bind in config order (wrapping Flow)
                         Column {
                             width: parent.width
                             spacing: 6
@@ -331,23 +326,26 @@ Item {
                                     readonly property var bindObj: KeybindData.getBindById(bindId)
 
                                     width: parent.width
-                                    height: 32
+                                    height: bindRowFlow.implicitHeight + 12
                                     radius: 4
                                     color: Deck.alpha(Deck.bg, 0.5)
                                     border.width: 1
                                     border.color: Deck.alpha(Deck.muted, 0.12)
 
-                                    Item {
-                                        anchors.fill: parent
+                                    Flow {
+                                        id: bindRowFlow
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.top: parent.top
+                                        anchors.margins: 6
                                         anchors.leftMargin: 10
                                         anchors.rightMargin: 10
+                                        spacing: 8
 
-                                        // Column 1: Description (primary) - fixed width 250px
                                         Text {
                                             id: descText
-                                            anchors.left: parent.left
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: 250
+                                            objectName: "elideOk"
+                                            width: Math.min(250, parent.width)
                                             text: bindObj ? KeybindData.descriptionText(bindObj) : ("(Unknown bind: " + bindId + ")")
                                             font.family: Deck.fontFamily
                                             font.pixelSize: Deck.fontSizeSmall
@@ -356,11 +354,8 @@ Item {
                                             elide: Text.ElideRight
                                         }
 
-                                        // Column 3: Right group (loop badge + source file:line)
                                         Row {
                                             id: rightGroup
-                                            anchors.right: parent.right
-                                            anchors.verticalCenter: parent.verticalCenter
                                             spacing: 8
 
                                             // Loop badge when generated is true
@@ -386,9 +381,10 @@ Item {
 
                                             // Source file:line with "~" path replacement
                                             Text {
+                                                objectName: "elideOk"
                                                 anchors.verticalCenter: parent.verticalCenter
-                                                width: 240
-                                                horizontalAlignment: Text.AlignRight
+                                                width: Math.min(240, bindRowFlow.width)
+                                                horizontalAlignment: Text.AlignLeft
                                                 text: root.formatSource(bindObj ? bindObj.source_file : "", bindObj ? bindObj.source_line : null)
                                                 font.family: Deck.fontFamily
                                                 font.pixelSize: Deck.fontSizeSmall
@@ -397,13 +393,9 @@ Item {
                                             }
                                         }
 
-                                        // Column 2: Action text (mono, muted) - fills between Col 1 and Col 3
                                         Text {
-                                            anchors.left: descText.right
-                                            anchors.leftMargin: 12
-                                            anchors.right: rightGroup.left
-                                            anchors.rightMargin: 12
-                                            anchors.verticalCenter: parent.verticalCenter
+                                            objectName: "elideOk"
+                                            width: Math.min(implicitWidth, parent.width)
                                             text: bindObj ? KeybindData.actionText(bindObj) : "-"
                                             font.family: Deck.fontFamily
                                             font.pixelSize: Deck.fontSizeSmall

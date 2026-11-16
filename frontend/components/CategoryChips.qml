@@ -10,21 +10,13 @@ Item {
     signal categorySelected(string category)
 
     implicitWidth: 500
-    implicitHeight: 30
+    implicitHeight: chipFlow.implicitHeight
 
-    Flickable {
-        id: flick
-        anchors.fill: parent
-        contentWidth: row.width
-        contentHeight: height
-        flickableDirection: Flickable.HorizontalFlick
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-
-        Row {
-            id: row
-            height: parent.height
-            spacing: 6
+    ChipFlow {
+        id: chipFlow
+        width: parent.width
+        spacing: 6
+        rowSpacing: 6
 
             // "All" chip
             Rectangle {
@@ -143,4 +135,3 @@ Item {
             }
         }
     }
-}

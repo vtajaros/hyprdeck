@@ -99,4 +99,29 @@ QtObject {
         var minLeft = (infoMinWidth !== undefined && !isNaN(Number(infoMinWidth))) ? Number(infoMinWidth) : 220;
         return (minLeft + gap + actW) > avail;
     }
+
+    function keybindRowModeForClass(layoutClass) {
+        if (layoutClass === "compact")
+            return "stacked";
+        if (layoutClass === "medium" || layoutClass === "cozy")
+            return "two-line";
+        return "columns";
+    }
+
+    function keybindActionsCollapsed(layoutClass) {
+        return layoutClass === "compact" || layoutClass === "medium" || layoutClass === "cozy";
+    }
+
+    function clampDialogSize(preferredW, preferredH, viewportW, viewportH) {
+        var pw = Number(preferredW) || 520;
+        var ph = Number(preferredH) || 480;
+        var vw = Number(viewportW) || pw;
+        var vh = Number(viewportH) || ph;
+        var maxW = Math.max(240, vw - 24);
+        var maxH = Math.max(200, vh - 24);
+        return {
+            width: Math.min(pw, maxW),
+            height: Math.min(ph, maxH)
+        };
+    }
 }

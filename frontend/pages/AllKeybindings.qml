@@ -18,6 +18,13 @@ Item {
     property int savedSelectedIndex: 0
     property bool shouldRestorePosition: false
     property bool initialLoadDone: false
+    property string layoutClass: "expanded"
+
+    function _syncLayoutClass() {
+        layoutClass = ResponsiveLogic.computeLayoutClass(root.width, layoutClass);
+    }
+    onWidthChanged: _syncLayoutClass()
+    Component.onCompleted: _syncLayoutClass()
 
     function findBindIndex(bindId) {
         if (!bindId || !root.filteredBinds) return -1;
@@ -186,14 +193,16 @@ Item {
         anchors.margins: Deck.space16
         spacing: Deck.space12
 
-        // Top control bar: Search + Add Keybind + Keyboard View Toggle
-        Row {
+        // Top control bar: Search + Add Keybind + Keyboard View Toggle (wrapping Flow)
+        Flow {
             width: parent.width
             spacing: Deck.space12
 
             SearchField {
                 id: searchField
-                width: parent.width - kbToggle.width - addKeybindBtn.width - 24
+                width: root.layoutClass === "compact"
+                    ? parent.width
+                    : Math.max(180, parent.width - kbToggle.width - addKeybindBtn.width - 24)
                 onTextChanged: {
                     root.shouldRestorePosition = false;
                     root.searchText = text;
@@ -264,7 +273,7 @@ Item {
             }
         }
 
-        // Category Chips
+        // Category Chips (wrap via ChipFlow)
         CategoryChips {
             width: parent.width
             categories: KeybindData.categories
@@ -276,19 +285,17 @@ Item {
             }
         }
 
-        // Submap note or selector + Results header count
-        Item {
+        // Submap note or selector + Results header count (wrapping Flow)
+        Flow {
             width: parent.width
-            height: 22
+            spacing: 8
 
-            // Left: Submap selector or note
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
+            // Submap selector or note
+            Flow {
                 spacing: 8
+                width: Math.min(implicitWidth, parent.width)
 
                 Text {
-                    anchors.verticalCenter: parent.verticalCenter
                     text: KeybindData.submaps.length > 0 ? "Submap:" : "No submaps in this config"
                     font.family: Deck.fontFamily
                     font.pixelSize: Deck.fontSizeSmall
@@ -327,10 +334,8 @@ Item {
                 }
             }
 
-            // Right: Results count "N of M keybindings"
+            // Results count "N of M keybindings"
             Text {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
                 text: root.filteredBinds.length + " of " + KeybindData.binds.length + " keybindings"
                 font.family: Deck.fontFamily
                 font.pixelSize: Deck.fontSizeSmall
@@ -414,6 +419,7 @@ Item {
 
                 delegate: KeybindRow {
                     width: listView.width - (listView.ScrollBar.vertical.visible ? 10 : 0)
+                    layoutClass: root.layoutClass
                     bindData: modelData
                     isSelected: root.selectedIndex === index
                     isExpanded: root.expandedIndex === index
@@ -429,7 +435,7 @@ Item {
         Rectangle {
             id: companionBanner
             width: parent.width
-            height: 26
+            height: Math.max(26, companionRow.implicitHeight + 8)
             radius: 4
             color: Deck.alpha(Deck.muted, 0.12)
             border.width: 1
@@ -437,7 +443,9 @@ Item {
             visible: (EditService.companionWarning.length > 0) || KeybindData.hasCompanionConf
 
             Row {
+                id: companionRow
                 anchors.centerIn: parent
+                width: Math.min(implicitWidth, parent.width - 16)
                 spacing: 6
 
                 Text {
@@ -450,6 +458,8 @@ Item {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - 18
+                    wrapMode: Text.WordWrap
                     text: "hyprland.conf is not modified by HyprDeck"
                     font.family: Deck.fontFamily
                     font.pixelSize: 10

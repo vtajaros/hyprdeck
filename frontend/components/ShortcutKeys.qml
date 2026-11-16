@@ -7,9 +7,10 @@ Item {
 
     property var parts: []
     property bool active: false
+    property bool wrap: true
 
-    clip: true
-    implicitHeight: 24
+    clip: false
+    implicitHeight: wrap ? Math.max(24, keysFlow.implicitHeight) : 24
     implicitWidth: totalNaturalWidth
 
     readonly property real defaultSpacing: 6
@@ -114,16 +115,15 @@ Item {
         return natural;
     }
 
-    Row {
-        id: keysRow
+    Flow {
+        id: keysFlow
         anchors.left: parent.left
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: root.currentSpacing
+        width: root.wrap && root.width > 0 ? root.width : root.totalNaturalWidth
+        spacing: root.wrap ? 4 : root.currentSpacing
 
         Repeater {
             model: root.flatModel
             delegate: Item {
-                anchors.verticalCenter: parent.verticalCenter
                 width: modelData.isKey ? cap.width : plusText.implicitWidth
                 height: 24
 
@@ -133,7 +133,11 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: modelData.isKey ? modelData.text : ""
                     active: root.active
-                    width: modelData.isKey ? root.keyWidth(modelData.keyIndex, modelData.text) : implicitWidth
+                    width: modelData.isKey
+                        ? (root.wrap
+                            ? (root.width > 0 ? Math.min(root.estimateKeyWidth(modelData.text), root.width) : root.estimateKeyWidth(modelData.text))
+                            : root.keyWidth(modelData.keyIndex, modelData.text))
+                        : implicitWidth
                 }
 
                 Text {
