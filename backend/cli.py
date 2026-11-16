@@ -944,6 +944,40 @@ def build_arg_parser() -> argparse.ArgumentParser:
     thm_wp.add_argument("wp_action", choices=("open",), help="Action: open wallpaper picker.")
     thm_wp.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
+    # settings power subcommand
+    st_pwr = st_sub.add_parser("power", help="Battery, CPU EPP/turbo, hypridle, and lid/sleep state.")
+    pwr_sub = st_pwr.add_subparsers(dest="power_action", required=True)
+
+    pwr_state = pwr_sub.add_parser("state", help="Read battery, CPU, hypridle, and lid/sleep state.")
+    pwr_state.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    pwr_state.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    pwr_epp = pwr_sub.add_parser("epp", help="Set CPU energy performance preference via pkexec (session-only).")
+    pwr_epp.add_argument("value", help="EPP preference (e.g. performance, balance_performance, balance_power, power).")
+    pwr_epp.add_argument("--timeout", dest="timeout", type=float, default=15.0, help="pkexec timeout seconds.")
+    pwr_epp.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    pwr_turbo = pwr_sub.add_parser("turbo", help="Enable or disable Intel Turbo Boost via pkexec (session-only).")
+    pwr_turbo.add_argument("mode", choices=("on", "off"), help="Target state: on or off.")
+    pwr_turbo.add_argument("--timeout", dest="timeout", type=float, default=15.0, help="pkexec timeout seconds.")
+    pwr_turbo.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    pwr_idle = pwr_sub.add_parser("idle", help="Update hypridle dim/lock/dpms timeouts in seconds and restart hypridle.")
+    pwr_idle.add_argument("pairs", nargs="*", help="Optional role=seconds pairs (e.g. dim=300 lock=600 dpms=900).")
+    pwr_idle.add_argument("--dim", dest="dim_sec", type=int, default=None, help="Dim timeout in seconds (30..86400).")
+    pwr_idle.add_argument("--lock", dest="lock_sec", type=int, default=None, help="Lock timeout in seconds (30..86400).")
+    pwr_idle.add_argument("--dpms", dest="dpms_sec", type=int, default=None, help="DPMS off timeout in seconds (30..86400).")
+    pwr_idle.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    pwr_idle.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    # settings system subcommand
+    st_sys = st_sub.add_parser("system", help="Read-only system hardware and software overview.")
+    sys_sub = st_sys.add_subparsers(dest="system_action", required=True)
+
+    sys_info = sys_sub.add_parser("info", help="Read privacy-safe system information.")
+    sys_info.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    sys_info.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
     return parser
 
 
@@ -2840,6 +2874,58 @@ def _handle_settings_themes(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 1
 
 
+def _handle_settings_power(args: argparse.Namespace, backup_dir: str | None = None) -> int:
+    from backend.settings.power.ops import set_epp, set_idle_timeouts, set_turbo
+    from backend.settings.power.state import get_power_state
+
+    p_action = args.power_action
+    timeout = getattr(args, "timeout", 5.0)
+
+    if p_action == "state":
+        st = get_power_state(timeout=timeout)
+        sys.stdout.write(json.dumps(st, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    if p_action == "epp":
+        res = set_epp(args.value, timeout=timeout)
+    elif p_action == "turbo":
+        res = set_turbo(args.mode == "on", timeout=timeout)
+    elif p_action == "idle":
+        changes: dict[str, Any] = {}
+        for pair in getattr(args, "pairs", []) or []:
+            if "=" not in pair:
+                res = {"ok": False, "error": f"Expected role=seconds pair, got {pair!r}"}
+                sys.stdout.write(json.dumps(res, indent=2) + "\n")
+                sys.stdout.flush()
+                return 1
+            k, v = pair.split("=", 1)
+            changes[k.strip()] = v.strip()
+        if getattr(args, "dim_sec", None) is not None:
+            changes["dim"] = args.dim_sec
+        if getattr(args, "lock_sec", None) is not None:
+            changes["lock"] = args.lock_sec
+        if getattr(args, "dpms_sec", None) is not None:
+            changes["dpms"] = args.dpms_sec
+        res = set_idle_timeouts(changes, backup_dir=backup_dir, timeout=timeout)
+    else:
+        res = {"ok": False, "error": f"Unknown power action: {p_action}"}
+
+    sys.stdout.write(json.dumps(res, indent=2) + "\n")
+    sys.stdout.flush()
+    return 0 if res.get("ok") else 1
+
+
+def _handle_settings_system(args: argparse.Namespace) -> int:
+    from backend.settings.power.state import get_system_info
+
+    timeout = getattr(args, "timeout", 5.0)
+    info = get_system_info(timeout=timeout)
+    sys.stdout.write(json.dumps(info, indent=2) + "\n")
+    sys.stdout.flush()
+    return 0
+
+
 def _handle_settings(args: argparse.Namespace) -> int:
     from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
     from backend.editor.backups import compute_file_sha256
@@ -2861,6 +2947,12 @@ def _handle_settings(args: argparse.Namespace) -> int:
 
     if action == "themes":
         return _handle_settings_themes(args)
+
+    if action == "power":
+        return _handle_settings_power(args, backup_dir=debug_bdir)
+
+    if action == "system":
+        return _handle_settings_system(args)
 
     if action == "display":
         return _handle_settings_display(args, cfg_dir, reload_override, debug_bdir)

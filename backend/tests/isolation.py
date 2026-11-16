@@ -9,6 +9,8 @@ import unittest
 from typing import Mapping
 
 from backend.core.constants import (
+    ENV_HYPRIDLE_PATH,
+    ENV_POWER_SYSFS_ROOT,
     ENV_SETTINGS_CONFIG_DIR,
     ENV_SETTINGS_DEBUG,
     ENV_SETTINGS_DEVICES_FIXTURE,
@@ -61,6 +63,12 @@ def assert_env_isolated(env: Mapping[str, str] | None = None) -> None:
     dbg_cfg = env_dict.get(ENV_SETTINGS_CONFIG_DIR, "").strip()
     if dbg_cfg:
         assert_path_isolated(dbg_cfg, ENV_SETTINGS_CONFIG_DIR)
+    pwr_sysfs = env_dict.get(ENV_POWER_SYSFS_ROOT, "").strip()
+    if pwr_sysfs:
+        assert_path_isolated(pwr_sysfs, ENV_POWER_SYSFS_ROOT)
+    hypridle_p = env_dict.get(ENV_HYPRIDLE_PATH, "").strip()
+    if hypridle_p:
+        assert_path_isolated(hypridle_p, ENV_HYPRIDLE_PATH)
     repo_fixtures = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
     dev_fx = env_dict.get(ENV_SETTINGS_DEVICES_FIXTURE, "").strip()
     if dev_fx and not is_under_path(dev_fx, repo_fixtures):
@@ -79,6 +87,8 @@ _CLEARED_ENV_VARS = (
     ENV_SETTINGS_DEVICES_FIXTURE,
     ENV_SETTINGS_XKB_PATH,
     ENV_THEMES_HOME,
+    ENV_POWER_SYSFS_ROOT,
+    ENV_HYPRIDLE_PATH,
 )
 
 
@@ -141,6 +151,7 @@ def install_suite_isolation_guard() -> None:
     import functools
     import backend.core.live_cmd as live_cmd_mod
     import backend.core.revert_guard as rg_mod
+    import backend.settings.power.ops as pwr_ops_mod
     import backend.core.transaction as tx_mod
     import backend.describe.sidecar_store as sc_mod
     import backend.editor.backups as bkp_mod
@@ -384,6 +395,8 @@ def install_suite_isolation_guard() -> None:
             if items and items[0] in (
                 "pactl", "wpctl", "busctl", "bluetoothctl", "rfkill", "nmcli",
                 "gsettings", "hyprctl", "awww", "xfconf-query",
+                "upower", "pkexec", "pgrep", "pkill", "hypridle", "systemd-analyze",
+                "hostnamectl", "uname", "lscpu", "free", "df", "lspci", "uptime", "quickshell",
             ):
                 raise AssertionError(
                     f"Test isolation violation: real {items[0]!r} called in tests without mock runner"
@@ -391,3 +404,13 @@ def install_suite_isolation_guard() -> None:
         return orig_run_live_cmd(argv, timeout=timeout, runner=runner, env=env)
 
     live_cmd_mod.run_live_cmd = guarded_run_live_cmd
+
+    orig_default_spawner = pwr_ops_mod.default_detached_spawner
+
+    @functools.wraps(orig_default_spawner)
+    def guarded_default_spawner(argv):
+        raise AssertionError(
+            f"Test isolation violation: real default_detached_spawner (Popen) called in tests for {list(argv)!r}"
+        )
+
+    pwr_ops_mod.default_detached_spawner = guarded_default_spawner

@@ -68,6 +68,10 @@ TestCase {
         id: themesLogic
     }
 
+    PowerControlLogic {
+        id: pwrLogic
+    }
+
     function test_close_guard_blocks_when_prompt_open() {
         guard.dialogOpen = false;
         verify(guard.closeAllowed);
@@ -242,5 +246,31 @@ TestCase {
         compare(themesLogic.clampCursorSize(32), 32);
         verify(themesLogic.hasConflict([{ id: "gtk_theme_env_override" }], "gtk_theme_env_override"));
         verify(!themesLogic.hasConflict([], "gtk_theme_env_override"));
+    }
+
+    function test_power_minutes_ordering_and_turbo_confirm() {
+        compare(pwrLogic.secToMin(300), 5);
+        compare(pwrLogic.secToMin(0), 1);
+        compare(pwrLogic.secToMin(100000), 1440);
+        compare(pwrLogic.minToSec(10), 600);
+        compare(pwrLogic.minToSec(0.5), 30);
+        compare(pwrLogic.minToSec(0), 30);
+        compare(pwrLogic.minToSec(2000), 86400);
+        compare(pwrLogic.validateIdleOrder(300, 600, 900), "");
+        verify(pwrLogic.validateIdleOrder(600, 600, 900).length > 0);
+        verify(pwrLogic.validateIdleOrder(300, 900, 900).length > 0);
+        verify(pwrLogic.validateIdleOrder(10, 600, 900).length > 0);
+        verify(pwrLogic.validateIdleOrder(300, 600, 90000).length > 0);
+        compare(pwrLogic.roleLabel("dim"), "Dim screen");
+        compare(pwrLogic.roleLabel("lock"), "Lock session");
+        compare(pwrLogic.roleLabel("dpms"), "Turn off display");
+        compare(pwrLogic.roleLabel("suspend"), "Suspend");
+        compare(pwrLogic.roleLabel("other"), "Custom listener");
+        compare(pwrLogic.eppLabel("balance_performance"), "Balanced");
+        verify(pwrLogic.needsTurboConfirm(false));
+        verify(!pwrLogic.needsTurboConfirm(true));
+        var txt = pwrLogic.formatCopyAllText({ hostname: "arch-del", os_name: "Arch Linux" });
+        verify(txt.indexOf("Hostname: arch-del") >= 0);
+        verify(txt.indexOf("Machine ID") < 0);
     }
 }

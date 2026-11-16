@@ -80,6 +80,9 @@ FloatingWindow {
         if (!ThemesService.loading && !ThemesService.busy) {
             ThemesService.reload(true);
         }
+        if (!PowerService.loading && !PowerService.busy) {
+            PowerService.reload(true);
+        }
     }
 
     function _performClose() {
@@ -122,7 +125,7 @@ FloatingWindow {
         id: closeGuard
         recorderActive: false
         editDialogOpen: false
-        dialogOpen: win.unsavedPromptOpen || DisplayService.countdownActive || InputService.countdownActive || BluetoothService.confirmOpen || NetworkService.confirmOpen
+        dialogOpen: win.unsavedPromptOpen || DisplayService.countdownActive || InputService.countdownActive || BluetoothService.confirmOpen || NetworkService.confirmOpen || PowerService.confirmOpen
         focusItem: rootSurface.Window.activeFocusItem
     }
 
@@ -134,6 +137,8 @@ FloatingWindow {
         BluetoothService.reload(false);
         NetworkService.reload(false);
         ThemesService.reload(false);
+        PowerService.reload(false);
+        SystemService.reload();
     }
 
     Binding {
@@ -160,10 +165,13 @@ FloatingWindow {
         value: win.visible && win.currentPage === "themes"
     }
 
-    readonly property var placeholderPages: [
-        { id: "power", icon: "󰁹", title: "Power", summary: "Idle timeouts, sleep behavior, and battery profiles." },
-        { id: "sysinfo", icon: "󰋼", title: "System info", summary: "OS, kernel, Hyprland version, and hardware overview." }
-    ]
+    Binding {
+        target: PowerService
+        property: "pollingEnabled"
+        value: win.visible && win.currentPage === "power"
+    }
+
+    readonly property var placeholderPages: []
 
     function currentPlaceholder() {
         for (var i = 0; i < placeholderPages.length; i++) {
@@ -385,7 +393,31 @@ FloatingWindow {
                             }
                         }
 
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰁹"
+                            text: "Power"
+                            active: win.currentPage === "power" && globalSearch.text.trim().length === 0
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.currentPage = "power";
+                                PowerService.reload(false);
+                            }
+                        }
+
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰋼"
+                            text: "System info"
+                            active: win.currentPage === "sysinfo" && globalSearch.text.trim().length === 0
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.currentPage = "sysinfo";
+                            }
+                        }
+
                         Rectangle {
+                            visible: win.placeholderPages.length > 0
                             width: parent.width
                             height: 1
                             color: HKS.alpha(HKS.muted, 0.15)
@@ -448,6 +480,16 @@ FloatingWindow {
                 ThemesPage {
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "themes"
+                }
+
+                PowerPage {
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "power"
+                }
+
+                SystemPage {
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "sysinfo"
                 }
 
                 PlaceholderPage {

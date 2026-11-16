@@ -45,6 +45,8 @@ ShellRoot {
             BluetoothService.reload(false);
             NetworkService.reload(false);
             ThemesService.reload(false);
+            PowerService.reload(false);
+            SystemService.reload();
         }
 
         function navigate(page: string) {
@@ -296,6 +298,52 @@ ShellRoot {
             return JSON.stringify({ ok: true, conflicts: ThemesService.conflicts });
         }
 
+        function debugPowerState(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            return JSON.stringify({
+                ok: true,
+                available: PowerService.available,
+                battery: PowerService.battery,
+                cpu: PowerService.cpu,
+                hypridle: PowerService.hypridle,
+                lidSleep: PowerService.lidSleep,
+                capabilities: PowerService.capabilities,
+                confirmOpen: PowerService.confirmOpen,
+                loading: PowerService.loading,
+                busy: PowerService.busy,
+                error: PowerService.error,
+                statusMessage: PowerService.statusMessage
+            });
+        }
+
+        function debugPowerRequestTurboOff(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            PowerService.requestTurbo(false);
+            return JSON.stringify({
+                ok: true,
+                confirmOpen: PowerService.confirmOpen,
+                confirmTitle: PowerService.confirmTitle,
+                confirmMessage: PowerService.confirmMessage
+            });
+        }
+
+        function debugPowerCancelConfirm(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            PowerService.cancelPending();
+            return JSON.stringify({ ok: true, confirmOpen: PowerService.confirmOpen });
+        }
+
+        function debugSystemInfo(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            return JSON.stringify({
+                ok: true,
+                available: SystemService.available,
+                loading: SystemService.loading,
+                info: SystemService.info,
+                error: SystemService.error
+            });
+        }
+
         function debugState(): string {
             if (!root.debugEnabled) return root._debugDisabledJson();
             var optsMap = ({});
@@ -400,6 +448,24 @@ ShellRoot {
                     busy: ThemesService.busy,
                     loading: ThemesService.loading,
                     error: ThemesService.error
+                },
+                power: {
+                    available: PowerService.available,
+                    battery: PowerService.battery,
+                    cpu: PowerService.cpu,
+                    hypridle: PowerService.hypridle,
+                    lidSleep: PowerService.lidSleep,
+                    capabilities: PowerService.capabilities,
+                    confirmOpen: PowerService.confirmOpen,
+                    busy: PowerService.busy,
+                    loading: PowerService.loading,
+                    error: PowerService.error
+                },
+                system: {
+                    available: SystemService.available,
+                    loading: SystemService.loading,
+                    info: SystemService.info,
+                    error: SystemService.error
                 }
             });
         }

@@ -5,3 +5,5 @@ AudioPage 1.0 AudioPage.qml
 BluetoothPage 1.0 BluetoothPage.qml
 NetworkPage 1.0 NetworkPage.qml
 ThemesPage 1.0 ThemesPage.qml
+PowerPage 1.0 PowerPage.qml
+SystemPage 1.0 SystemPage.qml
