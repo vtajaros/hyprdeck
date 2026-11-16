@@ -282,12 +282,12 @@ def install_suite_isolation_guard() -> None:
         return orig_atomic_write(target_path, data, mode_source=mode_source)
 
     @functools.wraps(orig_create_backup)
-    def guarded_create_backup(path: str, *, backup_dir: str | None = None, config_dir: str | None = None, env=None, sidecar_path: str | None = None):
+    def guarded_create_backup(path: str, *, backup_dir: str | None = None, config_dir: str | None = None, env=None, sidecar_path: str | None = None, **kwargs):
         resolved_bdir = bkp_mod.resolve_backup_dir(backup_dir=backup_dir, env=env)
         assert_path_isolated(resolved_bdir, "create_backup(backup_dir)")
         if sidecar_path is not None:
             assert_path_isolated(sidecar_path, "create_backup(sidecar_path)")
-        return orig_create_backup(path, backup_dir=backup_dir, config_dir=config_dir, env=env, sidecar_path=sidecar_path)
+        return orig_create_backup(path, backup_dir=backup_dir, config_dir=config_dir, env=env, sidecar_path=sidecar_path, **kwargs)
 
     @functools.wraps(orig_restore_backup)
     def guarded_restore_backup(record, expected_current_sha256: str | None = None, *, backup_dir: str | None = None, force: bool = False, env=None):

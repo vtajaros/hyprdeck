@@ -469,7 +469,20 @@ def build_arg_parser() -> argparse.ArgumentParser:
     # backups subcommand
     bak_p = subparsers.add_parser(
         "backups",
-        help="List configuration backups stored in the HyprDeck backup directory.",
+        help="List or diff configuration backups stored in the HyprDeck backup directory.",
+    )
+    bak_p.add_argument(
+        "action",
+        nargs="?",
+        choices=["list", "diff"],
+        default="list",
+        help="Optional backup action ('list' or 'diff').",
+    )
+    bak_p.add_argument(
+        "--id",
+        dest="backup_id",
+        default=None,
+        help="Backup ID (for 'backups diff --id X').",
     )
     bak_p.add_argument(
         "--path",
@@ -999,6 +1012,27 @@ def build_arg_parser() -> argparse.ArgumentParser:
     kb_open = kb_sub.add_parser("open", help="Launch or focus the HyprDeck Keybind Studio window.")
     kb_open.add_argument("--timeout", dest="timeout", type=float, default=8.0, help="Window launch timeout seconds.")
     kb_open.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    # settings backups subcommand
+    st_bak = st_sub.add_parser("backups", help="List, diff, and safely restore configuration backups.")
+    sbak_sub = st_bak.add_subparsers(dest="backups_action", required=True)
+
+    sbak_list = sbak_sub.add_parser("list", help="List enriched configuration backups.")
+    sbak_list.add_argument("--path", dest="path", default=None, help="Filter backups by original file path.")
+    sbak_list.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    sbak_diff = sbak_sub.add_parser("diff", help="Diff a backup snapshot against the current file on disk.")
+    sbak_diff.add_argument("--id", dest="backup_id", required=True, help="Backup ID to diff.")
+    sbak_diff.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    sbak_res = sbak_sub.add_parser("restore", help="Safely restore a backup snapshot (dry-run unless --apply).")
+    sbak_res.add_argument("--id", dest="backup_id", required=True, help="Backup ID to restore.")
+    sbak_res.add_argument("--dry-run", dest="dry_run", action="store_true", default=False, help="Preview restore without writing.")
+    sbak_res.add_argument("--apply", dest="apply", action="store_true", default=False, help="Write restored file and reload.")
+    sbak_res.add_argument("--no-reload", dest="no_reload", action="store_true", default=False, help="Skip per-file reload after restore.")
+    sbak_res.add_argument("--force", dest="force", action="store_true", default=False, help="Skip expected-sha256 check.")
+    sbak_res.add_argument("--expected-sha256", dest="expected_sha256", default=None, help="Expected current file SHA-256.")
+    sbak_res.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
     return parser
 
@@ -2043,8 +2077,37 @@ def _handle_edit(args: argparse.Namespace) -> int:
 
 def _handle_backups(args: argparse.Namespace) -> int:
     is_json = bool(getattr(args, "json_output", False))
+    action = getattr(args, "action", "list") or "list"
+    if action == "diff":
+        from backend.settings.backups_ops import diff_backup
+
+        backup_id = getattr(args, "backup_id", None)
+        if not backup_id:
+            msg = "Missing --id for 'backups diff'."
+            if is_json:
+                sys.stdout.write(json.dumps({"ok": False, "error": msg}, indent=2) + "\n")
+            else:
+                sys.stderr.write(f"hyprdeck backups diff: error: {msg}\n")
+            return 1
+        try:
+            res = diff_backup(backup_id)
+        except BackupError as exc:
+            res = {"ok": False, "id": backup_id, "error": str(exc)}
+        if is_json:
+            sys.stdout.write(json.dumps(res, indent=2, ensure_ascii=False) + "\n")
+        else:
+            if res.get("ok"):
+                sys.stdout.write(res.get("diff") or "(identical)\n")
+            else:
+                sys.stderr.write(f"hyprdeck backups diff: error: {res.get('error')}\n")
+        sys.stdout.flush()
+        return 0 if res.get("ok") else 1
+
     try:
         records = list_backups(path=args.path)
+        if is_json:
+            from backend.settings.backups_ops import list_enriched_backups
+            enriched = list_enriched_backups(path=args.path)
     except BackupError as exc:
         msg = str(exc)
         if is_json:
@@ -2066,7 +2129,7 @@ def _handle_backups(args: argparse.Namespace) -> int:
             warnings=[],
             backup=None,
             errors=[],
-            backups=[r.to_dict() for r in records],
+            backups=enriched,
         )
         sys.stdout.write(json.dumps(out_data, indent=2, ensure_ascii=False) + "\n")
         sys.stdout.flush()
@@ -2967,6 +3030,42 @@ def _handle_settings_keyboard(args: argparse.Namespace) -> int:
     return 0 if res.get("ok") else 1
 
 
+def _handle_settings_backups(args: argparse.Namespace, backup_dir: str | None = None) -> int:
+    from backend.settings.backups_ops import diff_backup, list_enriched_backups, safe_restore_backup
+
+    b_action = getattr(args, "backups_action", "")
+    if b_action == "list":
+        try:
+            items = list_enriched_backups(path=getattr(args, "path", None), backup_dir=backup_dir)
+            res: dict[str, Any] = {"ok": True, "backups": items, "count": len(items)}
+        except BackupError as exc:
+            res = {"ok": False, "backups": [], "error": str(exc)}
+    elif b_action == "diff":
+        try:
+            res = diff_backup(args.backup_id, backup_dir=backup_dir)
+        except BackupError as exc:
+            res = {"ok": False, "id": args.backup_id, "error": str(exc)}
+    elif b_action == "restore":
+        apply_flag = bool(getattr(args, "apply", False)) and not bool(getattr(args, "dry_run", False))
+        reload_flag = not bool(getattr(args, "no_reload", False))
+        res = safe_restore_backup(
+            args.backup_id,
+            apply=apply_flag,
+            reload=reload_flag,
+            force=bool(getattr(args, "force", False)),
+            expected_sha256=getattr(args, "expected_sha256", None),
+            backup_dir=backup_dir,
+            config_dir=getattr(args, "config_dir", None),
+            entrypoint=getattr(args, "entrypoint", None),
+        )
+    else:
+        res = {"ok": False, "error": f"Unknown backups action: {b_action}"}
+
+    sys.stdout.write(json.dumps(res, indent=2, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+    return 0 if res.get("ok") else 1
+
+
 def _handle_settings(args: argparse.Namespace) -> int:
     from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
     from backend.editor.backups import compute_file_sha256
@@ -2997,6 +3096,9 @@ def _handle_settings(args: argparse.Namespace) -> int:
 
     if action == "keyboard":
         return _handle_settings_keyboard(args)
+
+    if action == "backups":
+        return _handle_settings_backups(args, backup_dir=debug_bdir)
 
     if action == "display":
         return _handle_settings_display(args, cfg_dir, reload_override, debug_bdir)

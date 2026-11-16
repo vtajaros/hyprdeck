@@ -29,6 +29,7 @@ class BackupRecord:
     created_at: str
     sidecar_backup_path: str | None = None
     sidecar_original_path: str | None = None
+    reason: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -42,6 +43,8 @@ class BackupRecord:
             d["sidecar_backup_path"] = self.sidecar_backup_path
         if self.sidecar_original_path is not None:
             d["sidecar_original_path"] = self.sidecar_original_path
+        if self.reason is not None:
+            d["reason"] = self.reason
         return d
 
     @classmethod
@@ -54,6 +57,7 @@ class BackupRecord:
             created_at=str(data["created_at"]),
             sidecar_backup_path=data.get("sidecar_backup_path"),
             sidecar_original_path=data.get("sidecar_original_path"),
+            reason=data.get("reason"),
         )
 
 
@@ -162,6 +166,7 @@ def create_backup(
     config_dir: str | None = None,
     env: dict[str, str] | None = None,
     sidecar_path: str | None = None,
+    reason: str | None = None,
 ) -> BackupRecord:
     """Create a timestamped, hash-tagged backup of `path` and append to backups.json."""
     abs_path = os.path.abspath(os.path.expanduser(path))
@@ -210,6 +215,7 @@ def create_backup(
         created_at=created_at,
         sidecar_backup_path=s_backup_path,
         sidecar_original_path=s_orig_path,
+        reason=reason,
     )
 
     index_path = os.path.join(resolved_bdir, "backups.json")
@@ -234,6 +240,91 @@ def list_backups(
         return records
     abs_filter = os.path.abspath(os.path.expanduser(path))
     return [r for r in records if os.path.abspath(r.original_path) == abs_filter]
+
+
+_KNOWN_EDIT_FILENAMES = frozenset({
+    "hyprland.lua",
+    "hks-overrides.lua",
+    "hypridle.conf",
+    "qt6ct.conf",
+    "settings.ini",
+})
+
+
+def resolve_backup_record_path(
+    record: BackupRecord,
+    *,
+    backup_dir: str | None = None,
+    env: dict[str, str] | None = None,
+) -> str:
+    """Resolve backup file path by ID in current backup_dir first, then stored backup_path."""
+    resolved_bdir = resolve_backup_dir(backup_dir=backup_dir, env=env)
+    candidate = os.path.join(resolved_bdir, record.id)
+    if os.path.isfile(candidate):
+        return candidate
+    if record.backup_path and os.path.isfile(record.backup_path):
+        return record.backup_path
+    return candidate if record.id else record.backup_path
+
+
+def resolve_sidecar_backup_path(
+    record: BackupRecord,
+    *,
+    backup_dir: str | None = None,
+    env: dict[str, str] | None = None,
+) -> str | None:
+    """Resolve sidecar backup file path in current backup_dir/sidecar first, then stored path."""
+    if not record.sidecar_backup_path:
+        return None
+    if record.sidecar_backup_path == "none":
+        return "none"
+    resolved_bdir = resolve_backup_dir(backup_dir=backup_dir, env=env)
+    candidate = os.path.join(resolved_bdir, "sidecar", os.path.basename(record.sidecar_backup_path))
+    if os.path.isfile(candidate):
+        return candidate
+    if os.path.isfile(record.sidecar_backup_path):
+        return record.sidecar_backup_path
+    return candidate
+
+
+def classify_backup_reason(record: BackupRecord) -> str:
+    """Classify backup reason into {'edit', 'pre-restore', 'other'}."""
+    if record.reason in ("edit", "pre-restore", "other"):
+        return record.reason
+    if record.sidecar_backup_path is not None or os.path.basename(record.original_path) in _KNOWN_EDIT_FILENAMES:
+        return "edit"
+    return "other"
+
+
+def enrich_backup_record(
+    record: BackupRecord,
+    *,
+    backup_dir: str | None = None,
+    env: dict[str, str] | None = None,
+    current_sha_cache: dict[str, str | None] | None = None,
+) -> dict[str, Any]:
+    """Return BackupRecord dict enriched with availability, size, is_current, and reason."""
+    resolved_path = resolve_backup_record_path(record, backup_dir=backup_dir, env=env)
+    available = os.path.isfile(resolved_path)
+    size = os.path.getsize(resolved_path) if available else 0
+
+    orig = record.original_path
+    if current_sha_cache is not None and orig in current_sha_cache:
+        curr_sha = current_sha_cache[orig]
+    else:
+        curr_sha = compute_file_sha256(orig) if os.path.isfile(orig) else None
+        if current_sha_cache is not None:
+            current_sha_cache[orig] = curr_sha
+
+    d = record.to_dict()
+    d["resolved_backup_path"] = resolved_path
+    d["available"] = available
+    d["size"] = size
+    d["is_current"] = bool(available and curr_sha is not None and curr_sha == record.sha256)
+    d["reason"] = classify_backup_reason(record)
+    d["file_name"] = os.path.basename(orig)
+    d["has_sidecar"] = bool(record.sidecar_backup_path and record.sidecar_backup_path != "none")
+    return d
 
 
 def restore_backup(
@@ -263,10 +354,11 @@ def restore_backup(
     else:
         target_record = record
 
-    if not os.path.isfile(target_record.backup_path):
-        raise BackupError(f"Backup file is missing on disk: {target_record.backup_path}")
+    resolved_backup_path = resolve_backup_record_path(target_record, backup_dir=resolved_bdir, env=env)
+    if not os.path.isfile(resolved_backup_path):
+        raise BackupError(f"Backup file is missing on disk: {resolved_backup_path}")
 
-    with open(target_record.backup_path, "rb") as f:
+    with open(resolved_backup_path, "rb") as f:
         backup_bytes = f.read()
 
     actual_backup_sha = hashlib.sha256(backup_bytes).hexdigest()
@@ -293,23 +385,24 @@ def restore_backup(
     atomic_write_bytes(
         target_record.original_path,
         backup_bytes,
-        mode_source=target_record.backup_path,
+        mode_source=resolved_backup_path,
     )
 
     if target_record.sidecar_backup_path and target_record.sidecar_original_path:
-        if target_record.sidecar_backup_path == "none":
+        resolved_sidecar_bak = resolve_sidecar_backup_path(target_record, backup_dir=resolved_bdir, env=env)
+        if resolved_sidecar_bak == "none":
             if os.path.isfile(target_record.sidecar_original_path):
                 try:
                     os.unlink(target_record.sidecar_original_path)
                 except OSError:
                     pass
-        elif os.path.isfile(target_record.sidecar_backup_path):
-            with open(target_record.sidecar_backup_path, "rb") as sf:
+        elif resolved_sidecar_bak and os.path.isfile(resolved_sidecar_bak):
+            with open(resolved_sidecar_bak, "rb") as sf:
                 s_bytes = sf.read()
             atomic_write_bytes(
                 target_record.sidecar_original_path,
                 s_bytes,
-                mode_source=target_record.sidecar_backup_path,
+                mode_source=resolved_sidecar_bak,
             )
 
     return target_record
