@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import atexit
+import hashlib
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 from typing import Mapping
@@ -97,8 +100,15 @@ _CLEARED_ENV_VARS = (
 )
 
 
+_XDG_ENV_VARS = (
+    "XDG_CONFIG_HOME",
+    "XDG_DATA_HOME",
+    "XDG_STATE_HOME",
+)
+
+
 class IsolatedTestCase(unittest.TestCase):
-    """Base TestCase that enforces HKS_BACKUP_DIR, HKS_SIDECAR_PATH, and HKS_STATE_DIR isolation."""
+    """Base TestCase that enforces HKS_BACKUP_DIR, HKS_SIDECAR_PATH, HKS_STATE_DIR, and XDG_* isolation."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -106,15 +116,28 @@ class IsolatedTestCase(unittest.TestCase):
         self._orig_bkp = os.environ.get("HKS_BACKUP_DIR")
         self._orig_sc = os.environ.get("HKS_SIDECAR_PATH")
         self._orig_st = os.environ.get(ENV_STATE_DIR)
+        self._orig_xdg = {k: os.environ.get(k) for k in _XDG_ENV_VARS}
         self._orig_extra = {k: os.environ.get(k) for k in _CLEARED_ENV_VARS}
         self.backup_dir = os.path.join(self._isolated_root, "backups")
         self.sidecar_path = os.path.join(self._isolated_root, "hks", "descriptions.json")
         self.state_dir = os.path.join(self._isolated_root, "state")
-        os.makedirs(self.backup_dir, exist_ok=True)
-        os.makedirs(self.state_dir, exist_ok=True)
+        self.xdg_config_home = os.path.join(self._isolated_root, "xdg_config")
+        self.xdg_data_home = os.path.join(self._isolated_root, "xdg_data")
+        self.xdg_state_home = os.path.join(self._isolated_root, "xdg_state")
+        for d in (
+            self.backup_dir,
+            self.state_dir,
+            self.xdg_config_home,
+            self.xdg_data_home,
+            self.xdg_state_home,
+        ):
+            os.makedirs(d, exist_ok=True)
         os.environ["HKS_BACKUP_DIR"] = self.backup_dir
         os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
         os.environ[ENV_STATE_DIR] = self.state_dir
+        os.environ["XDG_CONFIG_HOME"] = self.xdg_config_home
+        os.environ["XDG_DATA_HOME"] = self.xdg_data_home
+        os.environ["XDG_STATE_HOME"] = self.xdg_state_home
         for k in _CLEARED_ENV_VARS:
             os.environ.pop(k, None)
         self.addCleanup(self._cleanup_isolation)
@@ -132,6 +155,11 @@ class IsolatedTestCase(unittest.TestCase):
             os.environ.pop(ENV_STATE_DIR, None)
         else:
             os.environ[ENV_STATE_DIR] = self._orig_st
+        for k, orig in self._orig_xdg.items():
+            if orig is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = orig
         for k, orig in self._orig_extra.items():
             if orig is None:
                 os.environ.pop(k, None)
@@ -144,6 +172,52 @@ class IsolatedTestCase(unittest.TestCase):
 
 
 _GUARD_INSTALLED = False
+_REAL_SNAPSHOT_DIRS = (
+    os.path.realpath(os.path.join(REAL_HOME, ".config", "hks")),
+    os.path.realpath(os.path.join(REAL_HOME, ".config", "hypr")),
+)
+
+
+def _snapshot_real_dir(root_dir: str) -> dict[str, object]:
+    """Read-only stat + sha256 snapshot of a directory (if present)."""
+    if not os.path.exists(root_dir):
+        return {"exists": False, "entries": {}}
+    entries: dict[str, tuple[int, int, str]] = {}
+    try:
+        for dirpath, dirnames, filenames in os.walk(root_dir):
+            dirnames.sort()
+            for fname in sorted(filenames):
+                full = os.path.join(dirpath, fname)
+                rel = os.path.relpath(full, root_dir)
+                try:
+                    st = os.stat(full, follow_symlinks=False)
+                    digest = ""
+                    if os.path.isfile(full) and not os.path.islink(full):
+                        with open(full, "rb") as f:
+                            digest = hashlib.sha256(f.read()).hexdigest()
+                    entries[rel] = (int(st.st_mtime_ns), int(st.st_size), digest)
+                except OSError:
+                    entries[rel] = (-1, -1, "unreadable")
+    except OSError:
+        return {"exists": True, "entries": {"<unreadable>": (-1, -1, "")}}
+    return {"exists": True, "entries": entries}
+
+
+def _verify_real_snapshots(baseline: dict[str, dict[str, object]]) -> None:
+    """Suite-exit guard: fail loudly if real ~/.config/hks or ~/.config/hypr changed."""
+    diffs: list[str] = []
+    for d, before in baseline.items():
+        after = _snapshot_real_dir(d)
+        if before != after:
+            diffs.append(f"{d}: before={before} after={after}")
+    if diffs:
+        sys.stderr.write(
+            "\nFATAL: Test suite modified real user configuration/state!\n"
+            + "\n".join(diffs)
+            + "\n"
+        )
+        sys.stderr.flush()
+        sys.exit(1)
 
 
 def install_suite_isolation_guard() -> None:
@@ -152,6 +226,9 @@ def install_suite_isolation_guard() -> None:
     if _GUARD_INSTALLED:
         return
     _GUARD_INSTALLED = True
+
+    baseline = {d: _snapshot_real_dir(d) for d in _REAL_SNAPSHOT_DIRS}
+    atexit.register(_verify_real_snapshots, baseline)
 
     import functools
     import backend.core.live_cmd as live_cmd_mod

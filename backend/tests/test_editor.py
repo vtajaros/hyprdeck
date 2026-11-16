@@ -248,6 +248,9 @@ class TestEditPlan(unittest.TestCase):
         self.assertIn("/tmp/fake/hyprland.lua:1", str(ctx2.exception))
 
 
+from backend.tests.isolation import IsolatedTestCase
+
+
 class TestBackups(unittest.TestCase):
     def test_create_list_restore_and_hash_mismatch_guard(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_root:
@@ -643,13 +646,13 @@ class TestApplyPipeline(unittest.TestCase):
         self.assertEqual(compute_file_sha256(self.lua_path), orig_sha)
 
 
-class TestEditorCLI(unittest.TestCase):
+class TestEditorCLI(IsolatedTestCase):
     def setUp(self) -> None:
-        self.tmp_obj = tempfile.TemporaryDirectory(prefix="hks_test_cli_")
-        self.root = self.tmp_obj.name
+        super().setUp()
+        self.root = self._isolated_root
         self.cfg_dir = os.path.join(self.root, "hypr")
-        self.bak_dir = os.path.join(self.root, "backups")
-        os.makedirs(self.cfg_dir)
+        self.bak_dir = self.backup_dir
+        os.makedirs(self.cfg_dir, exist_ok=True)
 
         self.lua_path = os.path.join(self.cfg_dir, "hyprland.lua")
         self.initial_lua = (
@@ -662,15 +665,8 @@ class TestEditorCLI(unittest.TestCase):
         with open(self.lua_path, "w", encoding="utf-8") as f:
             f.write(self.initial_lua)
 
-        self.env_patcher = mock.patch.dict(
-            os.environ,
-            {"HKS_BACKUP_DIR": self.bak_dir},
-        )
-        self.env_patcher.start()
-
     def tearDown(self) -> None:
-        self.env_patcher.stop()
-        self.tmp_obj.cleanup()
+        super().tearDown()
 
     def _run_cli(self, argv: list[str]) -> tuple[int, str, str]:
         out_buf = io.StringIO()

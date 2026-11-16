@@ -327,15 +327,18 @@ class TestPhase3b3Part1Submaps(unittest.TestCase):
                 os.unlink(path)
 
 
-class TestPhase3b3Part2CLIAndDryRun(unittest.TestCase):
+from backend.tests.isolation import IsolatedTestCase
+
+
+class TestPhase3b3Part2CLIAndDryRun(IsolatedTestCase):
     def test_cli_add_preview_json_structure(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             conf_path = os.path.join(td, "hyprland.lua")
             with open(conf_path, "w", encoding="utf-8") as f:
                 f.write('hl.bind("SUPER + Q", hl.dsp.window.close())\n')
 
-            backup_dir = os.path.join(td, "backups")
-            os.environ["HKS_BACKUP_DIR"] = backup_dir
+            os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+            os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
             try:
                 import io
@@ -366,7 +369,8 @@ class TestPhase3b3Part2CLIAndDryRun(unittest.TestCase):
                 self.assertEqual(out["has_conflicts"], False)
                 self.assertEqual(out["conflicts"], [])
             finally:
-                os.environ.pop("HKS_BACKUP_DIR", None)
+                os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+                os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
     def test_cli_add_conflict_duplicate_guard(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -374,8 +378,8 @@ class TestPhase3b3Part2CLIAndDryRun(unittest.TestCase):
             with open(conf_path, "w", encoding="utf-8") as f:
                 f.write('hl.bind("SUPER + Q", hl.dsp.window.close())\n')
 
-            backup_dir = os.path.join(td, "backups")
-            os.environ["HKS_BACKUP_DIR"] = backup_dir
+            os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+            os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
             try:
                 import io
@@ -421,7 +425,8 @@ class TestPhase3b3Part2CLIAndDryRun(unittest.TestCase):
                 self.assertFalse(out2["applied"])
                 self.assertIn("conflict", out2["errors"][0].lower())
             finally:
-                os.environ.pop("HKS_BACKUP_DIR", None)
+                os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+                os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
     def test_cli_add_apply_3layer_and_second_add(self) -> None:
         with tempfile.TemporaryDirectory() as td, tempfile.TemporaryDirectory() as bak_td:
@@ -429,7 +434,8 @@ class TestPhase3b3Part2CLIAndDryRun(unittest.TestCase):
             with open(conf_path, "w", encoding="utf-8") as f:
                 f.write('hl.bind("SUPER + Q", hl.dsp.window.close())\n')
 
-            os.environ["HKS_BACKUP_DIR"] = bak_td
+            os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+            os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
             try:
                 import io
@@ -485,7 +491,8 @@ class TestPhase3b3Part2CLIAndDryRun(unittest.TestCase):
                 self.assertIn('hl.bind("SUPER + Return", hl.dsp.exec_cmd("kitty"))', c2)
                 self.assertIn('hl.bind("SUPER + B", hl.dsp.exec_cmd("firefox"))', c2)
             finally:
-                os.environ.pop("HKS_BACKUP_DIR", None)
+                os.environ["HKS_BACKUP_DIR"] = self.backup_dir
+                os.environ["HKS_SIDECAR_PATH"] = self.sidecar_path
 
 
 if __name__ == "__main__":
