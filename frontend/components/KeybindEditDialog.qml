@@ -245,9 +245,10 @@ Item {
     // Center card
     Rectangle {
         id: card
+        readonly property var clamped: ResponsiveLogic.clampDialogSize(640, headerBar.height + bodyCol.implicitHeight + footerBar.height + 68, root.width, root.height)
         anchors.centerIn: parent
-        width: Math.min(parent.width - 48, 640)
-        height: Math.min(parent.height - 48, cardCol.implicitHeight + 40)
+        width: clamped.width
+        height: clamped.height
         radius: Deck.radius
         color: Deck.bg
         border.width: 1
@@ -267,6 +268,7 @@ Item {
 
             // Header Bar
             Item {
+                id: headerBar
                 width: parent.width
                 height: 28
 
@@ -341,16 +343,35 @@ Item {
                 }
             }
 
-            // Submap selector (Add mode only, when submaps exist)
-            Row {
-                id: submapSection
-                objectName: "submapSection"
-                visible: root.isAddMode && KeybindData.submaps.length > 0
+            // Scrollable Form Body
+            Flickable {
+                id: bodyScroll
                 width: parent.width
-                spacing: 8
+                height: Math.max(80, Math.min(bodyCol.implicitHeight, card.height - headerBar.height - footerBar.height - 68))
+                contentWidth: width
+                contentHeight: bodyCol.implicitHeight
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+
+                ScrollBar.vertical: ScrollBar {
+                    active: true
+                    width: 6
+                }
+
+                Column {
+                    id: bodyCol
+                    width: bodyScroll.width - (bodyScroll.ScrollBar.vertical.visible ? 10 : 0)
+                    spacing: 14
+
+                    // Submap selector (Add mode only, when submaps exist)
+                    Flow {
+                        id: submapSection
+                        objectName: "submapSection"
+                        visible: root.isAddMode && KeybindData.submaps.length > 0
+                        width: parent.width
+                        spacing: 8
 
                 Text {
-                    anchors.verticalCenter: parent.verticalCenter
                     text: "Submap:"
                     font.family: Deck.fontFamily
                     font.pixelSize: Deck.fontSizeSmall
@@ -980,13 +1001,13 @@ Item {
                     }
                 }
 
-                Row {
+                Flow {
                     width: parent.width
                     spacing: 10
 
                     // Description text input
                     Rectangle {
-                        width: parent.width - 170
+                        width: bodyCol.width < 460 ? parent.width : Math.max(160, parent.width - 170)
                         height: 34
                         radius: 6
                         color: Deck.alpha(Deck.surface, 0.7)
@@ -1014,7 +1035,7 @@ Item {
                     // Category dropdown
                     ComboBox {
                         id: catCombo
-                        width: 160
+                        width: bodyCol.width < 460 ? parent.width : 160
                         height: 34
                         model: SidecarService.categories
                         currentIndex: {
@@ -1028,16 +1049,19 @@ Item {
                         }
                     }
                 }
+                }
+                }
             }
 
-            // Footer / Action Buttons Row
-            Item {
+            // Footer / Action Buttons Flow
+            Flow {
+                id: footerBar
                 width: parent.width
-                height: 36
+                spacing: 10
 
                 Text {
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.min(implicitWidth, parent.width)
+                    wrapMode: Text.WordWrap
                     text: root.validationHint
                     visible: !root.canReview && root.validationHint.length > 0
                     font.family: Deck.fontFamily
@@ -1045,9 +1069,8 @@ Item {
                     color: Deck.warning
                 }
 
-                Row {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
+                Flow {
+                    width: Math.min(implicitWidth, parent.width)
                     spacing: 10
 
                     ActionButton {

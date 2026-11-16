@@ -13,9 +13,15 @@ Popup {
     dim: true
     closePolicy: Popup.NoAutoClose
 
+    readonly property var clampedSize: ResponsiveLogic.clampDialogSize(
+        620,
+        cardCol.implicitHeight + 48,
+        Overlay.overlay ? Overlay.overlay.width : 800,
+        Overlay.overlay ? Overlay.overlay.height : 600
+    )
     anchors.centerIn: Overlay.overlay ? Overlay.overlay : parent
-    width: Math.min(620, (Overlay.overlay ? Overlay.overlay.width : 800) - 48)
-    height: cardCol.implicitHeight + 48
+    width: clampedSize.width
+    height: clampedSize.height
 
     signal accepted(int modmask, string key, string display)
     signal cancelled()
@@ -414,9 +420,10 @@ Popup {
                         }
                     }
 
-                    // When captured
-                    Row {
+                    // When captured (wraps cleanly)
+                    Flow {
                         visible: root.recorderState === "captured"
+                        width: Math.min(implicitWidth, parent.width)
                         spacing: 6
 
                         Repeater {
@@ -429,7 +436,8 @@ Popup {
 
                         Text {
                             visible: root.capturedModmask !== 0 && root.capturedKey !== ""
-                            anchors.verticalCenter: parent.verticalCenter
+                            height: 24
+                            verticalAlignment: Text.AlignVCenter
                             text: "+"
                             font.family: Deck.fontFamily
                             font.pixelSize: 14
@@ -453,8 +461,9 @@ Popup {
                 width: parent.width - 32
 
                 // Modifier toggle chips
-                Row {
+                Flow {
                     anchors.horizontalCenter: parent.horizontalCenter
+                    width: Math.min(implicitWidth, parent.width)
                     spacing: 8
 
                     Repeater {
@@ -584,8 +593,8 @@ Popup {
         }
 
         // 5. Action Buttons Footer
-        Row {
-            anchors.right: parent.right
+        Flow {
+            width: parent.width
             spacing: 10
 
             // Re-record (visible when captured)

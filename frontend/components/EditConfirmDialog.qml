@@ -30,9 +30,10 @@ Item {
     // Centered modal card
     Rectangle {
         id: card
+        readonly property var clamped: ResponsiveLogic.clampDialogSize(720, 580, root.width, root.height)
         anchors.centerIn: parent
-        width: Math.min(parent.width - 48, 720)
-        height: Math.min(parent.height - 48, 580)
+        width: clamped.width
+        height: clamped.height
         radius: Deck.radius
         color: Deck.bg
         border.width: 1
@@ -102,13 +103,14 @@ Item {
             // Target Keybind Info Banner
             Rectangle {
                 width: parent.width
-                height: 40
+                height: Math.max(40, targetBannerFlow.implicitHeight + 16)
                 radius: 6
                 color: Deck.alpha(Deck.surface, 0.8)
                 border.width: 1
                 border.color: Deck.alpha(Deck.muted, 0.2)
 
-                Row {
+                Flow {
+                    id: targetBannerFlow
                     anchors.left: parent.left
                     anchors.leftMargin: 12
                     anchors.right: parent.right
@@ -127,7 +129,8 @@ Item {
                     // Shortcut Target (when operation targets a keybinding)
                     ShortcutKeys {
                         id: targetShortcutKeys
-                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, parent.width)
+                        wrap: true
                         parts: (EditService.activeOp && EditService.activeOp.parts) ? EditService.activeOp.parts : []
                         visible: !!(EditService.activeOp && EditService.activeOp.parts && EditService.activeOp.parts.length > 0)
                     }
@@ -135,10 +138,9 @@ Item {
                     // Text Label Fallback (e.g. for restore operations)
                     Rectangle {
                         id: targetLabelRect
-                        anchors.verticalCenter: parent.verticalCenter
                         visible: !targetShortcutKeys.visible
                         height: 22
-                        width: targetLabel.implicitWidth + 12
+                        width: Math.min(parent.width, targetLabel.implicitWidth + 12)
                         radius: 4
                         color: Deck.alpha(Deck.accent, 0.15)
                         border.width: 1
@@ -146,7 +148,10 @@ Item {
 
                         Text {
                             id: targetLabel
+                            objectName: "elideOk"
                             anchors.centerIn: parent
+                            width: Math.min(implicitWidth, parent.width - 8)
+                            elide: Text.ElideRight
                             text: EditService.activeOp ? EditService.activeOp.label : ""
                             font.family: Deck.fontFamily
                             font.pixelSize: Deck.fontSizeSmall
@@ -156,19 +161,19 @@ Item {
                     }
 
                     Text {
-                        anchors.verticalCenter: parent.verticalCenter
+                        objectName: "elideOk"
                         text: EditService.activeOp ? EditService.activeOp.description : ""
                         font.family: Deck.fontFamily
                         font.pixelSize: Deck.fontSizeSmall
                         color: Deck.muted
                         elide: Text.ElideRight
-                        width: Math.max(100, parent.width - (targetShortcutKeys.visible ? targetShortcutKeys.width : targetLabelRect.width) - 80)
+                        width: Math.min(implicitWidth, parent.width)
                     }
                 }
             }
 
-            // Verification Badges Row
-            Row {
+            // Verification Badges Flow
+            Flow {
                 width: parent.width
                 spacing: 8
 
@@ -607,9 +612,8 @@ Item {
                     }
 
                     // Right side buttons
-                    Row {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
+                    Flow {
+                        width: Math.min(implicitWidth, parent.width)
                         spacing: 10
 
                         // Cancel Button
