@@ -12,6 +12,16 @@ Item {
 
     property bool appeared: false
     property bool isClosing: false
+    property int debugOverrideWidth: 0
+    property int debugOverrideHeight: 0
+    property int lastGrabSeq: 0
+    property string lastGrabStatus: ""
+    property alias rootSurfaceRef: card
+    property alias popupListRef: popupList
+
+    function activeAuditTarget() {
+        return card;
+    }
 
     readonly property int popupLeft: {
         var raw = Deck.env("POPUP_LEFT");
@@ -87,8 +97,8 @@ Item {
             id: card
             x: root.popupLeft
             y: root.popupTop + (root.appeared ? 0 : -8)
-            width: parent.width > 0 ? Math.min(parent.width - root.popupLeft - 20, 760) : 760
-            height: parent.height > 0 ? Math.min(parent.height - root.popupTop - 20, 560) : 560
+            width: root.debugOverrideWidth > 0 ? root.debugOverrideWidth : (parent.width > 0 ? Math.min(parent.width - root.popupLeft - 20, 760) : 760)
+            height: root.debugOverrideHeight > 0 ? root.debugOverrideHeight : (parent.height > 0 ? Math.min(parent.height - root.popupTop - 20, 560) : 560)
             radius: 10
             color: Deck.bg
             border.width: 1
@@ -180,6 +190,7 @@ Item {
 
                 // Shared List Content
                 AllKeybindings {
+                    id: popupList
                     width: parent.width
                     height: parent.height - 44
                     onRequestClose: root.dismiss("key_escape")

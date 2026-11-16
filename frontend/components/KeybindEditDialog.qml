@@ -1126,6 +1126,8 @@ Item {
         }
     }
 
+    property alias recorderRef: keybindRecorder
+
     // Inner KeybindRecorder instance
     KeybindRecorder {
         id: keybindRecorder
