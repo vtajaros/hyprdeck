@@ -35,6 +35,9 @@ FloatingWindow {
     onVisibleChanged: {
         if (win.visible) {
             HKS.refreshTheme();
+            if (!KeyboardService.loading && !KeyboardService.busy) {
+                KeyboardService.reload();
+            }
         } else {
             BluetoothService.stopScanIfActive();
         }
@@ -82,6 +85,9 @@ FloatingWindow {
         }
         if (!PowerService.loading && !PowerService.busy) {
             PowerService.reload(true);
+        }
+        if (!KeyboardService.loading && !KeyboardService.busy) {
+            KeyboardService.reload();
         }
     }
 
@@ -139,6 +145,7 @@ FloatingWindow {
         ThemesService.reload(false);
         PowerService.reload(false);
         SystemService.reload();
+        KeyboardService.reload();
     }
 
     Binding {
@@ -416,6 +423,18 @@ FloatingWindow {
                             }
                         }
 
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰌌"
+                            text: "Keyboard shortcuts"
+                            active: win.currentPage === "keyboard" && globalSearch.text.trim().length === 0
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.currentPage = "keyboard";
+                                KeyboardService.reload();
+                            }
+                        }
+
                         Rectangle {
                             visible: win.placeholderPages.length > 0
                             width: parent.width
@@ -490,6 +509,11 @@ FloatingWindow {
                 SystemPage {
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "sysinfo"
+                }
+
+                KeyboardPage {
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "keyboard"
                 }
 
                 PlaceholderPage {

@@ -978,6 +978,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
     sys_info.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
     sys_info.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
+    # settings keyboard subcommand
+    st_kb = st_sub.add_parser("keyboard", help="Inspect or open Hyprland Keybind Studio.")
+    kb_sub = st_kb.add_subparsers(dest="keyboard_action", required=True)
+
+    kb_state = kb_sub.add_parser("state", help="Read Keybind Studio launcher availability and window state.")
+    kb_state.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
+    kb_state.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    kb_open = kb_sub.add_parser("open", help="Launch or focus the Hyprland Keybind Studio window.")
+    kb_open.add_argument("--timeout", dest="timeout", type=float, default=8.0, help="Window launch timeout seconds.")
+    kb_open.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
     return parser
 
 
@@ -2926,6 +2938,29 @@ def _handle_settings_system(args: argparse.Namespace) -> int:
     return 0
 
 
+def _handle_settings_keyboard(args: argparse.Namespace) -> int:
+    from backend.settings.keyboard.ops import open_hks
+    from backend.settings.keyboard.state import get_keyboard_state
+
+    k_action = args.keyboard_action
+    timeout = getattr(args, "timeout", 5.0)
+
+    if k_action == "state":
+        st = get_keyboard_state(timeout=timeout)
+        sys.stdout.write(json.dumps(st, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    if k_action == "open":
+        res = open_hks(timeout=timeout)
+    else:
+        res = {"ok": False, "error": f"Unknown keyboard action: {k_action}"}
+
+    sys.stdout.write(json.dumps(res, indent=2) + "\n")
+    sys.stdout.flush()
+    return 0 if res.get("ok") else 1
+
+
 def _handle_settings(args: argparse.Namespace) -> int:
     from backend.core.constants import OVERRIDES_FILENAME, SHA256_ABSENT
     from backend.editor.backups import compute_file_sha256
@@ -2953,6 +2988,9 @@ def _handle_settings(args: argparse.Namespace) -> int:
 
     if action == "system":
         return _handle_settings_system(args)
+
+    if action == "keyboard":
+        return _handle_settings_keyboard(args)
 
     if action == "display":
         return _handle_settings_display(args, cfg_dir, reload_override, debug_bdir)

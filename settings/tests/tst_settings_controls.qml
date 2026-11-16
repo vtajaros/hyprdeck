@@ -72,6 +72,10 @@ TestCase {
         id: pwrLogic
     }
 
+    KeyboardControlLogic {
+        id: kbLogic
+    }
+
     function test_close_guard_blocks_when_prompt_open() {
         guard.dialogOpen = false;
         verify(guard.closeAllowed);
@@ -272,5 +276,24 @@ TestCase {
         var txt = pwrLogic.formatCopyAllText({ hostname: "arch-del", os_name: "Arch Linux" });
         verify(txt.indexOf("Hostname: arch-del") >= 0);
         verify(txt.indexOf("Machine ID") < 0);
+    }
+
+    function test_keyboard_status_and_button_labels() {
+        compare(kbLogic.statusText(false, false, false), "Keybind Studio launcher script not found");
+        compare(kbLogic.statusText(false, true, true), "Keybind Studio launcher script not found");
+        compare(kbLogic.statusText(true, false, false), "Not currently running (launches on demand)");
+        compare(kbLogic.statusText(true, true, false), "Background daemon running (window closed)");
+        compare(kbLogic.statusText(true, true, true), "Keybind Studio is open");
+        compare(kbLogic.statusText(true, false, null), "Not currently running (launches on demand)");
+
+        compare(kbLogic.windowStateBadge(false, false), "Closed");
+        compare(kbLogic.windowStateBadge(true, false), "Standby");
+        compare(kbLogic.windowStateBadge(true, true), "Open");
+
+        compare(kbLogic.buttonLabel(false, false), "Open Keybind Studio");
+        compare(kbLogic.buttonLabel(false, null), "Open Keybind Studio");
+        compare(kbLogic.buttonLabel(false, true), "Focus Keybind Studio");
+        compare(kbLogic.buttonLabel(true, false), "Opening...");
+        compare(kbLogic.buttonLabel(true, true), "Opening...");
     }
 }

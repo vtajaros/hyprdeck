@@ -6,5 +6,6 @@ BluetoothControlLogic 1.0 BluetoothControlLogic.qml
 NetworkControlLogic 1.0 NetworkControlLogic.qml
 ThemesControlLogic 1.0 ThemesControlLogic.qml
 PowerControlLogic 1.0 PowerControlLogic.qml
+KeyboardControlLogic 1.0 KeyboardControlLogic.qml
 SettingRow 1.0 SettingRow.qml
 PlaceholderPage 1.0 PlaceholderPage.qml

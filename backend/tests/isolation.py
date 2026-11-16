@@ -9,6 +9,7 @@ import unittest
 from typing import Mapping
 
 from backend.core.constants import (
+    ENV_HKS_WINDOW_SCRIPT,
     ENV_HYPRIDLE_PATH,
     ENV_POWER_SYSFS_ROOT,
     ENV_SETTINGS_CONFIG_DIR,
@@ -69,6 +70,9 @@ def assert_env_isolated(env: Mapping[str, str] | None = None) -> None:
     hypridle_p = env_dict.get(ENV_HYPRIDLE_PATH, "").strip()
     if hypridle_p:
         assert_path_isolated(hypridle_p, ENV_HYPRIDLE_PATH)
+    hks_win_p = env_dict.get(ENV_HKS_WINDOW_SCRIPT, "").strip()
+    if hks_win_p:
+        assert_path_isolated(hks_win_p, ENV_HKS_WINDOW_SCRIPT)
     repo_fixtures = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
     dev_fx = env_dict.get(ENV_SETTINGS_DEVICES_FIXTURE, "").strip()
     if dev_fx and not is_under_path(dev_fx, repo_fixtures):
@@ -89,6 +93,7 @@ _CLEARED_ENV_VARS = (
     ENV_THEMES_HOME,
     ENV_POWER_SYSFS_ROOT,
     ENV_HYPRIDLE_PATH,
+    ENV_HKS_WINDOW_SCRIPT,
 )
 
 
@@ -392,11 +397,15 @@ def install_suite_isolation_guard() -> None:
     def guarded_run_live_cmd(argv, *, timeout=live_cmd_mod.DEFAULT_LIVE_CMD_TIMEOUT_SECONDS, runner=None, env=None):
         if runner is None and not isinstance(argv, (str, bytes)):
             items = list(argv)
-            if items and items[0] in (
-                "pactl", "wpctl", "busctl", "bluetoothctl", "rfkill", "nmcli",
-                "gsettings", "hyprctl", "awww", "xfconf-query",
-                "upower", "pkexec", "pgrep", "pkill", "hypridle", "systemd-analyze",
-                "hostnamectl", "uname", "lscpu", "free", "df", "lspci", "uptime", "quickshell",
+            if items and (
+                items[0] in (
+                    "pactl", "wpctl", "busctl", "bluetoothctl", "rfkill", "nmcli",
+                    "gsettings", "hyprctl", "awww", "xfconf-query",
+                    "upower", "pkexec", "pgrep", "pkill", "hypridle", "systemd-analyze",
+                    "hostnamectl", "uname", "lscpu", "free", "df", "lspci", "uptime", "quickshell",
+                    "hks-window", "hks-settings",
+                )
+                or os.path.basename(items[0]) in ("hks-window", "hks-settings")
             ):
                 raise AssertionError(
                     f"Test isolation violation: real {items[0]!r} called in tests without mock runner"

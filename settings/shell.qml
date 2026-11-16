@@ -47,6 +47,7 @@ ShellRoot {
             ThemesService.reload(false);
             PowerService.reload(false);
             SystemService.reload();
+            KeyboardService.reload();
         }
 
         function navigate(page: string) {
@@ -344,6 +345,21 @@ ShellRoot {
             });
         }
 
+        function debugKeyboardState(): string {
+            if (!root.debugEnabled) return root._debugDisabledJson();
+            return JSON.stringify({
+                ok: true,
+                available: KeyboardService.available,
+                scriptPath: KeyboardService.scriptPath,
+                hksWindowOpen: KeyboardService.hksWindowOpen,
+                hksRunning: KeyboardService.hksRunning,
+                loading: KeyboardService.loading,
+                busy: KeyboardService.busy,
+                error: KeyboardService.error,
+                statusMessage: KeyboardService.statusMessage
+            });
+        }
+
         function debugState(): string {
             if (!root.debugEnabled) return root._debugDisabledJson();
             var optsMap = ({});
@@ -466,6 +482,16 @@ ShellRoot {
                     loading: SystemService.loading,
                     info: SystemService.info,
                     error: SystemService.error
+                },
+                keyboard: {
+                    available: KeyboardService.available,
+                    scriptPath: KeyboardService.scriptPath,
+                    hksWindowOpen: KeyboardService.hksWindowOpen,
+                    hksRunning: KeyboardService.hksRunning,
+                    loading: KeyboardService.loading,
+                    busy: KeyboardService.busy,
+                    error: KeyboardService.error,
+                    statusMessage: KeyboardService.statusMessage
                 }
             });
         }
