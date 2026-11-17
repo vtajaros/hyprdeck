@@ -93,6 +93,10 @@ Singleton {
         ]);
     }
 
+    function setLidAction(mode) {
+        _runOp(["python3", "-m", "backend.cli", "settings", "power", "lid", String(mode), "--json"]);
+    }
+
     function _runOp(cmd) {
         root.busy = true;
         root.error = "";

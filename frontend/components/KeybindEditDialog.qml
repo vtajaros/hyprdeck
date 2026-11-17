@@ -964,7 +964,7 @@ Item {
                             Text {
                                 id: resetLinkTxt
                                 anchors.centerIn: parent
-                                text: "Reset to default"
+                                text: "Reset to Defaults"
                                 font.family: Deck.fontFamily
                                 font.pixelSize: 10
                                 color: resetMa.containsMouse ? Deck.accent : Deck.muted

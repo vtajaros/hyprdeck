@@ -117,12 +117,17 @@ Item {
             message: "No battery, CPU cpufreq, or hypridle backend detected."
         }
 
-        // Battery Card
         SectionCard {
-            visible: PowerService.available && !!PowerService.capabilities.has_battery
+            visible: PowerService.available
             width: viewport.innerWidth
-            cardPadding: viewport.cardPadding
-            spacing: 6
+            cardPadding: Deck.space16
+            spacing: Deck.space16
+
+            // Battery Section
+            Column {
+                visible: PowerService.available && !!PowerService.capabilities.has_battery
+                width: parent.width
+                spacing: 6
 
             Text {
                 width: parent.width
@@ -180,11 +185,18 @@ Item {
             }
         }
 
-        // Performance Card (EPP + Turbo)
-        SectionCard {
-            visible: PowerService.available && !!PowerService.cpu.available
-            width: viewport.innerWidth
-            cardPadding: viewport.cardPadding
+            Rectangle {
+                visible: !!PowerService.capabilities.has_battery && !!PowerService.cpu.available
+                width: parent.width
+                height: 1
+                color: Deck.alpha(Deck.muted, 0.14)
+            }
+
+            // Performance Section (EPP + Turbo)
+            Column {
+                visible: PowerService.available && !!PowerService.cpu.available
+                width: parent.width
+                spacing: Deck.space8
 
             Text {
                 width: parent.width
@@ -273,11 +285,18 @@ Item {
             }
         }
 
-        // Screen Idle Card (hypridle)
-        SectionCard {
-            visible: PowerService.available && !!PowerService.capabilities.hypridle_present
-            width: viewport.innerWidth
-            cardPadding: viewport.cardPadding
+            Rectangle {
+                visible: !!PowerService.capabilities.hypridle_present && (!!PowerService.capabilities.has_battery || !!PowerService.cpu.available)
+                width: parent.width
+                height: 1
+                color: Deck.alpha(Deck.muted, 0.14)
+            }
+
+            // Screen Idle Section (hypridle)
+            Column {
+                visible: PowerService.available && !!PowerService.capabilities.hypridle_present
+                width: parent.width
+                spacing: Deck.space8
 
             Item {
                 id: idleHdrBox
@@ -539,41 +558,96 @@ Item {
             }
         }
 
-        // Read-only Lid and Sleep Card
-        SectionCard {
-            visible: PowerService.available && !!PowerService.lidSleep.available
-            width: viewport.innerWidth
-            cardPadding: viewport.cardPadding
-            spacing: 4
-
-            Text {
+            Rectangle {
+                visible: !!PowerService.lidSleep.available && (!!PowerService.capabilities.has_battery || !!PowerService.cpu.available || !!PowerService.capabilities.hypridle_present)
                 width: parent.width
-                text: "Lid & Sleep (Read-Only)"
-                font.family: Deck.fontFamily
-                font.pixelSize: Deck.fontSize
-                font.weight: Font.DemiBold
-                color: Deck.fg
-                wrapMode: Text.WordWrap
+                height: 1
+                color: Deck.alpha(Deck.muted, 0.14)
             }
 
-            Text {
+            // Lid and Sleep Section
+            Column {
+                visible: PowerService.available && !!PowerService.lidSleep.available
                 width: parent.width
-                text: "Sleep mode: " + String(PowerService.lidSleep.mem_sleep || "unknown")
-                font.family: Deck.fontFamily
-                font.pixelSize: Deck.fontSizeSmall
-                color: Deck.muted
-                wrapMode: Text.WordWrap
-            }
+                spacing: Deck.space8
 
-            Text {
-                width: parent.width
-                text: "Lid switch: battery=" + String(PowerService.lidSleep.handle_lid_switch || "suspend")
-                    + " · ac=" + String(PowerService.lidSleep.handle_lid_switch_external_power || "suspend")
-                    + " · docked=" + String(PowerService.lidSleep.handle_lid_switch_docked || "ignore")
-                font.family: Deck.fontFamily
-                font.pixelSize: Deck.fontSizeSmall
-                color: Deck.muted
-                wrapMode: Text.WordWrap
+                Text {
+                    width: parent.width
+                    text: "Lid & Sleep"
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
+                    font.weight: Font.DemiBold
+                    color: Deck.fg
+                    wrapMode: Text.WordWrap
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 4
+
+                    Text {
+                        width: parent.width
+                        text: "When Laptop Lid Closes"
+                        font.family: Deck.fontFamily
+                        font.pixelSize: Deck.fontSizeSmall
+                        font.weight: Font.DemiBold
+                        color: Deck.fg
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: "Asks for your password; updates systemd-logind for battery and AC."
+                        font.family: Deck.fontFamily
+                        font.pixelSize: 11
+                        color: Deck.muted
+                        wrapMode: Text.WordWrap
+                    }
+
+                    ChipFlow {
+                        width: parent.width
+                        layoutClass: viewport.layoutClass
+                        layoutShort: viewport.layoutShort
+                        spacing: 6
+
+                        Repeater {
+                            model: [
+                                { mode: "suspend", label: "Sleep" },
+                                { mode: "lock", label: "Lock" },
+                                { mode: "ignore", label: "Do Nothing" }
+                            ]
+                            delegate: ActionButton {
+                                required property var modelData
+                                readonly property bool isActive: String(PowerService.lidSleep.handle_lid_switch || "suspend") === modelData.mode
+                                text: modelData.label
+                                compact: true
+                                variant: isActive ? "primary" : "default"
+                                enabled: !PowerService.busy
+                                onClicked: PowerService.setLidAction(modelData.mode)
+                            }
+                        }
+                    }
+                }
+
+                Text {
+                    width: parent.width
+                    text: "Sleep mode: " + String(PowerService.lidSleep.mem_sleep || "unknown")
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.muted
+                    wrapMode: Text.WordWrap
+                }
+
+                Text {
+                    width: parent.width
+                    text: "Lid switch: battery=" + String(PowerService.lidSleep.handle_lid_switch || "suspend")
+                        + " · ac=" + String(PowerService.lidSleep.handle_lid_switch_external_power || "suspend")
+                        + " · docked=" + String(PowerService.lidSleep.handle_lid_switch_docked || "ignore")
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSizeSmall
+                    color: Deck.muted
+                    wrapMode: Text.WordWrap
+                }
             }
         }
     }

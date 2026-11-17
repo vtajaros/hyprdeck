@@ -7,6 +7,7 @@ from backend.settings.power.ops import (
     rewrite_hypridle_timeouts,
     set_epp,
     set_idle_timeouts,
+    set_lid_action,
     set_turbo,
 )
 from backend.settings.power.state import (
@@ -41,5 +42,6 @@ __all__ = [
     "rewrite_hypridle_timeouts",
     "set_epp",
     "set_idle_timeouts",
+    "set_lid_action",
     "set_turbo",
 ]

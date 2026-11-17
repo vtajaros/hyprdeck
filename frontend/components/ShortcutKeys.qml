@@ -135,7 +135,7 @@ Item {
                     active: root.active
                     width: modelData.isKey
                         ? (root.wrap
-                            ? (root.width > 0 ? Math.min(root.estimateKeyWidth(modelData.text), root.width) : root.estimateKeyWidth(modelData.text))
+                            ? (root.width > 0 ? Math.min(cap.implicitWidth, root.width) : cap.implicitWidth)
                             : root.keyWidth(modelData.keyIndex, modelData.text))
                         : implicitWidth
                 }

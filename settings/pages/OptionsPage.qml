@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import "../theme"
 import "../shared_components"
 import "../components"
@@ -46,7 +47,7 @@ Item {
             ActionButton {
                 id: resetSectionBtn
                 visible: root.searchQuery.trim().length === 0
-                text: "Reset section"
+                text: "Reset to Defaults"
                 variant: "danger"
                 compact: true
                 enabled: !SettingsService.busy && SettingsService.includeInstalled
@@ -106,17 +107,21 @@ Item {
             message: "Try a different search query."
         }
 
-        // Two columns at >= 1200px viewport width; single column below
-        Flow {
+        // Two columns at >= 1200px viewport width; single column below (equal row heights via GridLayout)
+        GridLayout {
             visible: root.filteredOptions.length > 0
             width: viewport.innerWidth
-            spacing: viewport.columnSpacing
+            columns: viewport.twoColumns ? 2 : 1
+            columnSpacing: viewport.columnSpacing
+            rowSpacing: viewport.columnSpacing
 
             Repeater {
                 model: root.filteredOptions
                 delegate: SettingRow {
                     required property var modelData
-                    width: viewport.twoColumnCardWidth
+                    Layout.preferredWidth: viewport.twoColumnCardWidth
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     option: modelData
                     currentValue: SettingsService.effectiveValue(modelData)
                     modified: SettingsService.isOptionModified(modelData)

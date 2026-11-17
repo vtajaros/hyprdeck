@@ -34,6 +34,7 @@ Item {
     PageViewport {
         id: viewport
         anchors.fill: parent
+        allowTwoColumns: true
 
         header: PageHeader {
             title: "Network"
@@ -115,55 +116,60 @@ Item {
                 wrapMode: Text.WordWrap
             }
 
-            Repeater {
-                model: NetworkService.devices
-                delegate: DeviceCard {
-                    id: devCard
-                    required property var modelData
-                    width: viewport.innerWidth
-                    cardPadding: viewport.cardPadding
-                    highlighted: !!devCard.modelData.is_active
-                    title: String(devCard.modelData.name || "") + " (" + String(devCard.modelData.type || "") + ")"
-                    badges: {
-                        var b = [
-                            {
-                                text: String(devCard.modelData.state || ""),
-                                textColor: devCard.modelData.is_active ? Deck.accent : Deck.muted,
-                                bgColor: Deck.elevated
+            Flow {
+                width: parent.width
+                spacing: viewport.columnSpacing
+
+                Repeater {
+                    model: NetworkService.devices
+                    delegate: DeviceCard {
+                        id: devCard
+                        required property var modelData
+                        width: viewport.twoColumnCardWidth
+                        cardPadding: viewport.cardPadding
+                        highlighted: !!devCard.modelData.is_active
+                        title: String(devCard.modelData.name || "") + " (" + String(devCard.modelData.type || "") + ")"
+                        badges: {
+                            var b = [
+                                {
+                                    text: String(devCard.modelData.state || ""),
+                                    textColor: devCard.modelData.is_active ? Deck.accent : Deck.muted,
+                                    bgColor: Deck.elevated
+                                }
+                            ];
+                            if (devCard.modelData.is_active) {
+                                b.push({
+                                    text: "Active",
+                                    textColor: Deck.accent,
+                                    bgColor: Deck.alpha(Deck.accent, 0.16),
+                                    borderColor: Deck.alpha(Deck.accent, 0.45)
+                                });
                             }
-                        ];
-                        if (devCard.modelData.is_active) {
-                            b.push({
-                                text: "Active",
-                                textColor: Deck.accent,
-                                bgColor: Deck.alpha(Deck.accent, 0.16),
-                                borderColor: Deck.alpha(Deck.accent, 0.45)
-                            });
+                            return b;
                         }
-                        return b;
+                        subtitle: {
+                            var lines = [];
+                            if (devCard.modelData.active_connection) {
+                                var s = "Profile: " + String(devCard.modelData.active_connection || "");
+                                if (devCard.modelData.ip4_address) s += " · IP: " + devCard.modelData.ip4_address;
+                                if (devCard.modelData.ip4_gateway) s += " · GW: " + devCard.modelData.ip4_gateway;
+                                lines.push(s);
+                            }
+                            if ((devCard.modelData.ip4_dns || []).length > 0) {
+                                lines.push("DNS: " + (devCard.modelData.ip4_dns || []).join(", "));
+                            }
+                            return lines.join("\n");
+                        }
+                        actions: [
+                            ActionButton {
+                                text: "Disconnect"
+                                compact: true
+                                visible: !!devCard.modelData.is_active
+                                enabled: !NetworkService.busy
+                                onClicked: NetworkService.requestDisconnect(devCard.modelData)
+                            }
+                        ]
                     }
-                    subtitle: {
-                        var lines = [];
-                        if (devCard.modelData.active_connection) {
-                            var s = "Profile: " + String(devCard.modelData.active_connection || "");
-                            if (devCard.modelData.ip4_address) s += " · IP: " + devCard.modelData.ip4_address;
-                            if (devCard.modelData.ip4_gateway) s += " · GW: " + devCard.modelData.ip4_gateway;
-                            lines.push(s);
-                        }
-                        if ((devCard.modelData.ip4_dns || []).length > 0) {
-                            lines.push("DNS: " + (devCard.modelData.ip4_dns || []).join(", "));
-                        }
-                        return lines.join("\n");
-                    }
-                    actions: [
-                        ActionButton {
-                            text: "Disconnect"
-                            compact: true
-                            visible: !!devCard.modelData.is_active
-                            enabled: !NetworkService.busy
-                            onClicked: NetworkService.requestDisconnect(devCard.modelData)
-                        }
-                    ]
                 }
             }
         }
@@ -229,52 +235,57 @@ Item {
                 wrapMode: Text.WordWrap
             }
 
-            Repeater {
-                model: NetworkService.wifiNetworks
-                delegate: DeviceCard {
-                    id: wifiCard
-                    required property var modelData
-                    width: viewport.innerWidth
-                    cardPadding: viewport.cardPadding
-                    highlighted: !!wifiCard.modelData.in_use
-                    title: wifiCard.modelData.hidden ? "(Hidden network)" : String(wifiCard.modelData.ssid || "")
-                    badges: {
-                        var b = [];
-                        if (wifiCard.modelData.in_use) {
-                            b.push({
-                                text: "Connected",
-                                textColor: Deck.accent,
-                                bgColor: Deck.alpha(Deck.accent, 0.18),
-                                borderColor: Deck.alpha(Deck.accent, 0.4)
-                            });
-                        } else if (wifiCard.modelData.known) {
-                            b.push({
-                                text: "Saved",
-                                textColor: Deck.muted,
-                                bgColor: Deck.elevated
-                            });
-                        }
-                        return b;
-                    }
-                    subtitle: "Signal: " + String(wifiCard.modelData.signal || 0) + "%"
-                        + (wifiCard.modelData.security ? (" · " + wifiCard.modelData.security) : " · Open")
+            Flow {
+                width: parent.width
+                spacing: viewport.columnSpacing
 
-                    actions: [
-                        ActionButton {
-                            text: wifiCard.modelData.in_use ? "Connected" : "Connect"
-                            variant: wifiCard.modelData.in_use ? "neutral" : "accent"
-                            compact: true
-                            enabled: !wifiCard.modelData.in_use && !wifiCard.modelData.hidden && !NetworkService.busy
-                            onClicked: {
-                                var sec = String(wifiCard.modelData.security || "").trim();
-                                if (sec.length === 0 || sec === "--") {
-                                    NetworkService.joinWifi(wifiCard.modelData.ssid, "", "");
-                                } else {
-                                    root.openJoinPrompt(wifiCard.modelData.ssid, sec);
+                Repeater {
+                    model: NetworkService.wifiNetworks
+                    delegate: DeviceCard {
+                        id: wifiCard
+                        required property var modelData
+                        width: viewport.twoColumnCardWidth
+                        cardPadding: viewport.cardPadding
+                        highlighted: !!wifiCard.modelData.in_use
+                        title: wifiCard.modelData.hidden ? "(Hidden network)" : String(wifiCard.modelData.ssid || "")
+                        badges: {
+                            var b = [];
+                            if (wifiCard.modelData.in_use) {
+                                b.push({
+                                    text: "Connected",
+                                    textColor: Deck.accent,
+                                    bgColor: Deck.alpha(Deck.accent, 0.18),
+                                    borderColor: Deck.alpha(Deck.accent, 0.4)
+                                });
+                            } else if (wifiCard.modelData.known) {
+                                b.push({
+                                    text: "Saved",
+                                    textColor: Deck.muted,
+                                    bgColor: Deck.elevated
+                                });
+                            }
+                            return b;
+                        }
+                        subtitle: "Signal: " + String(wifiCard.modelData.signal || 0) + "%"
+                            + (wifiCard.modelData.security ? (" · " + wifiCard.modelData.security) : " · Open")
+
+                        actions: [
+                            ActionButton {
+                                text: wifiCard.modelData.in_use ? "Connected" : "Connect"
+                                variant: wifiCard.modelData.in_use ? "neutral" : "accent"
+                                compact: true
+                                enabled: !wifiCard.modelData.in_use && !wifiCard.modelData.hidden && !NetworkService.busy
+                                onClicked: {
+                                    var sec = String(wifiCard.modelData.security || "").trim();
+                                    if (sec.length === 0 || sec === "--") {
+                                        NetworkService.joinWifi(wifiCard.modelData.ssid, "", "");
+                                    } else {
+                                        root.openJoinPrompt(wifiCard.modelData.ssid, sec);
+                                    }
                                 }
                             }
-                        }
-                    ]
+                        ]
+                    }
                 }
             }
         }
@@ -320,42 +331,47 @@ Item {
                 }
             }
 
-            Repeater {
-                model: root.savedConnections
-                delegate: DeviceCard {
-                    id: connCard
-                    required property var modelData
-                    width: viewport.innerWidth
-                    cardPadding: viewport.cardPadding
-                    highlighted: !!connCard.modelData.active
-                    title: String(connCard.modelData.name || connCard.modelData.uuid) + (connCard.modelData.active ? " (Active)" : "")
-                    subtitle: root.showDetails ? "" : String(connCard.modelData.type || "")
-                    detailText: root.showDetails ? (String(connCard.modelData.type || "") + " · " + String(connCard.modelData.uuid || "")) : ""
+            Flow {
+                width: parent.width
+                spacing: viewport.columnSpacing
 
-                    actions: [
-                        ActionButton {
-                            text: connCard.modelData.autoconnect ? "Auto: On" : "Auto: Off"
-                            compact: true
-                            enabled: !NetworkService.busy
-                            onClicked: NetworkService.setAutoconnect(connCard.modelData.uuid, !connCard.modelData.autoconnect)
-                        },
-                        ActionButton {
-                            text: "Connect"
-                            variant: "accent"
-                            compact: true
-                            visible: !connCard.modelData.active && connCard.modelData.type !== "loopback"
-                            enabled: !NetworkService.busy
-                            onClicked: NetworkService.connectSaved(connCard.modelData.uuid)
-                        },
-                        ActionButton {
-                            text: "Forget"
-                            variant: "danger"
-                            compact: true
-                            visible: connCard.modelData.type !== "loopback"
-                            enabled: !NetworkService.busy
-                            onClicked: NetworkService.requestForget(connCard.modelData)
-                        }
-                    ]
+                Repeater {
+                    model: root.savedConnections
+                    delegate: DeviceCard {
+                        id: connCard
+                        required property var modelData
+                        width: viewport.twoColumnCardWidth
+                        cardPadding: viewport.cardPadding
+                        highlighted: !!connCard.modelData.active
+                        title: String(connCard.modelData.name || connCard.modelData.uuid) + (connCard.modelData.active ? " (Active)" : "")
+                        subtitle: root.showDetails ? "" : String(connCard.modelData.type || "")
+                        detailText: root.showDetails ? (String(connCard.modelData.type || "") + " · " + String(connCard.modelData.uuid || "")) : ""
+
+                        actions: [
+                            ActionButton {
+                                text: connCard.modelData.autoconnect ? "Auto: On" : "Auto: Off"
+                                compact: true
+                                enabled: !NetworkService.busy
+                                onClicked: NetworkService.setAutoconnect(connCard.modelData.uuid, !connCard.modelData.autoconnect)
+                            },
+                            ActionButton {
+                                text: "Connect"
+                                variant: "accent"
+                                compact: true
+                                visible: !connCard.modelData.active && connCard.modelData.type !== "loopback"
+                                enabled: !NetworkService.busy
+                                onClicked: NetworkService.connectSaved(connCard.modelData.uuid)
+                            },
+                            ActionButton {
+                                text: "Forget"
+                                variant: "danger"
+                                compact: true
+                                visible: connCard.modelData.type !== "loopback"
+                                enabled: !NetworkService.busy
+                                onClicked: NetworkService.requestForget(connCard.modelData)
+                            }
+                        ]
+                    }
                 }
             }
         }

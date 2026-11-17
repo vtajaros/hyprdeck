@@ -224,46 +224,57 @@ Item {
             ]
         }
 
-        // GTK Theme & Color Scheme
         SectionCard {
             width: viewport.innerWidth
-            cardPadding: viewport.cardPadding
+            cardPadding: Deck.space16
+            spacing: Deck.space16
 
-            Text {
+            // GTK Theme & Color Scheme
+            Column {
                 width: parent.width
-                text: "GTK Theme (" + String(ThemesService.gtk.effective_theme || "unset") + ") · Color scheme: " + ThemesService.colorScheme
-                font.family: Deck.fontFamily
-                font.pixelSize: Deck.fontSize
-                font.weight: Font.DemiBold
-                color: Deck.fg
-                wrapMode: Text.WordWrap
-            }
+                spacing: Deck.space8
 
-            ChipFlow {
-                width: parent.width
-                layoutClass: viewport.layoutClass
-                layoutShort: viewport.layoutShort
-                spacing: 6
+                Text {
+                    width: parent.width
+                    text: "GTK Theme (" + String(ThemesService.gtk.effective_theme || "unset") + ") · Color scheme: " + ThemesService.colorScheme
+                    font.family: Deck.fontFamily
+                    font.pixelSize: Deck.fontSize
+                    font.weight: Font.DemiBold
+                    color: Deck.fg
+                    wrapMode: Text.WordWrap
+                }
 
-                Repeater {
-                    model: ThemesService.gtk.installed || []
-                    delegate: ActionButton {
-                        required property string modelData
-                        text: modelData
-                        width: Math.min(implicitWidth, viewport.innerWidth - viewport.cardPadding * 2)
-                        variant: ThemesService.gtk.gsettings_theme === modelData ? "accent" : "neutral"
-                        compact: true
-                        enabled: !ThemesService.busy
-                        onClicked: ThemesService.setGtkTheme(modelData)
+                ChipFlow {
+                    width: parent.width
+                    layoutClass: viewport.layoutClass
+                    layoutShort: viewport.layoutShort
+                    spacing: 6
+
+                    Repeater {
+                        model: ThemesService.gtk.installed || []
+                        delegate: ActionButton {
+                            required property string modelData
+                            text: modelData
+                            width: Math.min(implicitWidth, parent.width)
+                            variant: ThemesService.gtk.gsettings_theme === modelData ? "accent" : "neutral"
+                            compact: true
+                            enabled: !ThemesService.busy
+                            onClicked: ThemesService.setGtkTheme(modelData)
+                        }
                     }
                 }
             }
-        }
 
-        // Icons
-        SectionCard {
-            width: viewport.innerWidth
-            cardPadding: viewport.cardPadding
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Deck.alpha(Deck.muted, 0.14)
+            }
+
+            // Icons
+            Column {
+                width: parent.width
+                spacing: Deck.space8
 
             Item {
                 id: iconHdrBox
@@ -326,7 +337,7 @@ Item {
                     delegate: ActionButton {
                         required property string modelData
                         text: modelData === "Papirus-Dynamic" ? "Papirus-Dynamic ★" : modelData
-                        width: Math.min(implicitWidth, viewport.innerWidth - viewport.cardPadding * 2)
+                        width: Math.min(implicitWidth, parent.width)
                         variant: ThemesService.icons.gsettings_theme === modelData ? "accent" : "neutral"
                         compact: true
                         enabled: !ThemesService.busy
@@ -336,10 +347,16 @@ Item {
             }
         }
 
-        // Cursor (live)
-        SectionCard {
-            width: viewport.innerWidth
-            cardPadding: viewport.cardPadding
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Deck.alpha(Deck.muted, 0.14)
+            }
+
+            // Cursor (live)
+            Column {
+                width: parent.width
+                spacing: Deck.space8
 
             Item {
                 id: curHdrBox
@@ -418,7 +435,7 @@ Item {
                     delegate: ActionButton {
                         required property string modelData
                         text: modelData
-                        width: Math.min(implicitWidth, viewport.innerWidth - viewport.cardPadding * 2)
+                        width: Math.min(implicitWidth, parent.width)
                         variant: ThemesService.cursor.gsettings_theme === modelData ? "accent" : "neutral"
                         compact: true
                         enabled: !ThemesService.busy
@@ -440,10 +457,16 @@ Item {
             }
         }
 
-        // Qt6ct
-        SectionCard {
-            width: viewport.innerWidth
-            cardPadding: viewport.cardPadding
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Deck.alpha(Deck.muted, 0.14)
+            }
+
+            // Qt6ct
+            Column {
+                width: parent.width
+                spacing: Deck.space8
 
             Text {
                 width: parent.width
@@ -466,7 +489,7 @@ Item {
                     delegate: ActionButton {
                         required property string modelData
                         text: modelData
-                        width: Math.min(implicitWidth, viewport.innerWidth - viewport.cardPadding * 2)
+                        width: Math.min(implicitWidth, parent.width)
                         variant: ThemesService.qt.style === modelData ? "accent" : "neutral"
                         compact: true
                         enabled: !ThemesService.busy
@@ -495,7 +518,7 @@ Item {
                     delegate: ActionButton {
                         required property var modelData
                         text: String(modelData.name || "")
-                        width: Math.min(implicitWidth, viewport.innerWidth - viewport.cardPadding * 2)
+                        width: Math.min(implicitWidth, parent.width)
                         variant: ThemesService.qt.color_scheme_path === modelData.path ? "accent" : "neutral"
                         compact: true
                         enabled: !ThemesService.busy
@@ -503,6 +526,7 @@ Item {
                     }
                 }
             }
+        }
         }
     }
 }

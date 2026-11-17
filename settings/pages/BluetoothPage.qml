@@ -19,6 +19,7 @@ Item {
     PageViewport {
         id: viewport
         anchors.fill: parent
+        allowTwoColumns: true
 
         header: PageHeader {
             title: "Bluetooth"
@@ -151,64 +152,69 @@ Item {
                 wrapMode: Text.WordWrap
             }
 
-            Repeater {
-                model: root.pairedList
-                delegate: DeviceCard {
-                    id: pairedCard
-                    required property var modelData
-                    width: viewport.innerWidth
-                    cardPadding: viewport.cardPadding
-                    highlighted: !!pairedCard.modelData.connected
-                    title: String(pairedCard.modelData.alias || pairedCard.modelData.name || pairedCard.modelData.address)
-                    badges: {
-                        var b = [];
-                        if (pairedCard.modelData.connected) {
-                            b.push({
-                                text: pairedCard.modelData.is_default_sink ? "Connected · Default Audio" : "Connected",
-                                textColor: Deck.accent,
-                                bgColor: Deck.alpha(Deck.accent, 0.18),
-                                borderColor: Deck.alpha(Deck.accent, 0.4)
-                            });
-                        }
-                        if (pairedCard.modelData.trusted) {
-                            b.push({
-                                text: "Trusted",
-                                textColor: Deck.muted,
-                                bgColor: Deck.elevated
-                            });
-                        }
-                        return b;
-                    }
-                    subtitle: String(pairedCard.modelData.address || "") + (pairedCard.modelData.is_audio ? " · Audio" : "")
+            Flow {
+                width: parent.width
+                spacing: viewport.columnSpacing
 
-                    actions: [
-                        ActionButton {
-                            text: pairedCard.modelData.connected ? "Disconnect" : "Connect"
-                            variant: pairedCard.modelData.connected ? "neutral" : "accent"
-                            compact: true
-                            enabled: root.ctrlPowered && !BluetoothService.busy
-                            onClicked: {
-                                if (pairedCard.modelData.connected) {
-                                    BluetoothService.requestDisconnect(pairedCard.modelData);
-                                } else {
-                                    BluetoothService.connect(pairedCard.modelData.address);
-                                }
+                Repeater {
+                    model: root.pairedList
+                    delegate: DeviceCard {
+                        id: pairedCard
+                        required property var modelData
+                        width: viewport.twoColumnCardWidth
+                        cardPadding: viewport.cardPadding
+                        highlighted: !!pairedCard.modelData.connected
+                        title: String(pairedCard.modelData.alias || pairedCard.modelData.name || pairedCard.modelData.address)
+                        badges: {
+                            var b = [];
+                            if (pairedCard.modelData.connected) {
+                                b.push({
+                                    text: pairedCard.modelData.is_default_sink ? "Connected · Default Audio" : "Connected",
+                                    textColor: Deck.accent,
+                                    bgColor: Deck.alpha(Deck.accent, 0.18),
+                                    borderColor: Deck.alpha(Deck.accent, 0.4)
+                                });
                             }
-                        },
-                        ActionButton {
-                            text: pairedCard.modelData.trusted ? "Untrust" : "Trust"
-                            compact: true
-                            enabled: !BluetoothService.busy
-                            onClicked: BluetoothService.setTrusted(pairedCard.modelData.address, !pairedCard.modelData.trusted)
-                        },
-                        ActionButton {
-                            text: "Remove"
-                            variant: "danger"
-                            compact: true
-                            enabled: !BluetoothService.busy
-                            onClicked: BluetoothService.requestRemove(pairedCard.modelData)
+                            if (pairedCard.modelData.trusted) {
+                                b.push({
+                                    text: "Trusted",
+                                    textColor: Deck.muted,
+                                    bgColor: Deck.elevated
+                                });
+                            }
+                            return b;
                         }
-                    ]
+                        subtitle: String(pairedCard.modelData.address || "") + (pairedCard.modelData.is_audio ? " · Audio" : "")
+
+                        actions: [
+                            ActionButton {
+                                text: pairedCard.modelData.connected ? "Disconnect" : "Connect"
+                                variant: pairedCard.modelData.connected ? "neutral" : "accent"
+                                compact: true
+                                enabled: root.ctrlPowered && !BluetoothService.busy
+                                onClicked: {
+                                    if (pairedCard.modelData.connected) {
+                                        BluetoothService.requestDisconnect(pairedCard.modelData);
+                                    } else {
+                                        BluetoothService.connect(pairedCard.modelData.address);
+                                    }
+                                }
+                            },
+                            ActionButton {
+                                text: pairedCard.modelData.trusted ? "Untrust" : "Trust"
+                                compact: true
+                                enabled: !BluetoothService.busy
+                                onClicked: BluetoothService.setTrusted(pairedCard.modelData.address, !pairedCard.modelData.trusted)
+                            },
+                            ActionButton {
+                                text: "Remove"
+                                variant: "danger"
+                                compact: true
+                                enabled: !BluetoothService.busy
+                                onClicked: BluetoothService.requestRemove(pairedCard.modelData)
+                            }
+                        ]
+                    }
                 }
             }
         }
@@ -281,27 +287,32 @@ Item {
                 wrapMode: Text.WordWrap
             }
 
-            Repeater {
-                model: root.discoveredList
-                delegate: DeviceCard {
-                    id: discCard
-                    required property var modelData
-                    width: viewport.innerWidth
-                    cardPadding: viewport.cardPadding
-                    title: String(discCard.modelData.alias || discCard.modelData.name || discCard.modelData.address)
-                    subtitle: {
-                        var rssiTxt = btLogic.rssiLabel(discCard.modelData.rssi);
-                        return String(discCard.modelData.address || "") + (rssiTxt.length > 0 ? (" · " + rssiTxt) : "");
-                    }
-                    actions: [
-                        ActionButton {
-                            text: "Pair"
-                            variant: "accent"
-                            compact: true
-                            enabled: root.ctrlPowered && !BluetoothService.busy
-                            onClicked: BluetoothService.pair(discCard.modelData.address)
+            Flow {
+                width: parent.width
+                spacing: viewport.columnSpacing
+
+                Repeater {
+                    model: root.discoveredList
+                    delegate: DeviceCard {
+                        id: discCard
+                        required property var modelData
+                        width: viewport.twoColumnCardWidth
+                        cardPadding: viewport.cardPadding
+                        title: String(discCard.modelData.alias || discCard.modelData.name || discCard.modelData.address)
+                        subtitle: {
+                            var rssiTxt = btLogic.rssiLabel(discCard.modelData.rssi);
+                            return String(discCard.modelData.address || "") + (rssiTxt.length > 0 ? (" · " + rssiTxt) : "");
                         }
-                    ]
+                        actions: [
+                            ActionButton {
+                                text: "Pair"
+                                variant: "accent"
+                                compact: true
+                                enabled: root.ctrlPowered && !BluetoothService.busy
+                                onClicked: BluetoothService.pair(discCard.modelData.address)
+                            }
+                        ]
+                    }
                 }
             }
         }

@@ -17,6 +17,7 @@ from backend.editor.backups import (
 from backend.settings.power.state import (
     parse_hypridle_conf,
     probe_cpu,
+    probe_lid_sleep,
     read_per_cpu_epp,
     read_turbo_enabled,
     resolve_power_paths,
@@ -129,6 +130,43 @@ def set_turbo(
         "before": cpu_before,
         "after": cpu_after,
         "message": f"Turbo boost {'enabled' if enabled else 'disabled'} (session-only; resets on reboot).",
+        "error": None,
+    }
+
+
+def set_lid_action(
+    mode: Any,
+    *,
+    runner: LiveRunner | None = None,
+    env: Mapping[str, str] | None = None,
+    timeout: float = 15.0,
+) -> dict[str, Any]:
+    """Set systemd-logind lid switch action (suspend, lock, ignore) via pkexec + helper."""
+    if not isinstance(mode, str) or mode.strip() not in ("suspend", "lock", "ignore"):
+        return _fail(f"Lid action must be one of suspend, lock, ignore; got {mode!r}.")
+    clean = mode.strip()
+
+    paths = resolve_power_paths(env)
+    sysfs_root = paths["sysfs_root"]
+    before = probe_lid_sleep(sysfs_root, runner=runner, timeout=timeout)
+
+    res = run_live_cmd(
+        ["pkexec", HELPER_PATH, "lid", clean],
+        timeout=timeout,
+        runner=runner,
+    )
+    if res.rc in (126, 127):
+        return _fail("Authorization cancelled (pkexec dismissed or unauthorized).", before=before, cancelled=True)
+    if not res.ok:
+        return _fail(res.err.strip() or f"pkexec helper failed (rc={res.rc})", before=before, cancelled=False)
+
+    after = probe_lid_sleep(sysfs_root, runner=runner, timeout=timeout)
+    label_map = {"suspend": "Sleep", "lock": "Lock", "ignore": "Do Nothing"}
+    return {
+        "ok": True,
+        "before": before,
+        "after": after,
+        "message": f"Lid close action set to {label_map[clean]}.",
         "error": None,
     }
 

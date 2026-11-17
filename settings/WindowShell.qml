@@ -58,6 +58,7 @@ FloatingWindow {
         if (win.currentPage === "network") return networkPage;
         if (win.currentPage === "themes") return themesPage;
         if (win.currentPage === "power") return powerPage;
+        if (win.currentPage === "apps") return defaultAppsPage;
         if (win.currentPage === "sysinfo") return systemPage;
         if (win.currentPage === "keyboard") return keyboardPage;
         if (win.currentPage === "backups") return backupsPage;
@@ -73,6 +74,7 @@ FloatingWindow {
         if (pageId === "network") return networkPage;
         if (pageId === "themes") return themesPage;
         if (pageId === "power") return powerPage;
+        if (pageId === "apps") return defaultAppsPage;
         if (pageId === "sysinfo") return systemPage;
         if (pageId === "keyboard") return keyboardPage;
         if (pageId === "backups") return backupsPage;
@@ -264,6 +266,10 @@ FloatingWindow {
                 event.accepted = true;
                 return;
             }
+            if (win.currentPage === "apps" && defaultAppsPage.handleEscape()) {
+                event.accepted = true;
+                return;
+            }
             if (win.currentPage === "backups" && backupsPage.handleEscape()) {
                 event.accepted = true;
                 return;
@@ -432,7 +438,7 @@ FloatingWindow {
                         SidebarItem {
                             width: parent.width
                             icon: "󰖲"
-                            text: "Desktop behavior"
+                            text: "Desktop Behavior"
                             compactRail: win.compactRail
                             showRailTooltip: false
                             active: win.currentPage === "desktop" && globalSearch.text.trim().length === 0
@@ -556,23 +562,24 @@ FloatingWindow {
 
                         SidebarItem {
                             width: parent.width
-                            icon: "󰋼"
-                            text: "System info"
+                            icon: "󰀻"
+                            text: "Default Applications"
                             compactRail: win.compactRail
                             showRailTooltip: false
-                            active: win.currentPage === "sysinfo" && globalSearch.text.trim().length === 0
+                            active: win.currentPage === "apps" && globalSearch.text.trim().length === 0
                             onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
                             onClicked: {
                                 globalSearch.text = "";
                                 win.railSearchExpanded = false;
-                                win.currentPage = "sysinfo";
+                                win.currentPage = "apps";
+                                DefaultAppsService.reload();
                             }
                         }
 
                         SidebarItem {
                             width: parent.width
                             icon: "󰌌"
-                            text: "Keyboard shortcuts"
+                            text: "Keyboard Shortcuts"
                             compactRail: win.compactRail
                             showRailTooltip: false
                             active: win.currentPage === "keyboard" && globalSearch.text.trim().length === 0
@@ -598,6 +605,21 @@ FloatingWindow {
                                 win.railSearchExpanded = false;
                                 win.currentPage = "backups";
                                 BackupsService.reload();
+                            }
+                        }
+
+                        SidebarItem {
+                            width: parent.width
+                            icon: "󰋼"
+                            text: "System Info"
+                            compactRail: win.compactRail
+                            showRailTooltip: false
+                            active: win.currentPage === "sysinfo" && globalSearch.text.trim().length === 0
+                            onRailHoverState: function(h, lbl, src) { win._updateRailTip(h, lbl, src); }
+                            onClicked: {
+                                globalSearch.text = "";
+                                win.railSearchExpanded = false;
+                                win.currentPage = "sysinfo";
                             }
                         }
 
@@ -637,7 +659,7 @@ FloatingWindow {
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length > 0 || win.currentPage === "appearance" || win.currentPage === "desktop"
                     section: win.currentPage === "desktop" ? "desktop" : "appearance"
-                    pageTitle: win.currentPage === "desktop" ? "Desktop behavior" : "Appearance"
+                    pageTitle: win.currentPage === "desktop" ? "Desktop Behavior" : "Appearance"
                     searchQuery: globalSearch.text
                 }
 
@@ -681,6 +703,12 @@ FloatingWindow {
                     id: powerPage
                     anchors.fill: parent
                     visible: globalSearch.text.trim().length === 0 && win.currentPage === "power"
+                }
+
+                DefaultAppsPage {
+                    id: defaultAppsPage
+                    anchors.fill: parent
+                    visible: globalSearch.text.trim().length === 0 && win.currentPage === "apps"
                 }
 
                 SystemPage {

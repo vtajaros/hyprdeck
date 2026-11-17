@@ -22,6 +22,7 @@ Rectangle {
 
     Text {
         id: label
+        objectName: "elideOk"
         anchors.centerIn: parent
         width: Math.min(parent.width - 8, implicitWidth)
         text: root.text

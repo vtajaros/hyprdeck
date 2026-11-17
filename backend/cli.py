@@ -993,6 +993,25 @@ def build_arg_parser() -> argparse.ArgumentParser:
     pwr_idle.add_argument("--timeout", dest="timeout", type=float, default=5.0, help="Per-command timeout seconds.")
     pwr_idle.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
 
+    pwr_lid = pwr_sub.add_parser("lid", help="Set systemd-logind lid-close action via pkexec.")
+    pwr_lid.add_argument("mode", choices=["suspend", "lock", "ignore"], help="Lid close action.")
+    pwr_lid.add_argument("--timeout", dest="timeout", type=float, default=15.0, help="pkexec timeout seconds.")
+    pwr_lid.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    # settings apps subcommand (Default Applications)
+    st_apps = st_sub.add_parser("apps", help="Inspect and set XDG MIME default applications.")
+    apps_sub = st_apps.add_subparsers(dest="apps_action", required=True)
+
+    apps_state = apps_sub.add_parser("state", help="Read default applications and MIME associations.")
+    apps_state.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
+    apps_set = apps_sub.add_parser("set", help="Set default application for a MIME type (dry-run unless --apply).")
+    apps_set.add_argument("--mime", dest="mime_type", required=True, help="MIME type (e.g. application/pdf).")
+    apps_set.add_argument("--desktop", dest="desktop_id", required=True, help="Desktop entry ID (e.g. firefox.desktop).")
+    apps_set.add_argument("--apply", dest="apply", action="store_true", default=False, help="Apply change via xdg-mime.")
+    apps_set.add_argument("--dry-run", dest="dry_run", action="store_true", default=False, help="Preview without modifying.")
+    apps_set.add_argument("--json", dest="json_output", action="store_true", default=False, help="Emit JSON output.")
+
     # settings system subcommand
     st_sys = st_sub.add_parser("system", help="Read-only system hardware and software overview.")
     sys_sub = st_sys.add_subparsers(dest="system_action", required=True)
@@ -2956,7 +2975,7 @@ def _handle_settings_themes(args: argparse.Namespace) -> int:
 
 
 def _handle_settings_power(args: argparse.Namespace, backup_dir: str | None = None) -> int:
-    from backend.settings.power.ops import set_epp, set_idle_timeouts, set_turbo
+    from backend.settings.power.ops import set_epp, set_idle_timeouts, set_lid_action, set_turbo
     from backend.settings.power.state import get_power_state
 
     p_action = args.power_action
@@ -2972,6 +2991,8 @@ def _handle_settings_power(args: argparse.Namespace, backup_dir: str | None = No
         res = set_epp(args.value, timeout=timeout)
     elif p_action == "turbo":
         res = set_turbo(args.mode == "on", timeout=timeout)
+    elif p_action == "lid":
+        res = set_lid_action(args.mode, timeout=timeout)
     elif p_action == "idle":
         changes: dict[str, Any] = {}
         for pair in getattr(args, "pairs", []) or []:
@@ -2991,6 +3012,28 @@ def _handle_settings_power(args: argparse.Namespace, backup_dir: str | None = No
         res = set_idle_timeouts(changes, backup_dir=backup_dir, timeout=timeout)
     else:
         res = {"ok": False, "error": f"Unknown power action: {p_action}"}
+
+    sys.stdout.write(json.dumps(res, indent=2) + "\n")
+    sys.stdout.flush()
+    return 0 if res.get("ok") else 1
+
+
+def _handle_settings_apps(args: argparse.Namespace) -> int:
+    from backend.settings.default_apps.ops import set_default_app
+    from backend.settings.default_apps.state import get_default_apps_state
+
+    a_action = getattr(args, "apps_action", "")
+    if a_action == "state":
+        st = get_default_apps_state()
+        sys.stdout.write(json.dumps(st, indent=2) + "\n")
+        sys.stdout.flush()
+        return 0
+
+    if a_action == "set":
+        dry = not bool(getattr(args, "apply", False)) or bool(getattr(args, "dry_run", False))
+        res = set_default_app(args.mime_type, args.desktop_id, dry_run=dry)
+    else:
+        res = {"ok": False, "error": f"Unknown apps action: {a_action}"}
 
     sys.stdout.write(json.dumps(res, indent=2) + "\n")
     sys.stdout.flush()
@@ -3090,6 +3133,9 @@ def _handle_settings(args: argparse.Namespace) -> int:
 
     if action == "power":
         return _handle_settings_power(args, backup_dir=debug_bdir)
+
+    if action == "apps":
+        return _handle_settings_apps(args)
 
     if action == "system":
         return _handle_settings_system(args)

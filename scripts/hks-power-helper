@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
 import sys
 
 _CPU_DIR_RE = re.compile(r"^cpu[0-9]+$")
@@ -93,10 +94,38 @@ def _handle_turbo(sysfs_root: str, mode: str) -> int:
     return 0
 
 
+def _handle_lid(mode: str) -> int:
+    if mode not in ("suspend", "lock", "ignore"):
+        sys.stderr.write(f"hks-power-helper: lid mode must be suspend|lock|ignore, got {mode!r}\n")
+        return 2
+
+    conf_dir = "/etc/systemd/logind.conf.d"
+    conf_path = os.path.join(conf_dir, "99-hyprdeck-lid.conf")
+    os.makedirs(conf_dir, exist_ok=True)
+    content = (
+        "# Managed by HyprDeck Settings\n"
+        "[Login]\n"
+        f"HandleLidSwitch={mode}\n"
+        f"HandleLidSwitchExternalPower={mode}\n"
+    )
+    tmp_path = conf_path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    os.replace(tmp_path, conf_path)
+
+    subprocess.run(
+        ["systemctl", "kill", "-s", "HUP", "systemd-logind"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if len(args) != 2:
-        sys.stderr.write("usage: hks-power-helper {epp <value>|turbo <on|off>}\n")
+        sys.stderr.write("usage: hks-power-helper {epp <value>|turbo <on|off>|lid <suspend|lock|ignore>}\n")
         return 2
 
     action, value = args[0], args[1]
@@ -107,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
             return _handle_epp(sysfs_root, value)
         if action == "turbo":
             return _handle_turbo(sysfs_root, value)
+        if action == "lid":
+            return _handle_lid(value)
     except OSError as exc:
         sys.stderr.write(f"hks-power-helper: {exc}\n")
         return 1

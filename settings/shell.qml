@@ -48,6 +48,7 @@ ShellRoot {
             NetworkService.reload(false);
             ThemesService.reload(false);
             PowerService.reload(false);
+            DefaultAppsService.reload();
             SystemService.reload();
             KeyboardService.reload();
             BackupsService.reload();

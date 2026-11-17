@@ -9,3 +9,4 @@ singleton PowerService 1.0 PowerService.qml
 singleton SystemService 1.0 SystemService.qml
 singleton KeyboardService 1.0 KeyboardService.qml
 singleton BackupsService 1.0 BackupsService.qml
+singleton DefaultAppsService 1.0 DefaultAppsService.qml

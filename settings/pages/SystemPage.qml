@@ -57,7 +57,7 @@ Item {
         anchors.fill: parent
 
         header: PageHeader {
-            title: "System info"
+            title: "System Info"
             subtitle: "Hardware, OS, and compositor summary (privacy-safe; IDs omitted)."
 
             ActionButton {
@@ -91,33 +91,39 @@ Item {
             message: SystemService.error || "Unable to read system information."
         }
 
-        Column {
+        SectionCard {
             visible: SystemService.available
             width: viewport.innerWidth
-            spacing: 6
+            cardPadding: Deck.space16
+            spacing: 0
 
             Repeater {
                 model: root.infoRows
-                delegate: Rectangle {
-                    id: infoCard
+                delegate: Item {
+                    id: infoRow
                     required property var modelData
-                    readonly property real innerW: Math.max(0, width - 20)
+                    required property int index
+                    readonly property real innerW: Math.max(0, width)
                     readonly property bool stacked: innerW < 440
 
-                    width: viewport.innerWidth
-                    height: rowContent.implicitHeight + 20
-                    radius: Deck.radiusSmall
-                    color: Deck.surface
-                    border.width: 1
-                    border.color: Deck.alpha(Deck.muted, 0.14)
+                    width: parent.width
+                    height: rowContent.implicitHeight + 16
+
+                    Rectangle {
+                        visible: infoRow.index > 0
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 1
+                        color: Deck.alpha(Deck.muted, 0.14)
+                    }
 
                     Item {
                         id: rowContent
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: 10
-                        implicitHeight: infoCard.stacked
+                        anchors.verticalCenter: parent.verticalCenter
+                        implicitHeight: infoRow.stacked
                             ? (lblTxt.implicitHeight + 4 + valTxt.implicitHeight)
                             : Math.max(lblTxt.implicitHeight, valTxt.implicitHeight)
                         height: implicitHeight
@@ -126,8 +132,8 @@ Item {
                             id: lblTxt
                             x: 0
                             y: 0
-                            width: infoCard.stacked ? infoCard.innerW : 160
-                            text: String(infoCard.modelData.label || "")
+                            width: infoRow.stacked ? infoRow.innerW : 170
+                            text: String(infoRow.modelData.label || "")
                             font.family: Deck.fontFamily
                             font.pixelSize: Deck.fontSizeSmall
                             font.weight: Font.DemiBold
@@ -137,10 +143,10 @@ Item {
 
                         Text {
                             id: valTxt
-                            x: infoCard.stacked ? 0 : 172
-                            y: infoCard.stacked ? (lblTxt.implicitHeight + 4) : 0
-                            width: infoCard.stacked ? infoCard.innerW : Math.max(0, infoCard.innerW - 172)
-                            text: String(infoCard.modelData.value || "")
+                            x: infoRow.stacked ? 0 : 182
+                            y: infoRow.stacked ? (lblTxt.implicitHeight + 4) : 0
+                            width: infoRow.stacked ? infoRow.innerW : Math.max(0, infoRow.innerW - 182)
+                            text: String(infoRow.modelData.value || "")
                             font.family: Deck.fontFamily
                             font.pixelSize: Deck.fontSizeSmall
                             color: Deck.fg

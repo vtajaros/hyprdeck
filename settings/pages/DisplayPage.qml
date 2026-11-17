@@ -19,6 +19,29 @@ Item {
         return s;
     }
 
+    function _filteredScaleOptions(scaleOptions, effScale) {
+        if (!scaleOptions || scaleOptions.length === undefined) return [];
+        var defaults = [1, 1.25, 1.5, 2];
+        var out = [];
+        for (var i = 0; i < scaleOptions.length; i++) {
+            var opt = scaleOptions[i];
+            if (!opt) continue;
+            var sc = Number(opt.scale);
+            var isDefault = false;
+            for (var d = 0; d < defaults.length; d++) {
+                if (Math.abs(sc - defaults[d]) < 0.001) {
+                    isDefault = true;
+                    break;
+                }
+            }
+            var isCurrent = Math.abs(sc - Number(effScale)) < 0.001;
+            if (isDefault || isCurrent) {
+                out.push(opt);
+            }
+        }
+        return out;
+    }
+
     PageViewport {
         id: viewport
         anchors.fill: parent
@@ -409,242 +432,332 @@ Item {
                     Column {
                         visible: !outputCard.effDisabled
                         width: parent.width
-                        spacing: Deck.space8
+                        spacing: Deck.space12
 
-                        // Resolution & Refresh
-                        Column {
-                            width: parent.width
-                            spacing: 4
-
-                            Text {
-                                width: parent.width
-                                text: "Resolution & Refresh Rate"
-                                font.family: Deck.fontFamily
-                                font.pixelSize: Deck.fontSizeSmall
-                                color: Deck.muted
-                                wrapMode: Text.WordWrap
-                            }
-
-                            ChipFlow {
-                                width: parent.width
-                                layoutClass: viewport.layoutClass
-                                layoutShort: viewport.layoutShort
-                                spacing: 6
-
-                                Repeater {
-                                    model: outputCard.outData && outputCard.outData.available_modes ? outputCard.outData.available_modes : []
-                                    delegate: Rectangle {
-                                        required property string modelData
-                                        readonly property string normVal: root._normMode(modelData)
-                                        readonly property bool selected: root._normMode(outputCard.effMode) === normVal
-                                        width: modeTxt.implicitWidth + 16
-                                        height: 28
-                                        radius: Deck.radiusSmall
-                                        color: selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
-                                        border.width: 1
-                                        border.color: selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
-
-                                        Text {
-                                            id: modeTxt
-                                            anchors.centerIn: parent
-                                            text: modelData
-                                            font.family: Deck.fontFamily
-                                            font.pixelSize: Deck.fontSizeSmall
-                                            color: selected ? Deck.accent : Deck.fg
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: DisplayService.setOutputDraft(outputCard.outName, "mode", normVal)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Scale
-                        Column {
-                            width: parent.width
-                            spacing: 4
-
-                            Flow {
-                                width: parent.width
-                                spacing: 8
-
-                                Text {
-                                    text: "Scale"
-                                    font.family: Deck.fontFamily
-                                    font.pixelSize: Deck.fontSizeSmall
-                                    color: Deck.muted
-                                }
-
-                                Rectangle {
-                                    id: scaleWarnBox
-                                    visible: outputCard.scaleWarn.length > 0
-                                    width: Math.min(scaleWarnTxt.implicitWidth + 10, parent.width)
-                                    height: 16
-                                    radius: 4
-                                    color: Deck.alpha(Deck.warning, 0.2)
-
-                                    Text {
-                                        id: scaleWarnTxt
-                                        objectName: "elideOk"
-                                        anchors.fill: parent
-                                        anchors.leftMargin: 5
-                                        anchors.rightMargin: 5
-                                        verticalAlignment: Text.AlignVCenter
-                                        text: outputCard.scaleWarn
-                                        font.family: Deck.fontFamily
-                                        font.pixelSize: 10
-                                        color: Deck.warning
-                                        elide: Text.ElideRight
-                                    }
-                                }
-                            }
-
-                            ChipFlow {
-                                width: parent.width
-                                layoutClass: viewport.layoutClass
-                                layoutShort: viewport.layoutShort
-                                spacing: 6
-
-                                Repeater {
-                                    model: outputCard.outData && outputCard.outData.scale_options ? outputCard.outData.scale_options : []
-                                    delegate: Rectangle {
-                                        required property var modelData
-                                        readonly property real optScale: Number(modelData.scale)
-                                        readonly property bool selected: Math.abs(outputCard.effScale - optScale) < 0.001
-                                        readonly property bool clean: !!modelData.clean
-                                        width: scaleTxt.implicitWidth + 16
-                                        height: 28
-                                        radius: Deck.radiusSmall
-                                        color: selected ? Deck.alpha(clean ? Deck.accent : Deck.warning, 0.22) : Deck.elevated
-                                        border.width: 1
-                                        border.color: selected ? (clean ? Deck.accent : Deck.warning) : Deck.alpha(Deck.muted, 0.25)
-
-                                        Text {
-                                            id: scaleTxt
-                                            anchors.centerIn: parent
-                                            text: String(modelData.label) + (clean ? "" : " ~")
-                                            font.family: Deck.fontFamily
-                                            font.pixelSize: Deck.fontSizeSmall
-                                            color: selected ? (clean ? Deck.accent : Deck.warning) : Deck.fg
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: DisplayService.setOutputDraft(outputCard.outName, "scale", optScale)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Rotation (Transform)
-                        Column {
-                            width: parent.width
-                            spacing: 4
-
-                            Text {
-                                width: parent.width
-                                text: "Rotation"
-                                font.family: Deck.fontFamily
-                                font.pixelSize: Deck.fontSizeSmall
-                                color: Deck.muted
-                                wrapMode: Text.WordWrap
-                            }
-
-                            ChipFlow {
-                                width: parent.width
-                                layoutClass: viewport.layoutClass
-                                layoutShort: viewport.layoutShort
-                                spacing: 6
-
-                                Repeater {
-                                    model: [0, 1, 2, 3, 4, 5, 6, 7]
-                                    delegate: Rectangle {
-                                        required property int modelData
-                                        readonly property bool selected: outputCard.effTransform === modelData
-                                        width: trTxt.implicitWidth + 16
-                                        height: 28
-                                        radius: Deck.radiusSmall
-                                        color: selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
-                                        border.width: 1
-                                        border.color: selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
-
-                                        Text {
-                                            id: trTxt
-                                            anchors.centerIn: parent
-                                            text: dispLogic.transformLabel(modelData)
-                                            font.family: Deck.fontFamily
-                                            font.pixelSize: Deck.fontSizeSmall
-                                            color: selected ? Deck.accent : Deck.fg
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: DisplayService.setOutputDraft(outputCard.outName, "transform", modelData)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // VRR
                         Flow {
+                            id: controlsGrid
                             width: parent.width
                             spacing: Deck.space12
+                            readonly property bool twoCol: width >= 620
+                            readonly property real cellW: twoCol ? Math.floor((width - Deck.space12) / 2) : width
+                            readonly property real row1H: twoCol ? Math.max(modeCol.implicitHeight, scaleCol.implicitHeight) + Deck.space12 * 2 : 0
+                            readonly property real row2H: twoCol ? Math.max(rotCol.implicitHeight, vrrCol.implicitHeight) + Deck.space12 * 2 : 0
 
-                            Column {
-                                spacing: 2
-                                Text {
-                                    text: "Variable Refresh Rate (VRR)"
-                                    font.family: Deck.fontFamily
-                                    font.pixelSize: Deck.fontSizeSmall
-                                    color: Deck.muted
-                                }
-                                Text {
-                                    visible: !(outputCard.outData && outputCard.outData.vrr_capable)
-                                    text: "Not supported by panel"
-                                    font.family: Deck.fontFamily
-                                    font.pixelSize: 10
-                                    color: Deck.muted
+                            // Resolution & Refresh
+                            Rectangle {
+                                id: modeCell
+                                width: controlsGrid.cellW
+                                height: controlsGrid.twoCol ? controlsGrid.row1H : (modeCol.implicitHeight + Deck.space12 * 2)
+                                radius: Deck.radiusSmall
+                                color: Deck.alpha(Deck.bg, 0.35)
+                                border.width: 1
+                                border.color: Deck.alpha(Deck.muted, 0.16)
+
+                                Column {
+                                    id: modeCol
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.margins: Deck.space12
+                                    spacing: Deck.space8
+
+                                    Column {
+                                        width: parent.width
+                                        spacing: 2
+                                        Text {
+                                            width: parent.width
+                                            text: "Resolution & Refresh Rate"
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSize
+                                            font.weight: Font.DemiBold
+                                            color: Deck.fg
+                                            wrapMode: Text.WordWrap
+                                        }
+                                        Text {
+                                            width: parent.width
+                                            text: "Active display mode and refresh rate."
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSizeSmall
+                                            color: Deck.muted
+                                            wrapMode: Text.WordWrap
+                                        }
+                                    }
+
+                                    ChipFlow {
+                                        width: parent.width
+                                        layoutClass: viewport.layoutClass
+                                        layoutShort: viewport.layoutShort
+                                        spacing: 6
+
+                                        Repeater {
+                                            model: outputCard.outData && outputCard.outData.available_modes ? outputCard.outData.available_modes : []
+                                            delegate: Rectangle {
+                                                required property string modelData
+                                                readonly property string normVal: root._normMode(modelData)
+                                                readonly property bool selected: root._normMode(outputCard.effMode) === normVal
+                                                width: modeTxt.implicitWidth + 16
+                                                height: 28
+                                                radius: Deck.radiusSmall
+                                                color: selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
+                                                border.width: 1
+                                                border.color: selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
+
+                                                Text {
+                                                    id: modeTxt
+                                                    anchors.centerIn: parent
+                                                    text: modelData
+                                                    font.family: Deck.fontFamily
+                                                    font.pixelSize: Deck.fontSizeSmall
+                                                    color: selected ? Deck.accent : Deck.fg
+                                                }
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: DisplayService.setOutputDraft(outputCard.outName, "mode", normVal)
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
-                            Row {
-                                spacing: 6
-                                opacity: (outputCard.outData && outputCard.outData.vrr_capable) ? 1.0 : 0.4
+                            // Scale (default clean options only)
+                            Rectangle {
+                                id: scaleCell
+                                width: controlsGrid.cellW
+                                height: controlsGrid.twoCol ? controlsGrid.row1H : (scaleCol.implicitHeight + Deck.space12 * 2)
+                                radius: Deck.radiusSmall
+                                color: Deck.alpha(Deck.bg, 0.35)
+                                border.width: 1
+                                border.color: Deck.alpha(Deck.muted, 0.16)
 
-                                Repeater {
-                                    model: [
-                                        { val: 0, label: "Off" },
-                                        { val: 1, label: "On" },
-                                        { val: 2, label: "Fullscreen" }
-                                    ]
-                                    delegate: Rectangle {
-                                        required property var modelData
-                                        readonly property bool selected: outputCard.effVrr === modelData.val
-                                        width: vrrTxt.implicitWidth + 14
-                                        height: 26
-                                        radius: Deck.radiusSmall
-                                        color: selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
-                                        border.width: 1
-                                        border.color: selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
+                                Column {
+                                    id: scaleCol
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.margins: Deck.space12
+                                    spacing: Deck.space8
 
+                                    Column {
+                                        width: parent.width
+                                        spacing: 2
                                         Text {
-                                            id: vrrTxt
-                                            anchors.centerIn: parent
-                                            text: modelData.label
+                                            width: parent.width
+                                            text: "Scale"
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSize
+                                            font.weight: Font.DemiBold
+                                            color: Deck.fg
+                                        }
+                                        Text {
+                                            width: parent.width
+                                            text: outputCard.scaleWarn.length > 0 ? outputCard.scaleWarn : "UI scaling factor for this display."
                                             font.family: Deck.fontFamily
                                             font.pixelSize: Deck.fontSizeSmall
-                                            color: selected ? Deck.accent : Deck.fg
+                                            color: outputCard.scaleWarn.length > 0 ? Deck.warning : Deck.muted
+                                            wrapMode: Text.WordWrap
                                         }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            enabled: !!(outputCard.outData && outputCard.outData.vrr_capable)
-                                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                            onClicked: DisplayService.setOutputDraft(outputCard.outName, "vrr", modelData.val)
+                                    }
+
+                                    ChipFlow {
+                                        width: parent.width
+                                        layoutClass: viewport.layoutClass
+                                        layoutShort: viewport.layoutShort
+                                        spacing: 6
+
+                                        Repeater {
+                                            model: root._filteredScaleOptions(
+                                                outputCard.outData && outputCard.outData.scale_options ? outputCard.outData.scale_options : [],
+                                                outputCard.effScale
+                                            )
+                                            delegate: Rectangle {
+                                                required property var modelData
+                                                readonly property real optScale: Number(modelData.scale)
+                                                readonly property bool selected: Math.abs(outputCard.effScale - optScale) < 0.001
+                                                readonly property bool clean: !!modelData.clean
+                                                width: scaleTxt.implicitWidth + 16
+                                                height: 28
+                                                radius: Deck.radiusSmall
+                                                color: selected ? Deck.alpha(clean ? Deck.accent : Deck.warning, 0.22) : Deck.elevated
+                                                border.width: 1
+                                                border.color: selected ? (clean ? Deck.accent : Deck.warning) : Deck.alpha(Deck.muted, 0.25)
+
+                                                Text {
+                                                    id: scaleTxt
+                                                    anchors.centerIn: parent
+                                                    text: String(modelData.label) + (clean ? "" : " ~")
+                                                    font.family: Deck.fontFamily
+                                                    font.pixelSize: Deck.fontSizeSmall
+                                                    color: selected ? (clean ? Deck.accent : Deck.warning) : Deck.fg
+                                                }
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: DisplayService.setOutputDraft(outputCard.outName, "scale", optScale)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Rotation (Transform)
+                            Rectangle {
+                                id: rotCell
+                                width: controlsGrid.cellW
+                                height: controlsGrid.twoCol ? controlsGrid.row2H : (rotCol.implicitHeight + Deck.space12 * 2)
+                                radius: Deck.radiusSmall
+                                color: Deck.alpha(Deck.bg, 0.35)
+                                border.width: 1
+                                border.color: Deck.alpha(Deck.muted, 0.16)
+
+                                Column {
+                                    id: rotCol
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.margins: Deck.space12
+                                    spacing: Deck.space8
+
+                                    Column {
+                                        width: parent.width
+                                        spacing: 2
+                                        Text {
+                                            width: parent.width
+                                            text: "Rotation"
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSize
+                                            font.weight: Font.DemiBold
+                                            color: Deck.fg
+                                        }
+                                        Text {
+                                            width: parent.width
+                                            text: "Screen orientation and flip."
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSizeSmall
+                                            color: Deck.muted
+                                            wrapMode: Text.WordWrap
+                                        }
+                                    }
+
+                                    ChipFlow {
+                                        width: parent.width
+                                        layoutClass: viewport.layoutClass
+                                        layoutShort: viewport.layoutShort
+                                        spacing: 6
+
+                                        Repeater {
+                                            model: [0, 1, 2, 3, 4, 5, 6, 7]
+                                            delegate: Rectangle {
+                                                required property int modelData
+                                                readonly property bool selected: outputCard.effTransform === modelData
+                                                width: trTxt.implicitWidth + 16
+                                                height: 28
+                                                radius: Deck.radiusSmall
+                                                color: selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
+                                                border.width: 1
+                                                border.color: selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
+
+                                                Text {
+                                                    id: trTxt
+                                                    anchors.centerIn: parent
+                                                    text: dispLogic.transformLabel(modelData)
+                                                    font.family: Deck.fontFamily
+                                                    font.pixelSize: Deck.fontSizeSmall
+                                                    color: selected ? Deck.accent : Deck.fg
+                                                }
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: DisplayService.setOutputDraft(outputCard.outName, "transform", modelData)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // VRR
+                            Rectangle {
+                                id: vrrCell
+                                width: controlsGrid.cellW
+                                height: controlsGrid.twoCol ? controlsGrid.row2H : (vrrCol.implicitHeight + Deck.space12 * 2)
+                                radius: Deck.radiusSmall
+                                color: Deck.alpha(Deck.bg, 0.35)
+                                border.width: 1
+                                border.color: Deck.alpha(Deck.muted, 0.16)
+
+                                Column {
+                                    id: vrrCol
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.margins: Deck.space12
+                                    spacing: Deck.space8
+
+                                    Column {
+                                        width: parent.width
+                                        spacing: 2
+                                        Text {
+                                            width: parent.width
+                                            text: "Variable Refresh Rate (VRR)"
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSize
+                                            font.weight: Font.DemiBold
+                                            color: Deck.fg
+                                            wrapMode: Text.WordWrap
+                                        }
+                                        Text {
+                                            width: parent.width
+                                            text: (outputCard.outData && outputCard.outData.vrr_capable)
+                                                ? "Adaptive sync mode for this panel."
+                                                : "Not supported by panel"
+                                            font.family: Deck.fontFamily
+                                            font.pixelSize: Deck.fontSizeSmall
+                                            color: Deck.muted
+                                            wrapMode: Text.WordWrap
+                                        }
+                                    }
+
+                                    ChipFlow {
+                                        width: parent.width
+                                        layoutClass: viewport.layoutClass
+                                        layoutShort: viewport.layoutShort
+                                        spacing: 6
+                                        opacity: (outputCard.outData && outputCard.outData.vrr_capable) ? 1.0 : 0.4
+
+                                        Repeater {
+                                            model: [
+                                                { val: 0, label: "Off" },
+                                                { val: 1, label: "On" },
+                                                { val: 2, label: "Fullscreen" }
+                                            ]
+                                            delegate: Rectangle {
+                                                required property var modelData
+                                                readonly property bool selected: outputCard.effVrr === modelData.val
+                                                width: vrrTxt.implicitWidth + 14
+                                                height: 28
+                                                radius: Deck.radiusSmall
+                                                color: selected ? Deck.alpha(Deck.accent, 0.22) : Deck.elevated
+                                                border.width: 1
+                                                border.color: selected ? Deck.accent : Deck.alpha(Deck.muted, 0.25)
+
+                                                Text {
+                                                    id: vrrTxt
+                                                    anchors.centerIn: parent
+                                                    text: modelData.label
+                                                    font.family: Deck.fontFamily
+                                                    font.pixelSize: Deck.fontSizeSmall
+                                                    color: selected ? Deck.accent : Deck.fg
+                                                }
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    enabled: !!(outputCard.outData && outputCard.outData.vrr_capable)
+                                                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                                    onClicked: DisplayService.setOutputDraft(outputCard.outName, "vrr", modelData.val)
+                                                }
+                                            }
                                         }
                                     }
                                 }
